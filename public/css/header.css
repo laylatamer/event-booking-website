@@ -1,0 +1,30 @@
+/* Header-specific styles */
+.page-top-gap {
+    height: 28px; 
+}
+
+.container {
+    max-width: 1520px;
+    margin: 0 auto;
+    padding: 0 16px;
+}
+
+/* Global styles that apply to header */
+* { 
+    box-sizing: border-box; 
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    color: #eef2f7;
+    background:
+        radial-gradient(1100px 480px at 20% -160px, rgba(214,90,46,0.30), rgba(214,90,46,0) 65%),
+        #0a0b0d;
+    min-height: 100vh;
+    line-height: 1.4;
+}
