@@ -4,10 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>All Events & Activities - Dark Mode</title>
-
-    <!-- Load Lucide icons for clean UI elements -->
     <script type="module" src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-
     <link rel="stylesheet" href="../../public/css/allevents.css">
    
 </head>

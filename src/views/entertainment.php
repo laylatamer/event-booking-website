@@ -7,13 +7,12 @@
 
     <!-- Load Lucide icons for clean UI elements -->
     <script type="module" src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-
     <link rel="stylesheet" href="../../public/css/allevents.css">
    
 </head>
 <body class="page-body">
 <?php
-// Include the footer file
+// Include the header file
 include '../../includes/header.php';
 ?>
    
@@ -38,7 +37,7 @@ include '../../includes/header.php';
                     <i data-lucide="map-pin"></i> All Venues
                 </button>
 
-                <!-- NEW: Reset Filter Button -->
+                <!-- Reset Filter Button -->
                 <button id="reset-filters-btn" class="filter-btn-base">
                     <i data-lucide="x-circle"></i> Reset Filters
                 </button>

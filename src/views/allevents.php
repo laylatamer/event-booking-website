@@ -92,12 +92,14 @@ include '../../includes/header.php';
                 </button>
             </div>
             <div class="modal-inner-content" id="category-list-container">
+                <div class="filter-list-item" data-value="Entertainment">Entertainment</div>
                 <div class="filter-list-item" data-value="Nightlife">Nightlife</div>
                 <div class="filter-list-item" data-value="Activities">Activities</div>
                 <div class="filter-list-item" data-value="Art & Theatre">Art & Theatre</div>
                 <div class="filter-list-item" data-value="Concerts">Concerts</div>
                 <div class="filter-list-item" data-value="Comedy">Comedy</div>
                 <div class="filter-list-item" data-value="Sports">Sports</div>
+                <div class="filter-list-item" data-value="Football">Football</div>
                 <div class="filter-list-item" data-value="Festivals">Festivals</div>
                 <div class="filter-list-item" data-value="Workshops">Workshops</div>
             </div>

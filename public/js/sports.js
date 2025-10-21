@@ -6,7 +6,7 @@
         title: "ZED FC vs Petrojet", 
         date: "Oct 19 | 05:00 PM", 
         venue: "Cairo Stadium", 
-        category: "Premier League", 
+        category: "Football", 
         image: "https://images.unsplash.com/photo-1508804185872-d7badad00f7d?w=400&h=400&fit=crop"
     },
     { 
@@ -14,7 +14,7 @@
         title: "Ceramica vs Talea El Geish", 
         date: "Oct 19 | 08:00 PM", 
         venue: "30 June Stadium", 
-        category: "Premier League", 
+        category: "Football", 
         image: "https://images.unsplash.com/photo-1521412644187-c49fa049e84d?w=400&h=400&fit=crop"
     },
     { 
@@ -22,7 +22,7 @@
         title: "Pyramids FC vs Pharco FC", 
         date: "Oct 21 | 05:00 PM", 
         venue: "Air Defense Stadium", 
-        category: "Premier League", 
+        category: "Football", 
         image: "https://images.unsplash.com/photo-1517927033932-b3d18e61fb3a?w=400&h=400&fit=crop"
     },
     { 
@@ -30,7 +30,7 @@
         title: "Ahly vs Ittihad of Alexandria", 
         date: "Oct 22 | 05:00 PM", 
         venue: "Al Salam Stadium", 
-        category: "Premier League", 
+        category: "Football", 
         image: "https://images.unsplash.com/photo-1518091043644-c1d4457512c6?w=400&h=400&fit=crop"
     },
     { 
@@ -38,7 +38,7 @@
         title: "Masry vs Smouha SC", 
         date: "Oct 22 | 08:00 PM", 
         venue: "Borg El Arab Stadium", 
-        category: "Premier League", 
+        category: "Football", 
         image: "https://images.unsplash.com/photo-1518091043644-c1d4457512c6?w=400&h=400&fit=crop"
     },
     { 
@@ -46,7 +46,7 @@
         title: "Future FC vs Zamalek SC", 
         date: "Oct 23 | 08:00 PM", 
         venue: "Cairo Stadium", 
-        category: "Premier League", 
+        category: "Football", 
         image: "https://images.unsplash.com/photo-1518091043644-c1d4457512c6?w=400&h=400&fit=crop"
     },
 ];
