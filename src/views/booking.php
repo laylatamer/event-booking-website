@@ -75,35 +75,13 @@ if ($event) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo $eventTitle; ?> | TicketVortex</title>
+    <title><?php echo $eventTitle; ?> | Eحgzly</title>
+    <link rel="stylesheet" href="../../public/css/booking.css">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/feather-icons"></script>
     <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.net.min.js"></script>
-    <style>
-        /* Shared Style for Header/Footer if included */
-        #vanta-bg {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -10;
-        }
-
-        .gradient-bg {
-            background: linear-gradient(135deg, #000000 0%, #c2410c 100%);
-        }
-        .parallax-layer {
-            transition: transform 0.1s ease-out;
-        }
-        .event-banner {
-            height: 60vh;
-            background-attachment: fixed;
-            background-position: center;
-            background-repeat: no-repeat;
-            background-size: cover;
-        }
-    </style>
+    
 </head>
 <body class="min-h-screen text-white overflow-x-hidden">
     <!-- Vanta Background container -->
@@ -271,93 +249,12 @@ include '../../includes/header.php';
        
     </div>
 
-    <script>
-        // Initialize Vanta.js background
-        VANTA.NET({
-            el: "#vanta-bg",
-            color: 0xf97316,
-            backgroundColor: 0x0,
-            points: 12,
-            maxDistance: 20,
-            spacing: 15
-        });
-
-        // Initialize feather icons
-        feather.replace();
-
-        // Get the initial price from the PHP-set data attribute
-        const initialPriceElement = document.getElementById('ticket-price');
-        // Fallback for when the price element might not exist (e.g., event not found)
-        const initialPrice = parseFloat(initialPriceElement ? initialPriceElement.getAttribute('data-base-price') : 0);
-
-        // Function to update ticket count (Client-side interactivity)
-        function updateTicketCount(change) {
-            const countElement = document.getElementById('ticket-count');
-            let count = parseInt(countElement.textContent);
-            count += change;
-            if (count < 1) count = 1;
-            if (count > 10) count = 10;
-            countElement.textContent = count;
-
-            // Calculate totals using the base price
-            const ticketPrice = initialPrice;
-            const subtotal = (ticketPrice * count);
-            const fees = (5.99 * count);
-            const total = (subtotal + fees).toFixed(2);
-
-            document.getElementById('checkout-btn').textContent = `Checkout • $${total}`;
-        }
-
-        // Initialize checkout button text on load
-        updateTicketCount(0);
-
-        // Checkout Button Alert (Client-side interactivity)
-        document.getElementById('checkout-btn').addEventListener('click', () => {
-            const ticketCount = parseInt(document.getElementById('ticket-count').textContent);
-            const ticketPrice = initialPrice;
-            const subtotal = ticketPrice * ticketCount;
-            const fees = 5.99 * ticketCount;
-            const grandTotal = subtotal + fees;
-
-            // Use the PHP-set price format for the alert
-            const formattedPriceForAlert = '$' + ticketPrice.toFixed(2);
-            
-            // NOTE: Per instructions, using custom alert simulation instead of native alert()
-            const alertMessage = `Order Summary:\n\nTickets: ${ticketCount} x ${formattedPriceForAlert}\nSubtotal: $${subtotal.toFixed(2)}\nFees: $${fees.toFixed(2)}\nTotal: $${grandTotal.toFixed(2)}`;
-            console.log(alertMessage); // Log to console instead of native alert
-            
-            // A simple message box replacement (as native alerts are forbidden)
-            if (document.getElementById('custom-alert-overlay')) {
-                document.getElementById('custom-alert-message').textContent = alertMessage.replace(/\n\n/g, '\n').replace(/\n/g, ' | ');
-                document.getElementById('custom-alert-overlay').style.display = 'flex';
-            } else {
-                 // Fallback to console if custom alert HTML isn't in header/footer/body
-                 alert('Order initiated (see console for details)');
-            }
-        });
-
-        // Parallax effect (Client-side visual effect)
-        window.addEventListener('scroll', function() {
-            const scrollPosition = window.scrollY;
-
-            // Banner parallax
-            const banner = document.getElementById('event-banner');
-            if (banner) {
-                banner.style.backgroundPositionY = `calc(50% + ${scrollPosition * 0.3}px)`;
-            }
-
-            // Content parallax
-            const parallaxLayers = document.querySelectorAll('.parallax-layer');
-            parallaxLayers.forEach((layer, index) => {
-                const speed = 0.1 + (index * 0.05);
-                const offsetY = scrollPosition * speed;
-                layer.style.transform = `translateY(${offsetY}px)`;
-            });
-        });
-    </script>
+   
     <?php
 // Assuming includes/header.php and includes/footer.php exist relative to this file's location
 include '../../includes/footer.php';
 ?>
+    <script type="module" src="../../public/js/booking.js"></script>
+
 </body>
 </html>

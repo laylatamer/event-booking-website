@@ -4,17 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contact Us | TicketVortex</title>
+    <title>Contact Us | Eحgzly </title>
+    <link rel="stylesheet" href="../../public/css/contact_us.css">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/feather-icons"></script>
     <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.net.min.js"></script>
-    <style>
-        .parallax { background-attachment: fixed; background-position: center; background-repeat: no-repeat; background-size: cover; }
-        .gradient-bg { background: linear-gradient(135deg, #000000 0%, #c2410c 100%); }
-        .input-glow:focus { box-shadow: 0 0 10px rgba(249, 115, 22, 0.7); }
-        .floating { animation: float 6s ease-in-out infinite; }
-        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-20px); } 100% { transform: translateY(0px); } }
-    </style>
+   
 </head>
 <body class="min-h-screen text-white overflow-x-hidden">
  <?php
@@ -99,16 +95,7 @@ include '../../includes/header.php';
 // Include the footer file
 include '../../includes/footer.php';
 ?>
-<script>
-    VANTA.NET({
-        el: "#vanta-bg",
-        color: 0xf97316,
-        backgroundColor: 0x0,
-        points: 12,
-        maxDistance: 20,
-        spacing: 15
-    });
-    feather.replace();
-</script>
+    <script type="module" src="../../public/js/contact_us.js"></script>
+
 </body>
 </html>
