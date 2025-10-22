@@ -165,7 +165,7 @@ include '../../includes/header.php';
                                     </button>
                                 </div>
 
-                                <button id="checkout-btn" class="w-full gradient-bg hover:bg-opacity-90 text-white font-bold py-3 px-4 rounded-lg transition duration-300 transform hover:scale-105">
+                                <button  id="checkout-btn" class="w-full gradient-bg hover:bg-opacity-90 text-white font-bold py-3 px-4 rounded-lg transition duration-300 transform hover:scale-105">
                                     Proceed to Checkout
                                 </button>
 

@@ -222,6 +222,9 @@
         </div>
     </div>
 
-    <script src="../../public/css/checkout.js"></script>
+    
+    <script type="module" src="../../public/css/checkout.js"></script>
+    
+    
 </body>
 </html>
