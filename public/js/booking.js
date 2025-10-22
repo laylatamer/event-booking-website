@@ -1,6 +1,3 @@
-// --- FIX 2: Wait for the HTML document to be fully loaded ---
-// This ensures that elements like 'checkout-btn' and 'ticket-count'
-// exist before the script tries to find them.
 document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize Vanta.js background
@@ -54,11 +51,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize checkout button text on load
     updateTicketCount(0);
 
-    // --- FIX 1: Add Event Listeners for the +/- buttons ---
-    // This was the missing part. Your updateTicketCount function
-    // was never being called when a button was clicked.
-    //
-    // *** IMPORTANT: Make sure your HTML buttons have these exact IDs ***
     const decreaseBtn = document.getElementById('decrease-btn');
     const increaseBtn = document.getElementById('increase-btn');
 
@@ -115,39 +107,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     
-    // Checkout Button Alert (Client-side interactivity)
-    // This will now work because it's inside the DOMContentLoaded listener
+    // --- FIX: Checkout Button Logic Updated ---
     const checkoutBtn = document.getElementById('checkout-btn');
     if (checkoutBtn) {
         checkoutBtn.addEventListener('click', () => {
             const countElement = document.getElementById('ticket-count');
             if (!countElement) return; // Safety check
 
+            // 1. Get the ticket count
             const ticketCount = parseInt(countElement.textContent);
-            const ticketPrice = initialPrice;
-            const subtotal = ticketPrice * ticketCount;
-            const fees = 5.99 * ticketCount;
-            const grandTotal = subtotal + fees;
+            
+            // 2. Get the event ID from the button's data attribute (which you just added in booking.php)
+            const eventId = checkoutBtn.getAttribute('data-event-id');
 
-            // Use the PHP-set price format for the alert
-            const formattedPriceForAlert = '$' + ticketPrice.toFixed(2);
-            
-            // NOTE: Per instructions, using custom alert simulation instead of native alert()
-            const alertMessage = `Order Summary:\n\nTickets: ${ticketCount} x ${formattedPriceForAlert}\nSubtotal: $${subtotal.toFixed(2)}\nFees: $${fees.toFixed(2)}\nTotal: $${grandTotal.toFixed(2)}`;
-            console.log(alertMessage); // Log to console instead of native alert
-            
-            // A simple message box replacement (as native alerts are forbidden)
-            const customAlertOverlay = document.getElementById('custom-alert-overlay');
-            if (customAlertOverlay) {
-                const customAlertMessage = document.getElementById('custom-alert-message');
-                if (customAlertMessage) {
-                    customAlertMessage.textContent = alertMessage.replace(/\n\n/g, '\n').replace(/\n/g, ' | ');
-                }
-                customAlertOverlay.style.display = 'flex';
-            } else {
-                // Fallback to console if custom alert HTML isn't in header/footer/body
-                alert('Order initiated (see console for details)');
-            }
+            // 3. Redirect to checkout.php, passing the data as URL parameters
+            // This replaces the old alert logic.
+            // Note: This assumes checkout.php is in the same directory. 
+            // If it's in a different folder (like /views/), adjust the path.
+            window.location.href = `checkout.php?event_id=${eventId}&tickets=${ticketCount}`;
         });
     }
 
@@ -171,3 +148,4 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 }); // --- End of DOMContentLoaded listener ---
+

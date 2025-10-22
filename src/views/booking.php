@@ -156,16 +156,29 @@ include '../../includes/header.php';
                                     </div>
                                 </div>
                                 <div class="flex items-center">
-                                    <button class="px-3 py-1 bg-gray-700 rounded-l" onclick="updateTicketCount(-1)">
+                                    <!-- 
+                                        FIX: Removed onclick="" and added id="decrease-btn" 
+                                        This now matches what booking.js is looking for.
+                                    -->
+                                    <button id="decrease-btn" class="px-3 py-1 bg-gray-700 rounded-l">
                                         <i data-feather="minus" class="w-4 h-4"></i>
                                     </button>
                                     <span id="ticket-count" class="px-4 py-1 bg-gray-800">1</span>
-                                    <button class="px-3 py-1 bg-gray-700 rounded-r" onclick="updateTicketCount(1)">
+                                    <!-- 
+                                        FIX: Removed onclick="" and added id="increase-btn" 
+                                        This now matches what booking.js is looking for.
+                                    -->
+                                    <button id="increase-btn" class="px-3 py-1 bg-gray-700 rounded-r">
                                         <i data-feather="plus" class="w-4 h-4"></i>
                                     </button>
                                 </div>
 
-                                <button  id="checkout-btn" class="w-full gradient-bg hover:bg-opacity-90 text-white font-bold py-3 px-4 rounded-lg transition duration-300 transform hover:scale-105">
+                                <!-- 
+                                    FIX: Added data-event-id attribute to store the event ID for javascript
+                                -->
+                                <button  id="checkout-btn"
+                                         data-event-id="<?php echo $eventId; ?>"
+                                         class="w-full gradient-bg hover:bg-opacity-90 text-white font-bold py-3 px-4 rounded-lg transition duration-300 transform hover:scale-105">
                                     Proceed to Checkout
                                 </button>
 
