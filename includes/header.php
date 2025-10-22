@@ -1,3 +1,19 @@
+<?php
+// Initialize session if not already started
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Initialize variables to prevent undefined variable warnings
+$isLoggedIn = false;
+$userName = '';
+
+// Check if user is logged in
+if (isset($_SESSION['user_id']) && isset($_SESSION['username'])) {
+    $isLoggedIn = true;
+    $userName = $_SESSION['username'];
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
