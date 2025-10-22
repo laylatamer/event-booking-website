@@ -37,6 +37,33 @@
         // Initialize checkout button text on load
         updateTicketCount(0);
 
+        //Term & Conditions
+        const termsModal = document.getElementById('terms-modal');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const openTermsModalLink = document.getElementById('open-terms-modal');
+
+        openTermsModalLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            termsModal.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden'); // Prevent background scrolling
+            feather.replace(); // Ensure icons in modal are rendered
+        });
+
+        const closeModal = () => {
+            termsModal.classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+        };
+
+        closeModalBtn.addEventListener('click', closeModal);
+
+        // Hide modal if user clicks outside of it (on the overlay)
+        termsModal.addEventListener('click', (e) => {
+            if (e.target.id === 'terms-modal') {
+                closeModal();
+            }
+        });
+
+
         // Checkout Button Alert (Client-side interactivity)
         document.getElementById('checkout-btn').addEventListener('click', () => {
             const ticketCount = parseInt(document.getElementById('ticket-count').textContent);
@@ -80,3 +107,5 @@
                 layer.style.transform = `translateY(${offsetY}px)`;
             });
         });
+
+        
