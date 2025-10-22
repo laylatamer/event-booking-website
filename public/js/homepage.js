@@ -186,10 +186,10 @@ function viewCategory(category) {
     // Handle specific category redirects
     switch(category) {
         case 'nightlife':
-            window.location.href = 'nightlife.php';
+            window.location.href = 'entertainment.php';
             break;
         case 'football':
-            window.location.href = 'football.php';
+            window.location.href = 'sports.php';
             break;
         default:
             // For other categories, show alert for now
