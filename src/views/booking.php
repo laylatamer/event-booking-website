@@ -75,7 +75,8 @@ if ($event) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo $eventTitle; ?> | Eحgzly</title>
+       <title><?php echo $eventTitle; ?> | Eحgzly</title>
+
     <link rel="stylesheet" href="../../public/css/booking.css">
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -163,9 +164,16 @@ include '../../includes/header.php';
                                         <i data-feather="plus" class="w-4 h-4"></i>
                                     </button>
                                 </div>
+
                                 <button id="checkout-btn" class="w-full gradient-bg hover:bg-opacity-90 text-white font-bold py-3 px-4 rounded-lg transition duration-300 transform hover:scale-105">
                                     Proceed to Checkout
                                 </button>
+
+                                <!-- TERMS AND CONDITIONS LINK - Opens the new modal -->
+                                <p class="text-center text-xs text-gray-400 mb-4">
+                                    By proceeding, you agree to the <a href="#" id="open-terms-modal" class="text-orange-400 hover:text-orange-300 underline font-medium">Terms & Conditions</a>.
+                                </p>
+                                
                             </div>
                         </div>
                     </div>
@@ -246,10 +254,31 @@ include '../../includes/header.php';
             </div>
         </main>
 
-       
+    </div>
+     <!-- Terms and Conditions Modal Structure (Hidden by default) -->
+    <div id="terms-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-sm p-4">
+        <!-- MODAL SIZE ADJUSTED HERE: max-w-xl is slightly wider than max-w-lg -->
+        <div class="bg-gray-800 rounded-xl p-8 max-w-xl w-full max-h-[80vh] overflow-y-auto shadow-2xl border border-orange-500">
+            <div class="flex justify-between items-center mb-6 border-b border-gray-700 pb-3">
+                <h2 class="text-2xl font-bold text-orange-400">Event Terms & Conditions</h2>
+                <button id="close-modal-btn" class="text-gray-400 hover:text-white transition">
+                    <i data-feather="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div class="prose max-w-none text-gray-300">
+                <!-- CONCISE TERMS -->
+                <p><strong>1. Ticket Purchase:</strong> All sales are final. *Refunds/exchanges only if the event is canceled or postponed*.</p>
+                <p><strong>2. Entry & ID:</strong> Requires a *valid ticket* (printed/mobile) and *government-issued photo ID*. Admission may be refused.</p>
+                <p><strong>3. Conduct:</strong> Follow all rules. *Disorderly conduct/non-compliance will result in immediate ejection without refund*.</p>
+                <p><strong>4. Photography/Recording:</strong> Professional cameras, video, or audio recording devices are *prohibited without organizer consent*.</p>
+                <p><strong>5. Personal Liability:</strong> Organizers are *not responsible* for lost/stolen property or injuries. Attend at your own risk.</p>
+                <p><strong>6. Rescheduling/Cancellation:</strong> Rescheduled tickets remain valid. *Canceled events will be refunded* per organizer policy.</p>
+                <!-- END CONCISE TERMS -->
+            </div>
+        </div>
     </div>
 
-   
+    
     <?php
 // Assuming includes/header.php and includes/footer.php exist relative to this file's location
 include '../../includes/footer.php';
