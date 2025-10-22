@@ -111,7 +111,7 @@ include '../../includes/header.php';
                         <div class="cat-info">
                             <div class="cat-meta">
                                 <div class="cat-name">Nightlife</div>
-                                <div class="cat-count">5 Events</div>
+                                <div class="cat-count">6 Events</div>
                             </div>
                             <button class="cat-arrow" onclick="viewCategory('nightlife')" aria-label="View Nightlife events">
                                 <span>→</span>
@@ -198,7 +198,7 @@ include '../../includes/header.php';
                         <div class="cat-info">
                             <div class="cat-meta">
                                 <div class="cat-name">Football</div>
-                                <div class="cat-count">18 Events</div>
+                                <div class="cat-count">6 Events</div>
                             </div>
                             <button class="cat-arrow" onclick="viewCategory('football')" aria-label="View Football events">
                                 <span>→</span>
