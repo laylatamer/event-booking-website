@@ -1,0 +1,131 @@
+/* terms.css - External CSS for Terms and Conditions Page */
+
+:root {
+    --bg-color: #121212; /* Dark background */
+    --text-color: #f0f0f0; /* Light text */
+    --primary-color: #ff6f00; /* A contrasting color for emphasis (e.g., orange/red) */
+    --secondary-color: #a0a0a0; /* Secondary text color */
+}
+
+/* Base Styles */
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+}
+
+/* Main Container */
+.container {
+    width: 100%;
+    max-width: 900px; /* Constrain the content width */
+    padding: 40px 20px;
+}
+
+/* Typography */
+h1 {
+    font-size: 2.5em;
+    font-weight: 700;
+    color: var(--text-color);
+    margin-bottom: 5px;
+}
+
+.last-updated {
+    color: var(--secondary-color);
+    font-size: 0.9em;
+    margin-bottom: 40px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #333;
+}
+
+.section-heading, .subsection-heading {
+    margin-top: 35px;
+    margin-bottom: 15px;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.section-heading {
+    font-size: 1.6em;
+    color: var(--primary-color); /* Highlight main section titles */
+}
+
+.subsection-heading {
+    font-size: 1.25em;
+    color: var(--text-color);
+}
+
+p {
+    margin-bottom: 20px;
+    font-size: 1em;
+}
+
+/* Lists */
+.bullet-list, .numbered-list {
+    list-style-type: none;
+    padding-left: 20px;
+    margin-bottom: 20px;
+}
+
+.bullet-list li, .numbered-list li {
+    position: relative;
+    margin-bottom: 10px;
+    padding-left: 15px;
+}
+
+.bullet-list li::before {
+    content: '\2022'; /* Unicode bullet point */
+    color: var(--primary-color);
+    font-weight: bold;
+    display: inline-block;
+    width: 1em;
+    margin-left: -1em;
+}
+
+.numbered-list {
+    list-style-type: decimal;
+    padding-left: 40px;
+}
+
+/* Links and Contact */
+a {
+    color: var(--primary-color);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+a:hover {
+    color: #ffaa5e; /* Lighter shade on hover */
+}
+
+.contact-info {
+    margin-top: 15px;
+    padding: 15px;
+    border: 1px solid #333;
+    border-radius: 8px;
+    background-color: #1e1e1e;
+}
+
+.contact-info p {
+    margin: 5px 0;
+}
+
+/* Mobile adjustments */
+@media (max-width: 600px) {
+    .container {
+        padding: 20px 15px;
+    }
+    h1 {
+        font-size: 2em;
+    }
+    .section-heading {
+        font-size: 1.4em;
+    }
+    .subsection-heading {
+        font-size: 1.1em;
+    }
+}
