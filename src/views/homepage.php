@@ -36,7 +36,7 @@ include '../../includes/header.php';
                                 <a href="#" class="btn secondary">More Info</a>
                             </div>
                         </div>
-                        <div class="event-media" style="background-image: url('../../public/images/ali-qndeel.jpg'); background-position: center; background-size: cover;">
+                        <div class="event-media" style="background-image: url('../../public/img/ali-qndeel.jpg'); background-position: center; background-size: cover;">
                             <span class="date-badge">Fri, Nov 21</span>
                         </div>
                     </article>
@@ -57,7 +57,7 @@ include '../../includes/header.php';
                                 <a href="#" class="btn secondary">More Info</a>
                             </div>
                         </div>
-                        <div class="event-media" style="background-image: url('../../public/images/food fest.jpg'); background-position: center; background-size: cover;">
+                        <div class="event-media" style="background-image: url('../../public/img/food fest.jpg'); background-position: center; background-size: cover;">
                             <span class="date-badge">Sat, Dec 7</span>
                         </div>
                     </article>
@@ -78,7 +78,7 @@ include '../../includes/header.php';
                                 <a href="#" class="btn secondary">More Info</a>
                             </div>
                         </div>
-                        <div class="event-media" style="background-image: url('../../public/images/pyramids.jpg'); background-position: center; background-size: cover;">
+                        <div class="event-media" style="background-image: url('../../public/img/pyramids.jpg'); background-position: center; background-size: cover;">
                             <span class="date-badge">Thu, Jan 2</span>
                         </div>
                     </article>
