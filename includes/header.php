@@ -41,12 +41,21 @@
                         <a href="faq.php">FAQs</a>
                         <a href="contact_form.php">Contact & Support</a>
                     </nav>
-                    <button class="profile-btn" aria-label="Profile">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                            <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5Z" fill="#6b7280"/>
-                            <path d="M4 20.2C4 16.88 7.582 14 12 14s8 2.88 8 6.2c0 .994-.806 1.8-1.8 1.8H5.8C4.806 22 4 21.194 4 20.2Z" fill="#6b7280"/>
-                        </svg>
-                    </button>
+                   
+                     <!-- DYNAMICALLY RENDERED LOGIN/LOGOUT BUTTON -->
+                    <?php if ($isLoggedIn): ?>
+                        <a href="logout.php" class="logout-btn">
+                            Logout (<?= $userName ?>)
+                        </a>
+                    <?php else: ?>
+                        <!-- FIX: Using a single <a> element with button styling for valid HTML -->
+                        <a href="auth.php" class="profile-btn" aria-label="Profile or Login">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5Z"/>
+                                <path d="M4 20.2C4 16.88 7.582 14 12 14s8 2.88 8 6.2c0 .994-.806 1.8-1.8 1.8H5.8C4.806 22 4 21.194 4 20.2Z"/>
+                            </svg>
+                        </a>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
