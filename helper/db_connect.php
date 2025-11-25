@@ -17,7 +17,8 @@ $options = [
     PDO::ATTR_EMULATE_PREPARES   => false,
 ];
 
-$pdo = null;
+//$pdo = null; layla changed this
+$GLOBALS['pdo'] = null;
 
 try {
     // Create a new PDO instance, which attempts the connection
