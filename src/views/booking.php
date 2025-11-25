@@ -2,7 +2,7 @@
 // Use include_once for safety to load the $events array from the centralized file.
 // The path '../../includes/event_data.php' assumes booking.php is in 'projectSoft/src/views/'
 // and event_data.php is in 'projectSoft/includes/'.
-include_once 'includes/event_data.php';
+include_once '../../includes/event_data.php';
 
 // The $events array is now available.
 // PHP logic to find the event by ID from the URL (GET parameter)
@@ -91,7 +91,7 @@ if ($event) {
     <!-- Assuming includes/header.php and includes/footer.php exist relative to this file's location -->
     <?php
 // Assuming 'includes/' is relative to the root, and this file is in 'src/views/'
-include 'includes/header.php'; 
+include '../../includes/header.php'; 
 ?>
 
     <div class="relative min-h-screen flex flex-col">
@@ -294,7 +294,7 @@ include 'includes/header.php';
     
     <?php
 // Assuming includes/header.php and includes/footer.php exist relative to this file's location
-include 'includes/footer.php';
+include '../../includes/footer.php';
 ?>
     <script type="module" src="../../public/js/booking.js"></script>
 

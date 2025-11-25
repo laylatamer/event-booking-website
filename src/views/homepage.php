@@ -12,7 +12,7 @@
 <body>
     <?php
 // Include the header file
-include 'includes/header.php';
+include '../../includes/header.php';
 ?>
         <!-- Events slider -->
         <section id="events-slider" class="events-slider-section" aria-roledescription="carousel" aria-label="Available events" aria-live="polite">
@@ -298,7 +298,7 @@ include 'includes/header.php';
 
     <?php
 // Include the footer file
-include 'includes/footer.php';
+include '../../includes/footer.php';
 ?>
 <script src="../../public/js/homepage.js"></script>
 <script src="../../public/js/navbar.js"></script>

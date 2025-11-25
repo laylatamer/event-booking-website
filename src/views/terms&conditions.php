@@ -27,7 +27,7 @@ $google_maps_link = "https://maps.app.goo.gl/JFKuWYJDqJB42nLN7";
 </head>
 <body class="page-body">
     <!-- Header MUST be included here, AFTER the <body> tag opens -->
-    <?php include 'includes/header.php'; ?>
+    <?php include '../../includes/header.php'; ?>
     
     <!-- Main Content Area -->
     <main class="main-content">
@@ -112,7 +112,7 @@ $google_maps_link = "https://maps.app.goo.gl/JFKuWYJDqJB42nLN7";
     <script type="module" src="../../public/js/terms.js"></script>
     <?php
     // Include the footer file
-    include 'includes/footer.php';
+    include '../../includes/footer.php';
     ?>
 </body>
 </html>
