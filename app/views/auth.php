@@ -5,7 +5,7 @@
 // =========================================================================
 
 // Include the database connection file (CRITICAL STEP)
-require_once 'db_connect.php'; 
+require_once '../../helper/db_connect.php'; 
 
 // Start the session (essential for maintaining user login state)
 // MUST be the absolute first thing before any HTML output
