@@ -1,3 +1,6 @@
+<?php
+exit('Admin backend coming soon.');
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>

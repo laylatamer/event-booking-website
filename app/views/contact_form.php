@@ -62,8 +62,14 @@ include 'includes/header.php';
                     <div class="p-8 md:p-12">
                         <h1 class="text-3xl font-bold mb-2 text-orange-400">Contact Us</h1>
                         <p class="mb-8 text-gray-300">Fill out the form below and we'll get back to you within 24 hours</p>
+                        <?php if (isset($_SESSION['contact_status'])): ?>
+                            <?php $status = $_SESSION['contact_status']; unset($_SESSION['contact_status']); ?>
+                            <div class="mb-6 px-4 py-3 rounded-lg <?php echo $status['type'] === 'success' ? 'bg-green-600/30 border border-green-500 text-green-200' : 'bg-red-600/30 border border-red-500 text-red-200'; ?>">
+                                <?php echo htmlspecialchars($status['message']); ?>
+                            </div>
+                        <?php endif; ?>
 
-                        <form action="contact.php" method="POST" class="space-y-6">
+                        <form action="../../public/contact.php" method="POST" class="space-y-6">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label class="block mb-2 text-sm font-medium">Your Name</label>

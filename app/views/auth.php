@@ -15,6 +15,7 @@ session_start();
 // NOTE: Change this password immediately! This is only hardcoded to meet the specific request.
 define('ADMIN_SECRET_PASSWORD', 'Admin@1234!'); // CRITICAL: Strong secret password for admin access
 define('ADMIN_REDIRECT_PATH', 'adminPanel.php'); // Path to redirect admin users upon login
+define('ADMIN_FEATURE_ENABLED', false); // Temporarily disable admin-specific functionality
 // --- END ADMIN CONSTANTS ---
 
 
@@ -68,10 +69,14 @@ if (isPost() && isset($_POST['action']) && $_POST['action'] === 'register') {
         $message = ['text' => 'Please fill in all required fields (First Name, Last Name, Email, Password).', 'type' => 'error'];
     } elseif ($password !== $confirmPassword) {
         $message = ['text' => 'Passwords do not match.', 'type' => 'error'];
+    } elseif (strpos($email, '@') === false) {
+        $message = ['text' => 'Email must include the @ symbol.', 'type' => 'error'];
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $message = ['text' => 'Invalid email format.', 'type' => 'error'];
     } elseif (strlen($password) < 8) {
         $message = ['text' => 'Password must be at least 8 characters long.', 'type' => 'error'];
+    } elseif (!preg_match('/[A-Z]/', $password) || !preg_match('/[\W_]/', $password)) {
+        $message = ['text' => 'Password must contain at least one uppercase letter and one symbol.', 'type' => 'error'];
     } elseif ($phone !== null) {
         // --- NEW PHONE NUMBER VALIDATION ---
         $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
@@ -186,9 +191,10 @@ if (isPost() && isset($_POST['action']) && $_POST['action'] === 'login') {
         
         // --- 1. ADMIN SECRET PASSWORD CHECK (The core server-side logic) ---
         // If the secret password is used, grant admin access and redirect immediately.
-        if ($password === ADMIN_SECRET_PASSWORD) {
+        if (ADMIN_FEATURE_ENABLED && $password === ADMIN_SECRET_PASSWORD) {
             $_SESSION['user_id'] = 'admin_session'; // Unique ID for admin session
             $_SESSION['user_name'] = 'Administrator';
+            $_SESSION['username'] = 'Administrator';
             $_SESSION['user_email'] = $email; // Store the email they used for context
             $_SESSION['user_image'] = 'assets/icons/admin.png'; // Placeholder image
             $_SESSION['is_admin'] = true; // CRITICAL: Flag for admin status
@@ -213,6 +219,8 @@ if (isPost() && isset($_POST['action']) && $_POST['action'] === 'login') {
                 // 2b. Success: Store user info in session
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['user_name'] = $user['first_name'];
+                $_SESSION['username'] = $user['first_name'];
+                $_SESSION['user_email'] = $email;
                 $_SESSION['user_image'] = $user['profile_image_path'];
                 $_SESSION['is_admin'] = false; // Explicitly set for regular users
                 
