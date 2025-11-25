@@ -15,7 +15,7 @@
 <body class="min-h-screen text-white overflow-x-hidden">
  <?php
 // Include the header file
-include '../../includes/header.php';
+include 'includes/header.php';
 ?>
 <div id="vanta-bg" class="fixed inset-0 -z-10"></div>
 
@@ -93,7 +93,7 @@ include '../../includes/header.php';
     </main>
 <?php
 // Include the footer file
-include '../../includes/footer.php';
+include 'includes/footer.php';
 ?>
     <script type="module" src="../../public/js/contact_us.js"></script>
 
