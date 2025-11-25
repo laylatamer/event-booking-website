@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>All Events & Activities - Dark Mode</title>
+
+    <!-- Load Lucide icons for clean UI elements -->
     <script type="module" src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <link rel="stylesheet" href="../../public/css/allevents.css">
    
@@ -11,15 +13,14 @@
 <body class="page-body">
 <?php
 // Include the header file
-include '../../includes/header.php';
+include 'includes/header.php';
 ?>
    
-
     <!-- Main Content Area -->
     <main class="main-content">
         
         <!-- Page Title -->
-        <h1 class="page-title">Sports</h1>
+        <h1 class="page-title"> Entertainment</h1>
 
         <!-- Filter Bar Section -->
         <section class="filter-section filter-bg">
@@ -36,7 +37,7 @@ include '../../includes/header.php';
                     <i data-lucide="map-pin"></i> All Venues
                 </button>
 
-                <!-- NEW: Reset Filter Button -->
+                <!-- Reset Filter Button -->
                 <button id="reset-filters-btn" class="filter-btn-base">
                     <i data-lucide="x-circle"></i> Reset Filters
                 </button>
@@ -175,10 +176,10 @@ include '../../includes/header.php';
 
 
     <!-- --------------------------------------- JAVASCRIPT --------------------------------------- -->
-    <script type="module" src="../../public/js/sports.js"></script>
+    <script type="module" src="../../public/js/entertainment.js"></script>
     <?php
 // Include the footer file
-include '../../includes/footer.php';
+include 'includes/footer.php';
 ?>
 </body>
 </html>
