@@ -1,3 +1,233 @@
+<?php
+session_start();
+
+if (!isset($_SESSION['user_id'])) {
+    header('Location: auth.php');
+    exit;
+}
+
+require_once __DIR__ . '/../../helper/db_connect.php';
+
+function ensureUserColumn(PDO $pdo, string $column, string $definition): void
+{
+    $safeColumn = preg_replace('/[^a-zA-Z0-9_]/', '', $column);
+    if ($safeColumn === '') {
+        return;
+    }
+
+    try {
+        $quotedColumn = $pdo->quote($safeColumn);
+        $check = $pdo->query("SHOW COLUMNS FROM `users` LIKE {$quotedColumn}");
+        if (!$check->fetch()) {
+            $pdo->exec("ALTER TABLE `users` ADD COLUMN `{$safeColumn}` {$definition}");
+        }
+    } catch (\PDOException $e) {
+        error_log("Column ensure failed for {$safeColumn}: " . $e->getMessage());
+    }
+}
+
+function loadUser(PDO $pdo, int $userId): ?array
+{
+    $stmt = $pdo->prepare('SELECT id, first_name, last_name, email, phone_number, address, city, country, state, preferred_team, profile_image_path, password_hash FROM users WHERE id = :id LIMIT 1');
+    $stmt->execute([':id' => $userId]);
+    $user = $stmt->fetch();
+    return $user ?: null;
+}
+
+ensureUserColumn($pdo, 'country', "VARCHAR(120) NULL");
+ensureUserColumn($pdo, 'state', "VARCHAR(120) NULL");
+
+$userId = (int) $_SESSION['user_id'];
+$user = loadUser($pdo, $userId);
+
+if (!$user) {
+    $_SESSION = [];
+    session_destroy();
+    header('Location: auth.php');
+    exit;
+}
+
+$alert = null;
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? '';
+
+    if ($action === 'update_profile') {
+        $fanName = trim($_POST['fan_name'] ?? '');
+        $emailInput = trim($_POST['email'] ?? '');
+        $phoneInput = trim($_POST['phone'] ?? '');
+        $addressInput = trim($_POST['address'] ?? '');
+        $cityInput = trim($_POST['city'] ?? '');
+        $countryInput = trim($_POST['country'] ?? '');
+        $stateInput = trim($_POST['state'] ?? '');
+        $teamInput = trim($_POST['team'] ?? '');
+
+        $errors = [];
+
+        if ($fanName === '') {
+            $errors[] = 'Fan name is required.';
+        }
+
+        if (!filter_var($emailInput, FILTER_VALIDATE_EMAIL)) {
+            $errors[] = 'Please provide a valid email.';
+        }
+
+        if ($phoneInput !== '' && !preg_match('/^01[0-9]{9}$/', $phoneInput)) {
+            $errors[] = 'Phone must be 11 digits and start with 01.';
+        }
+
+        $profileImagePath = null;
+
+        if (!empty($_FILES['profile_image']['name'])) {
+            $file = $_FILES['profile_image'];
+            if ($file['error'] === UPLOAD_ERR_OK) {
+                $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                $mime = finfo_file($finfo, $file['tmp_name']);
+                finfo_close($finfo);
+
+                $allowed = [
+                    'image/jpeg' => 'jpg',
+                    'image/png'  => 'png',
+                    'image/gif'  => 'gif',
+                ];
+
+                if (!isset($allowed[$mime])) {
+                    $errors[] = 'Profile image must be JPG, PNG, or GIF.';
+                } elseif ($file['size'] > 2 * 1024 * 1024) {
+                    $errors[] = 'Profile image must be 2MB or smaller.';
+                } else {
+                    $uploadDir = __DIR__ . '/../../uploads/profile_pics/';
+                    if (!is_dir($uploadDir)) {
+                        mkdir($uploadDir, 0777, true);
+                    }
+                    $newFileName = 'user_' . $userId . '_' . time() . '.' . $allowed[$mime];
+                    if (move_uploaded_file($file['tmp_name'], $uploadDir . $newFileName)) {
+                        $profileImagePath = 'uploads/profile_pics/' . $newFileName;
+                    } else {
+                        $errors[] = 'Failed to save the uploaded image.';
+                    }
+                }
+            } else {
+                $errors[] = 'Could not upload profile image.';
+            }
+        }
+
+        if (empty($errors)) {
+            $emailCheck = $pdo->prepare('SELECT COUNT(*) FROM users WHERE email = :email AND id <> :id');
+            $emailCheck->execute([':email' => $emailInput, ':id' => $userId]);
+            if ($emailCheck->fetchColumn() > 0) {
+                $errors[] = 'This email is already registered.';
+            }
+        }
+
+        if (empty($errors)) {
+            $nameParts = preg_split('/\s+/', $fanName, 2);
+            $firstName = $nameParts[0];
+            $lastName = $nameParts[1] ?? '';
+
+            $sql = 'UPDATE users SET first_name = :first_name, last_name = :last_name, email = :email, phone_number = :phone, address = :address, city = :city, country = :country, state = :state, preferred_team = :team';
+            if ($profileImagePath !== null) {
+                $sql .= ', profile_image_path = :profile_image_path';
+            }
+            $sql .= ' WHERE id = :id';
+
+            $params = [
+                ':first_name' => $firstName,
+                ':last_name'  => $lastName,
+                ':email'      => $emailInput,
+                ':phone'      => $phoneInput ?: null,
+                ':address'    => $addressInput ?: null,
+                ':city'       => $cityInput ?: null,
+                ':country'    => $countryInput ?: null,
+                ':state'      => $stateInput ?: null,
+                ':team'       => $teamInput ?: null,
+                ':id'         => $userId,
+            ];
+
+            if ($profileImagePath !== null) {
+                $params[':profile_image_path'] = $profileImagePath;
+            }
+
+            $update = $pdo->prepare($sql);
+            $update->execute($params);
+
+            $_SESSION['username'] = $firstName;
+            $_SESSION['user_name'] = $firstName;
+            $_SESSION['user_email'] = $emailInput;
+            if ($profileImagePath !== null) {
+                $_SESSION['user_image'] = $profileImagePath;
+            }
+
+            $alert = ['type' => 'success', 'message' => 'Profile updated successfully.'];
+        } else {
+            $alert = ['type' => 'error', 'message' => implode(' ', $errors)];
+        }
+    } elseif ($action === 'update_password') {
+        $currentPassword = $_POST['current_password'] ?? '';
+        $newPassword = $_POST['new_password'] ?? '';
+        $confirmPassword = $_POST['confirm_password'] ?? '';
+
+        $errors = [];
+
+        if (!password_verify($currentPassword, $user['password_hash'])) {
+            $errors[] = 'Current password is incorrect.';
+        }
+
+        if ($newPassword === '' || strlen($newPassword) < 8) {
+            $errors[] = 'New password must be at least 8 characters.';
+        }
+
+        if (!preg_match('/[A-Z]/', $newPassword) || !preg_match('/[\W_]/', $newPassword)) {
+            $errors[] = 'New password must include at least one uppercase letter and one symbol.';
+        }
+
+        if ($newPassword !== $confirmPassword) {
+            $errors[] = 'New password and confirmation do not match.';
+        }
+
+        if (empty($errors)) {
+            $hash = password_hash($newPassword, PASSWORD_DEFAULT);
+            $stmt = $pdo->prepare('UPDATE users SET password_hash = :hash WHERE id = :id');
+            $stmt->execute([':hash' => $hash, ':id' => $userId]);
+            $alert = ['type' => 'success', 'message' => 'Password updated successfully.'];
+        } else {
+            $alert = ['type' => 'error', 'message' => implode(' ', $errors)];
+        }
+    }
+
+    $user = loadUser($pdo, $userId);
+}
+
+$fullName = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
+if ($fullName === '') {
+    $fullName = $user['email'];
+}
+
+$profileImageSrc = !empty($user['profile_image_path'])
+    ? '../../' . ltrim($user['profile_image_path'], '/\\')
+    : 'https://via.placeholder.com/150/16181d/9aa3af?text=User';
+
+$email = $user['email'] ?? '';
+$phone = $user['phone_number'] ?? '';
+$address = $user['address'] ?? '';
+$city = $user['city'] ?? '';
+$country = $user['country'] ?? '';
+$state = $user['state'] ?? '';
+$preferredTeam = $user['preferred_team'] ?? '';
+$userIdDisplay = sprintf('USER-%05d', $user['id']);
+
+$teamOptions = ['Al Ahly', 'Zamalek', 'Ismaily', 'Pyramids', 'Other'];
+
+$entertainmentTickets = [];
+$sportsTickets = [];
+$paymentHistory = [];
+
+$alertBaseStyle = 'margin:1.5rem auto;max-width:1100px;padding:0.9rem 1.25rem;border-radius:10px;font-weight:600;';
+$alertStyles = [
+    'success' => 'background:rgba(22,163,74,0.15);border:1px solid #16a34a;color:#bbf7d0;',
+    'error'   => 'background:rgba(239,68,68,0.15);border:1px solid #ef4444;color:#fecaca;',
+];
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -11,7 +241,7 @@
     <div class="navbar-wrap" role="navigation" aria-label="Primary">
         <div class="container navbar-container">
             <div class="navbar">
-                <a class="brand" href="#" aria-label="Homepage"><span class="brand-name">Eحgzly</span></a>
+                <a class="brand" href="homepage.php" aria-label="Homepage"><span class="brand-name">Eحgzly</span></a>
                 <div class="search" role="search">
                     <div class="search-field">
                         <input type="search" name="q" placeholder="Search events, artists, venues" />
@@ -20,118 +250,201 @@
                 </div>
                 <div class="actions">
                     <nav class="nav" aria-label="Main">
-                        <a href="#">Events</a><a href="#">FAQs</a><a href="#">Contact</a>
+                        <a href="allevents.php">Events</a><a href="faq.php">FAQs</a><a href="contact_form.php">Contact</a>
                     </nav>
-                    <button class="profile-btn" aria-label="Profile"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5Z" fill="currentColor"/><path d="M4 20.2C4 16.88 7.582 14 12 14s8 2.88 8 6.2c0 .994-.806 1.8-1.8 1.8H5.8C4.806 22 4 21.194 4 20.2Z" fill="currentColor"/></svg></button>
+                    <a class="profile-btn" aria-label="Profile" href="profile.php"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5Z" fill="currentColor"/><path d="M4 20.2C4 16.88 7.582 14 12 14s8 2.88 8 6.2c0 .994-.806 1.8-1.8 1.8H5.8C4.806 22 4 21.194 4 20.2Z" fill="currentColor"/></svg></a>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="container page-content">
-        <aside class="sidebar">
-            <div class="profile-card">
-                <div class="profile-header">
-                    <div class="logo">
-                        <span>Eحgzly Profile</span>
-                    </div>
-                </div>
-                <div class="profile-body">
-                    <div class="profile-image">
-                        <label for="profile-upload" class="profile-upload-label" title="Change profile picture">
-                            <img src="https://via.placeholder.com/150/16181d/9aa3af?text=User" alt="Profile Picture" id="profile-pic">
-                            <span class="edit-icon">✏️</span>
-                        </label>
-                        <input type="file" id="profile-upload" accept="image/png, image/jpeg" hidden>
-                    </div>
-                    <h3 class="profile-name">محمود شلبي</h3>
-                    <div class="profile-id">
-                        Eحgzly ID
-                        <span>10301732910070</span>
-                    </div>
-                    <button class="btn primary print-btn">Print</button>
-                </div>
-            </div>
+    <?php if ($alert): ?>
+        <div class="profile-alert" style="<?php echo $alertBaseStyle . ($alertStyles[$alert['type']] ?? 'background:#1f2937;color:#fff;border:1px solid rgba(255,255,255,0.2);'); ?>">
+            <?php echo htmlspecialchars($alert['message']); ?>
+        </div>
+    <?php endif; ?>
 
-            <div class="sidebar-filters">
-                <div class="form-group">
-                    <label for="country-select">Country of Residence</label>
-                    <select id="country-select" class="custom-select"></select>
+    <form method="POST" enctype="multipart/form-data" class="profile-form">
+        <input type="hidden" name="action" id="profile-action" value="update_profile">
+        <div class="container page-content">
+            <aside class="sidebar">
+                <div class="profile-card">
+                    <div class="profile-header">
+                        <div class="logo">
+                            <span>Eحgzly Profile</span>
+                        </div>
+                    </div>
+                    <div class="profile-body">
+                        <div class="profile-image">
+                            <label for="profile-upload" class="profile-upload-label" title="Change profile picture">
+                                <img src="<?php echo htmlspecialchars($profileImageSrc); ?>" alt="Profile Picture" id="profile-pic">
+                                <span class="edit-icon">✏️</span>
+                            </label>
+                            <input type="file" id="profile-upload" name="profile_image" accept="image/png, image/jpeg, image/gif" hidden>
+                        </div>
+                        <h3 class="profile-name"><?php echo htmlspecialchars($fullName); ?></h3>
+                        <div class="profile-id">
+                            Eحgzly ID
+                            <span><?php echo htmlspecialchars($userIdDisplay); ?></span>
+                        </div>
+                        <button type="submit" class="btn primary print-btn" data-action-value="update_profile">Save Profile</button>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="state-select">State / Province</label>
-                    <select id="state-select" class="custom-select" disabled>
-                        <option value="">Select Country First</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="team-select">Preferred Team</label>
-                    <select id="team-select" class="custom-select"></select>
-                </div>
-            </div>
-        </aside>
 
-        <main class="content">
-            <section class="info-card">
-                <div class="card-header">
-                    <h2>Personal Information</h2>
-                    <button class="btn primary update-btn">Update</button>
-                </div>
-                <div class="form-grid">
-                    <div class="form-group"><label for="fan-name">Fan Name</label><input type="text" id="fan-name" value="محمود شلبي"></div>
-                    <div class="form-group"><label for="email">Email</label><input type="email" id="email" value="ms6261898@gmail.com"></div>
-                    <div class="form-group"><label for="mobile-number">Mobile number</label><input type="text" id="mobile-number" value="+201120034377"></div>
-                </div>
-            </section>
-            <section class="info-card">
-                <div class="card-header">
-                    <h2>Account Information</h2>
-                    <button class="btn primary update-btn">Update</button>
-                </div>
-                <div class="form-grid">
-                    <div class="form-group password-group">
-                        <label for="password">Password</label>
-                        <div class="password-wrapper"><input type="password" id="password" value="secretpassword"><button type="button" id="password-toggle" class="password-toggle" aria-label="Show password">👁️</button></div>
+                <div class="sidebar-filters">
+                    <div class="form-group">
+                        <label for="country-select">Country of Residence</label>
+                        <select id="country-select" name="country" class="custom-select" data-current-country="<?php echo htmlspecialchars($country); ?>">
+                            <option value=""><?php echo $country ? 'Select to change country' : 'Select a Country'; ?></option>
+                        </select>
                     </div>
                     <div class="form-group">
-                        <label for="address-one">Address</label>
-                        <input type="text" id="address-one" value="north teseen" >
+                        <label for="state-select">State / Province</label>
+                        <select id="state-select" name="state" class="custom-select" data-current-state="<?php echo htmlspecialchars($state); ?>" <?php echo $country ? '' : 'disabled'; ?>>
+                            <option value=""><?php echo $state ? htmlspecialchars($state) : 'Select Country First'; ?></option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="team-select">Preferred Team</label>
+                        <select id="team-select" name="team" class="custom-select" data-current-team="<?php echo htmlspecialchars($preferredTeam); ?>">
+                            <option value="">Select your team</option>
+                            <?php foreach ($teamOptions as $team): ?>
+                                <option value="<?php echo htmlspecialchars($team); ?>" <?php echo $preferredTeam === $team ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($team); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
                 </div>
-            </section>
+            </aside>
 
-            <div class="history-section">
-                <details class="history-accordion">
-                    <summary class="history-header"><h3>Entertainment Tickets</h3><span class="accordion-icon">▶</span></summary>
-                    <div class="history-content">
-                        <table class="history-table">
-                            <thead><tr><th>Event Name</th><th>Date</th><th>Venue</th><th>Action</th></tr></thead>
-                            <tbody>
-                                <tr><td>Ali Quandil: Standup Show</td><td>24 Oct 2025</td><td>Theatro Arkan</td><td><a href="#" class="view-ticket-btn">View Ticket</a></td></tr>
-                                <tr><td>Mediterranean Food Fest</td><td>07 Dec 2025</td><td>Alexandria, Egypt</td><td><a href="#" class="view-ticket-btn">View Ticket</a></td></tr>
-                            </tbody>
-                        </table>
+            <main class="content">
+                <section class="info-card">
+                    <div class="card-header">
+                        <h2>Personal Information</h2>
+                        <button type="submit" class="btn primary update-btn" data-action-value="update_profile">Save Changes</button>
                     </div>
-                </details>
-                <details class="history-accordion">
-                    <summary class="history-header"><h3>Sports Tickets</h3><span class="accordion-icon">▶</span></summary>
-                    <div class="history-content"><div class="no-data-message"><span>ⓘ</span> No data to display.</div></div>
-                </details>
-                <details class="history-accordion">
-                    <summary class="history-header"><h3>Payment History</h3><span class="accordion-icon">▶</span></summary>
-                    <div class="history-content">
-                        <table class="history-table">
-                            <thead><tr><th>Transaction ID</th><th>Date</th><th>Amount</th><th>Status</th></tr></thead>
-                            <tbody>
-                                <tr><td>#8A4D3-2025</td><td>07 Dec 2025</td><td>EGP 750.00</td><td><span class="status-badge status-successful">Successful</span></td></tr>
-                                <tr><td>#F2B1A-2025</td><td>21 Nov 2025</td><td>EGP 400.00</td><td><span class="status-badge status-refunded">Refunded</span></td></tr>
-                            </tbody>
-                        </table>
+                    <div class="form-grid">
+                        <div class="form-group"><label for="fan-name">Fan Name</label><input type="text" id="fan-name" name="fan_name" value="<?php echo htmlspecialchars($fullName); ?>" required></div>
+                        <div class="form-group"><label for="email">Email</label><input type="email" id="email" name="email" value="<?php echo htmlspecialchars($email); ?>" required></div>
+                        <div class="form-group"><label for="mobile-number">Mobile number</label><input type="text" id="mobile-number" name="phone" value="<?php echo htmlspecialchars($phone); ?>" placeholder="01xxxxxxxxx"></div>
                     </div>
-                </details>
-            </div>
-        </main>
-    </div>
+                </section>
+                <section class="info-card">
+                    <div class="card-header">
+                        <h2>Contact Details</h2>
+                        <button type="submit" class="btn primary update-btn" data-action-value="update_profile">Save Changes</button>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="address-one">Address</label>
+                            <input type="text" id="address-one" name="address" value="<?php echo htmlspecialchars($address); ?>" >
+                        </div>
+                        <div class="form-group">
+                            <label for="city">City</label>
+                            <input type="text" id="city" name="city" value="<?php echo htmlspecialchars($city); ?>">
+                        </div>
+                    </div>
+                </section>
+
+                <section class="info-card">
+                    <div class="card-header">
+                        <h2>Security</h2>
+                        <button type="submit" class="btn primary update-btn" data-action-value="update_password">Update Password</button>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="current-password">Current Password</label>
+                            <input type="password" id="current-password" name="current_password" autocomplete="current-password">
+                        </div>
+                        <div class="form-group password-group">
+                            <label for="password">New Password</label>
+                            <div class="password-wrapper"><input type="password" id="password" name="new_password" autocomplete="new-password"><button type="button" id="password-toggle" class="password-toggle" aria-label="Show password">👁️</button></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="confirm-password">Confirm New Password</label>
+                            <input type="password" id="confirm-password" name="confirm_password" autocomplete="new-password">
+                        </div>
+                    </div>
+                </section>
+
+                <div class="history-section">
+                    <details class="history-accordion">
+                        <summary class="history-header"><h3>Entertainment Tickets</h3><span class="accordion-icon">▶</span></summary>
+                        <div class="history-content">
+                            <?php if (count($entertainmentTickets)): ?>
+                                <table class="history-table">
+                                    <thead><tr><th>Event Name</th><th>Date</th><th>Venue</th><th>Action</th></tr></thead>
+                                    <tbody>
+                                    <?php foreach ($entertainmentTickets as $ticket): ?>
+                                        <tr>
+                                            <td><?php echo htmlspecialchars($ticket['event']); ?></td>
+                                            <td><?php echo htmlspecialchars($ticket['date']); ?></td>
+                                            <td><?php echo htmlspecialchars($ticket['venue']); ?></td>
+                                            <td><a href="<?php echo htmlspecialchars($ticket['link'] ?? '#'); ?>" class="view-ticket-btn" target="_blank" rel="noopener">View Ticket</a></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            <?php else: ?>
+                                <div class="no-data-message"><span>ⓘ</span> No entertainment tickets yet.</div>
+                            <?php endif; ?>
+                        </div>
+                    </details>
+
+                    <details class="history-accordion">
+                        <summary class="history-header"><h3>Sports Tickets</h3><span class="accordion-icon">▶</span></summary>
+                        <div class="history-content">
+                            <?php if (count($sportsTickets)): ?>
+                                <table class="history-table">
+                                    <thead><tr><th>Event Name</th><th>Date</th><th>Venue</th><th>Action</th></tr></thead>
+                                    <tbody>
+                                    <?php foreach ($sportsTickets as $ticket): ?>
+                                        <tr>
+                                            <td><?php echo htmlspecialchars($ticket['event']); ?></td>
+                                            <td><?php echo htmlspecialchars($ticket['date']); ?></td>
+                                            <td><?php echo htmlspecialchars($ticket['venue']); ?></td>
+                                            <td><a href="<?php echo htmlspecialchars($ticket['link'] ?? '#'); ?>" class="view-ticket-btn" target="_blank" rel="noopener">View Ticket</a></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            <?php else: ?>
+                                <div class="no-data-message"><span>ⓘ</span> No sports tickets yet.</div>
+                            <?php endif; ?>
+                        </div>
+                    </details>
+
+                    <details class="history-accordion">
+                        <summary class="history-header"><h3>Payment History</h3><span class="accordion-icon">▶</span></summary>
+                        <div class="history-content">
+                            <?php if (count($paymentHistory)): ?>
+                                <table class="history-table">
+                                    <thead><tr><th>Transaction ID</th><th>Date</th><th>Amount</th><th>Status</th></tr></thead>
+                                    <tbody>
+                                    <?php foreach ($paymentHistory as $payment): ?>
+                                        <tr>
+                                            <td><?php echo htmlspecialchars($payment['reference']); ?></td>
+                                            <td><?php echo htmlspecialchars($payment['date']); ?></td>
+                                            <td><?php echo htmlspecialchars($payment['amount']); ?></td>
+                                            <td><span class="status-badge status-<?php echo htmlspecialchars($payment['status']); ?>"><?php echo htmlspecialchars(ucfirst($payment['status'])); ?></span></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            <?php else: ?>
+                                <div class="no-data-message"><span>ⓘ</span> No payments recorded yet.</div>
+                            <?php endif; ?>
+                        </div>
+                    </details>
+                </div>
+            </main>
+        </div>
+
+        <div class="form-actions" style="margin:2rem auto 0; max-width:1100px; text-align:right;">
+            <button type="submit" class="btn primary update-btn" data-action-value="update_profile">Save Profile Details</button>
+        </div>
+    </form>
 
      <footer class="footer" id="footer">
             <div class="container">
@@ -196,6 +509,7 @@
         </footer>
 
 
-    <script src="../../public/css/profile.js"></script>
+    <script src="../../public/js/profile.js"></script>
 </body>
 </html>
+<?php

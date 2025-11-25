@@ -358,9 +358,32 @@ $initial_form = $is_register_mode ? 'register' : 'login';
             border-left: 4px solid #00D1A1;
             color: #79F2C0;
         }
+        .back-link {
+            position: fixed;
+            top: 1.5rem;
+            left: 1.5rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.35rem 0.85rem;
+            border-radius: 999px;
+            border: 1px solid rgba(255,255,255,0.2);
+            color: var(--text-light);
+            font-size: 0.9rem;
+            transition: background-color 0.2s ease, color 0.2s ease;
+            text-decoration: none;
+        }
+        .back-link:hover {
+            background-color: rgba(255,255,255,0.1);
+            color: #fff;
+        }
     </style>
 </head>
 <body class="page-body">
+    <a href="homepage.php" class="back-link">
+        <span aria-hidden="true">←</span>
+        Back to homepage
+    </a>
 
     <main class="main-content w-full max-w-7xl px-4">
         
