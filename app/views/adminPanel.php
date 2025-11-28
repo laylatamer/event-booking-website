@@ -1267,6 +1267,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
-    <script src="../../public/css/adminPanel.js"></script>
+    <script src="../../public/js/adminPanel.js"></script>
 </body>
 </html>
