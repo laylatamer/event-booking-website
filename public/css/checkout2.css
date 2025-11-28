@@ -1,0 +1,810 @@
+/* --- General & Body --- */
+body.chk-checkout-page {
+    background-color: #1a1a1a;
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    margin: 0;
+    overflow-x: hidden;
+    min-height: 100vh;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.chk-checkout-container {
+    max-width: 1290px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+    position: relative;
+    z-index: 10;
+}
+
+/* --- Utilities --- */
+.chk-hidden {
+    display: none !important;
+}
+
+/* --- Vanta Background --- */
+#vanta-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -10;
+}
+
+/* --- Layout & Wrappers --- */
+.chk-checkout-content-wrapper {
+    background-color: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(10px);
+    border-radius: 0.75rem;
+    padding: 2rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.chk-checkout-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+@media (min-width: 1024px) {
+    .chk-checkout-layout {
+        flex-direction: row;
+    }
+    .chk-checkout-layout__order-details {
+        width: 66.666667%;
+    }
+    .chk-checkout-layout__payment-column {
+        width: 33.333333%;
+    }
+}
+
+/* --- Page Header --- */
+.chk-checkout-header__title {
+    font-size: 1.875rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.chk-checkout-header__subtitle {
+    color: #9ca3af;
+    margin-bottom: 1.5rem;
+}
+
+/* --- Base Card Styles --- */
+.chk-card-header {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #f5750c; /* text-orange-400 */
+    margin-bottom: 1rem;
+}
+
+.chk-order-summary-card,
+.chk-attendee-info-card,
+.chk-payment-card {
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid #4b5563;
+}
+
+.chk-payment-card {
+    position: sticky;
+    top: 1rem;
+}
+
+/* --- Order Summary --- */
+.chk-order-items-container {
+    margin-bottom: 1.5rem;
+}
+
+.chk-order-item {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #4b5563;
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+    transition: background-color 0.3s ease;
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+}
+.chk-order-item:last-child {
+    margin-bottom: 0;
+    border-bottom: none;
+    padding-bottom: 0.75rem;
+}
+
+.chk-order-item:hover {
+    background-color: rgba(55, 65, 81, 0.5);
+}
+
+.chk-order-item__icon-wrapper {
+    width: 4rem;
+    height: 4rem;
+    background-color: rgba(124, 45, 18, 0.3);
+    border-radius: 0.5rem;
+    margin-right: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.chk-order-item__icon {
+    color: #f5750c;
+    font-size: 1.25rem;
+}
+
+.chk-order-item__info {
+    flex-grow: 1;
+    min-width: 0; /* Prevents text overflow issues */
+}
+
+.chk-order-item__title {
+    font-weight: 600;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.chk-order-item__detail {
+    color: #9ca3af;
+    font-size: 0.875rem;
+}
+
+.chk-quantity-control {
+    margin-top: 0.5rem;
+    display: flex;
+    align-items: center;
+}
+
+.chk-quantity-control__button {
+    color: #f5750c;
+    background-color: rgba(124, 45, 18, 0.3);
+    border-radius: 9999px;
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    cursor: pointer;
+    transition: color 0.3s ease;
+    font-size: 0.75rem;
+}
+
+.chk-quantity-control__button:hover {
+    color: #fdba74;
+}
+
+.chk-quantity-control__display {
+    margin: 0 0.5rem;
+    width: 2rem;
+    text-align: center;
+    color: #fff;
+}
+
+.chk-order-item__price-section {
+    text-align: right;
+    margin-left: 0.5rem;
+}
+
+.chk-order-item__price {
+    font-weight: 600;
+    color: #fff;
+}
+
+.chk-order-item__ticket-type {
+    color: #9ca3af;
+    font-size: 0.875rem;
+}
+
+/* --- Totals Summary --- */
+.chk-totals-summary {
+    background-color: #1f2937;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid #4b5563;
+}
+
+.chk-totals-summary__row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+.chk-totals-summary__row:last-child {
+    margin-bottom: 0;
+}
+
+.chk-totals-summary__label {
+    color: #d1d5db;
+}
+
+.chk-totals-summary__value {
+    font-weight: 500;
+}
+
+.chk-totals-summary__row--total {
+    font-weight: 700;
+    font-size: 1.125rem;
+    color: #f5750c;
+    padding-top: 0.5rem;
+    border-top: 1px solid #4b5563;
+}
+
+/* --- Form Styles --- */
+.chk-form-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+@media (min-width: 768px) {
+    .chk-form-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .chk-form-field--span-2 {
+        grid-column: span 2 / span 2;
+    }
+}
+
+.chk-form-grid--halves {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-bottom: 0;
+}
+
+/* Standardized form field margin */
+.chk-form-field {
+    position: relative;
+    /* This margin is now the primary spacer.
+      It's 1rem, and the error will add its own margin when visible.
+    */
+    margin-bottom: 1rem;
+}
+
+/* Remove margin from last field in a grid */
+.chk-form-grid .chk-form-field:last-child {
+    margin-bottom: 0;
+}
+/* Ensure fields in halves grid have correct margin */
+.chk-form-grid--halves .chk-form-field {
+    margin-bottom: 1rem;
+}
+
+
+.chk-form-field__input {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: #1f2937;
+    border: 1px solid #4b5563;
+    border-radius: 0.5rem;
+    color: #fff;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    font-size: 1rem;
+}
+
+.chk-form-field__input:focus {
+    outline: none;
+    border-color: #f97316;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.5);
+}
+
+.chk-form-field__input::placeholder {
+    color: transparent;
+}
+
+/* Floating label */
+.chk-floating-label {
+    transition: all 0.3s ease;
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: #1f2937;
+    padding: 0 5px;
+    color: #9ca3af;
+    font-size: 12px;
+    pointer-events: none;
+    transform: translateY(-20px);
+    opacity: 0;
+}
+
+.chk-form-field__input:focus + .chk-floating-label,
+.chk-form-field__input:not(:placeholder-shown) + .chk-floating-label {
+    transform: translateY(-21px); /* Adjusted for better alignment */
+    opacity: 1;
+}
+.chk-form-field__input:not(:placeholder-shown):not(:focus) + .chk-floating-label {
+     transform: translateY(-21px);
+     opacity: 1;
+}
+.chk-form-field__input:placeholder-shown + .chk-floating-label {
+    top: 14px;
+    left: 14px;
+    font-size: 1rem;
+    opacity: 1;
+    transform: translateY(0);
+    background: transparent;
+}
+.chk-form-field__input:focus:placeholder-shown + .chk-floating-label {
+    top: 10px;
+    left: 10px;
+    font-size: 12px;
+    transform: translateY(-21px);
+    background: #1f2937;
+}
+
+
+/* Form Field Error */
+.chk-form-field__error {
+    color: #ef4444; /* Bright red */
+    font-size: 0.8rem;
+    padding-left: 0.25rem;
+    display: none; /* Hidden by default */
+    /* REMOVED: position: absolute, bottom, left.
+      It's now a simple block element in the flow.
+    */
+    margin-top: 0.25rem;
+}
+.chk-form-field__error--visible {
+    display: block; /* Shown when error occurs */
+}
+
+/* Input highlight */
+.chk-input-highlight {
+    transition: all 0.3s ease;
+    position: relative;
+    /* REMOVED: margin-bottom.
+      The parent .chk-form-field now controls all vertical spacing.
+    */
+}
+.chk-input-highlight:focus-within {
+    border-color: #f97316;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2);
+}
+.chk-input-highlight.active {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(249, 115, 22, 0.2);
+}
+.chk-form-grid--halves .chk-input-highlight {
+    margin-bottom: 0; /* Explicitly remove margin here too */
+}
+
+
+/* --- Payment Method Selector --- */
+.chk-payment-method-selector {
+    margin-bottom: 1.5rem;
+}
+
+.chk-payment-method-selector > * + * {
+    margin-top: 0.75rem;
+}
+
+.chk-payment-method {
+    border: 2px solid #4b5563;
+    border-radius: 0.75rem;
+    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.chk-payment-method:hover {
+    border-color: #f97316;
+}
+
+.chk-payment-method.chk-payment-method--active {
+    border-color: #f97316;
+    background-color: rgba(124, 45, 18, 0.2);
+}
+
+.chk-payment-method__content {
+    display: flex;
+    align-items: center;
+}
+
+.chk-payment-method__icon-wrapper {
+    width: 2.5rem;
+    height: 2.5rem;
+    background-color: rgba(124, 45, 18, 0.3);
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 0.75rem;
+}
+
+.chk-payment-method__icon {
+    color: #f5750c;
+}
+
+.chk-payment-method__label {
+    font-weight: 600;
+    color: #f5750c;
+}
+
+/* --- Credit Card Visual --- */
+.chk-card-container {
+    perspective: 1500px;
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto 1.5rem auto;
+}
+.chk-card {
+    position: relative;
+    width: 100%;
+    height: 240px;
+    transform-style: preserve-3d;
+    transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border-radius: 20px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+}
+.chk-card.flipped {
+    transform: rotateY(180deg);
+}
+.chk-card-front, .chk-card-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    border-radius: 20px;
+    padding: 25px;
+    box-sizing: border-box;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background-size: cover;
+    background-position: center;
+    overflow: hidden;
+}
+.chk-card-front::before, .chk-card-back::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.3);
+    z-index: -1;
+}
+.chk-card-front {
+    background-image: url('https://media.istockphoto.com/id/2055023629/photo/4k-beautiful-color-gradient-background-with-noise-abstract-pastel-holographic-blurred-grainy.jpg?s=612x612&w=0&k=20&c=l65_0xqN76oYzun9lKf_abnquQ7i8HF3pGkCnVbPKsE=');
+    z-index: 2;
+}
+.chk-card-back {
+    background-image: url('https://media.istockphoto.com/id/2055023629/photo/4k-beautiful-color-gradient-background-with-noise-abstract-pastel-holographic-blurred-grainy.jpg?s=612x612&w=0&k=20&c=l65_0xqN76oYzun9lKf_abnquQ7i8HF3pGkCnVbPKsE=');
+    transform: rotateY(180deg);
+}
+.chk-card-header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+.chk-card-issuer {
+    font-size: 0.875rem;
+}
+.chk-card-magnetic-strip {
+    position: absolute;
+    top: 25px;
+    left: 0;
+    width: 100%;
+    height: 40px;
+    background: rgba(0,0,0,0.7);
+}
+.chk-card-cvv-strip {
+    position: relative;
+    height: 40px;
+    background: white;
+    margin-top: 15px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+    color: #333;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 10px;
+    font-family: monospace;
+    font-size: 18px;
+    letter-spacing: 2px;
+}
+.chk-card-signature {
+    position: relative;
+    height: 30px;
+    background: repeating-linear-gradient(45deg, #efefef, #efefef 5px, white 5px, white 10px);
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    padding-left: 10px;
+    font-style: italic;
+    color: #333;
+}
+.chk-card-number {
+    font-family: monospace;
+    font-size: 22px;
+    letter-spacing: 3px;
+    margin: 10px 0;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+.chk-card-details {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+}
+.chk-card-holder, .chk-card-expiry {
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+.chk-card-brand-back {
+    position: absolute;
+    right: 25px;
+    top: 75px;
+    font-size: 36px;
+    opacity: 0.8;
+}
+.chk-card-hologram {
+    position: absolute;
+    right: 25px;
+    top: 130px;
+    width: 60px;
+    height: 40px;
+    background: linear-gradient(45deg, rgba(255,0,0,0.5), rgba(0,255,0,0.5), rgba(0,0,255,0.5));
+    border-radius: 5px;
+    opacity: 0.7;
+}
+@media (max-width: 640px) {
+    .chk-card {
+        height: 200px;
+    }
+    .chk-card-number {
+        font-size: 18px;
+    }
+}
+.chk-payment-section {
+    transition: all 0.5s ease;
+    transform-origin: top;
+}
+.chk-payment-section.active {
+    transform: scale(1.02);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+.chk-cvv-tooltip-trigger {
+    position: absolute;
+    right: 0.75rem;
+    top: 0.75rem;
+    color: #9ca3af;
+    cursor: pointer;
+    z-index: 2;
+}
+
+/* --- Checkbox --- */
+.chk-checkbox-field {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+.chk-checkbox-field__input {
+    margin-right: 0.5rem;
+    width: 1.25rem;
+    height: 1.25rem;
+    accent-color: #ea580c;
+    border-radius: 0.25rem;
+}
+.chk-checkbox-field__input:focus {
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.5);
+}
+.chk-checkbox-field__label {
+    color: #d1d5db;
+}
+
+/* --- Cash Payment Info Box --- */
+.chk-info-box {
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+.chk-info-box--warning {
+    background-color: rgba(124, 45, 18, 0.2);
+    border: 1px solid #f97316;
+}
+.chk-info-box__content {
+    display: flex;
+    align-items: flex-start;
+}
+.chk-info-box__icon {
+    color: #f5750c;
+    margin-top: 0.25rem;
+    margin-right: 0.5rem;
+}
+.chk-info-box__text {
+    font-size: 0.875rem;
+    color: #f5750c;
+}
+
+/* --- Button --- */
+.chk-button {
+    color: #fff;
+    font-weight: 700;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border: none;
+    cursor: pointer;
+}
+.chk-button--primary {
+}
+.chk-button--secondary {
+    background-color: #4b5563;
+    color: #fff;
+}
+.chk-button--secondary:hover {
+    background-color: #6b7280;
+}
+.chk-gradient-bg {
+    background: linear-gradient(135deg, #000000 0%, #c2410c 100%);
+}
+.chk-gradient-bg:hover {
+    opacity: 0.9;
+}
+.chk-button--full-width {
+    width: 100%;
+}
+.chk-button__icon {
+    margin-left: 0.5rem;
+}
+
+/* --- Form Footer Text --- */
+.chk-form-footer-text {
+    margin-top: 1rem;
+    text-align: center;
+    font-size: 0.875rem;
+    color: #9ca3af;
+}
+.chk-form-footer-text__link {
+    color: #fb923c;
+    text-decoration: underline;
+}
+.chk-form-footer-text__link:hover {
+    color: #fdba74;
+}
+
+/* --- Secure Badge --- */
+.chk-secure-payment-badge {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #4b5563;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.chk-secure-payment-badge__icon {
+    color: #f5750c;
+    margin-right: 0.5rem;
+}
+.chk-secure-payment-badge__text {
+    font-size: 0.875rem;
+    color: #9ca3af;
+}
+
+/* --- Modal Styles --- */
+.chk-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+.chk-modal-overlay:not(.chk-hidden) {
+    display: flex;
+    opacity: 1;
+    visibility: visible;
+}
+.chk-modal-content {
+    background-color: #1f2937;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    max-width: 24rem;
+    width: 90%;
+    position: relative;
+    border: 1px solid #f97316;
+    transform: scale(0.95);
+    opacity: 0;
+    transition: all 0.3s ease;
+}
+.chk-modal-overlay:not(.chk-hidden) .chk-modal-content {
+    transform: scale(1);
+    opacity: 1;
+}
+.chk-modal-close-button {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    color: #9ca3af;
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    cursor: pointer;
+    line-height: 1;
+}
+.chk-modal-close-button:hover {
+    color: #fff;
+}
+.chk-modal-header {
+    font-weight: 700;
+    font-size: 1.125rem;
+    margin-bottom: 0.5rem;
+    color: #f5750c;
+}
+.chk-modal-text {
+    color: #d1d5db;
+    margin-bottom: 1rem;
+    line-height: 1.5;
+}
+.chk-modal-list-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    color: #d1d5db;
+}
+.chk-modal-list-item:last-child {
+    margin-bottom: 0;
+}
+.chk-modal-list-item__icon {
+    color: #f5750c;
+    margin-right: 0.5rem;
+}
+.chk-modal-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    margin-top: 1.5rem;
+}
+
+/* --- Animations --- */
+@keyframes chk-pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+.chk-pulse-animation {
+    animation: chk-pulse 2s infinite;
+}
+@keyframes chk-shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+.chk-animate-shake {
+    animation: chk-shake 0.5s ease-in-out;
+}
+.chk-confetti {
+    position: fixed;
+    width: 10px;
+    height: 10px;
+    background-color: #f00;
+    z-index: 9999;
+}
