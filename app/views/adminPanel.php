@@ -1,6 +1,4 @@
-<?php
-exit('Admin backend coming soon.');
-?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -65,7 +63,7 @@ exit('Admin backend coming soon.');
                     </li>
                     <li>
                         <button class="nav-btn" data-section="tickets">
-                            <i data-feather="ticket"></i>
+                         <i data-feather="film"></i>
                             <span>Tickets</span>
                         </button>
                     </li>
