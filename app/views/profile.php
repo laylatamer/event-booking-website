@@ -512,4 +512,3 @@ $alertStyles = [
     <script src="../../public/js/profile.js"></script>
 </body>
 </html>
-<?php
