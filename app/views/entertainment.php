@@ -13,7 +13,7 @@
 <body class="page-body">
 <?php
 // Include the header file
-include 'includes/header.php';
+include 'partials/header.php';
 ?>
    
     <!-- Main Content Area -->
@@ -179,7 +179,7 @@ include 'includes/header.php';
     <script type="module" src="../../public/js/entertainment.js"></script>
     <?php
 // Include the footer file
-include 'includes/footer.php';
+include 'partials/footer.php';
 ?>
 </body>
 </html>

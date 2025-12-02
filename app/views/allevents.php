@@ -13,7 +13,7 @@
 <body class="page-body">
 <?php
 // Include the header file
-include 'includes/header.php';
+include 'partials/header.php';
 ?>
     
     <main class="main-content">
@@ -162,7 +162,7 @@ include 'includes/header.php';
 
     <?php
     // 1. Include the canonical event data array
-    include 'includes/event_data.php';
+    include 'partials/event_data.php';
 
     // 2. Encode the PHP array into a JSON string
     $js_events_json = json_encode($events);
@@ -175,7 +175,7 @@ include 'includes/header.php';
     <script type="module" src="../../public/js/allevents.js"></script>
     <?php
     // Include the footer file
-    include 'includes/footer.php';
+    include 'partials/footer.php';
     ?>
 </body>
 </html>
