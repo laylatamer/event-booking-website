@@ -1,5 +1,5 @@
 /* --- General & Body --- */
-body.checkout-page {
+body.chk-checkout-page {
     background-color: #1a1a1a;
     color: #fff;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -17,7 +17,7 @@ a {
     text-decoration: none;
 }
 
-.checkout-container {
+.chk-checkout-container {
     max-width: 1290px;
     margin: 0 auto;
     padding: 2rem 1rem;
@@ -26,7 +26,7 @@ a {
 }
 
 /* --- Utilities --- */
-.hidden {
+.chk-hidden {
     display: none !important;
 }
 
@@ -41,7 +41,7 @@ a {
 }
 
 /* --- Layout & Wrappers --- */
-.checkout-content-wrapper {
+.chk-checkout-content-wrapper {
     background-color: rgba(0, 0, 0, 0.7);
     backdrop-filter: blur(10px);
     border-radius: 0.75rem;
@@ -49,47 +49,47 @@ a {
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 }
 
-.checkout-layout {
+.chk-checkout-layout {
     display: flex;
     flex-direction: column;
     gap: 2rem;
 }
 
 @media (min-width: 1024px) {
-    .checkout-layout {
+    .chk-checkout-layout {
         flex-direction: row;
     }
-    .checkout-layout__order-details {
+    .chk-checkout-layout__order-details {
         width: 66.666667%;
     }
-    .checkout-layout__payment-column {
+    .chk-checkout-layout__payment-column {
         width: 33.333333%;
     }
 }
 
 /* --- Page Header --- */
-.checkout-header__title {
+.chk-checkout-header__title {
     font-size: 1.875rem;
     font-weight: 700;
     margin-bottom: 0.5rem;
 }
 
-.checkout-header__subtitle {
+.chk-checkout-header__subtitle {
     color: #9ca3af;
     margin-bottom: 1.5rem;
 }
 
 /* --- Base Card Styles --- */
-.card-header {
+.chk-card-header {
     font-size: 1.5rem;
     font-weight: 700;
     color: #f5750c; /* text-orange-400 */
     margin-bottom: 1rem;
 }
 
-.order-summary-card,
-.attendee-info-card,
-.payment-card {
+.chk-order-summary-card,
+.chk-attendee-info-card,
+.chk-payment-card {
     background-color: rgba(0, 0, 0, 0.5);
     border-radius: 0.75rem;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
@@ -98,17 +98,17 @@ a {
     border: 1px solid #4b5563;
 }
 
-.payment-card {
+.chk-payment-card {
     position: sticky;
     top: 1rem;
 }
 
 /* --- Order Summary --- */
-.order-items-container {
+.chk-order-items-container {
     margin-bottom: 1.5rem;
 }
 
-.order-item {
+.chk-order-item {
     display: flex;
     align-items: center;
     border-bottom: 1px solid #4b5563;
@@ -118,17 +118,17 @@ a {
     border-radius: 0.5rem;
     padding: 0.75rem;
 }
-.order-item:last-child {
+.chk-order-item:last-child {
     margin-bottom: 0;
     border-bottom: none;
     padding-bottom: 0.75rem;
 }
 
-.order-item:hover {
+.chk-order-item:hover {
     background-color: rgba(55, 65, 81, 0.5);
 }
 
-.order-item__icon-wrapper {
+.chk-order-item__icon-wrapper {
     width: 4rem;
     height: 4rem;
     background-color: rgba(124, 45, 18, 0.3);
@@ -140,17 +140,17 @@ a {
     flex-shrink: 0;
 }
 
-.order-item__icon {
+.chk-order-item__icon {
     color: #f5750c;
     font-size: 1.25rem;
 }
 
-.order-item__info {
+.chk-order-item__info {
     flex-grow: 1;
     min-width: 0; /* Prevents text overflow issues */
 }
 
-.order-item__title {
+.chk-order-item__title {
     font-weight: 600;
     color: #fff;
     white-space: nowrap;
@@ -158,18 +158,18 @@ a {
     text-overflow: ellipsis;
 }
 
-.order-item__detail {
+.chk-order-item__detail {
     color: #9ca3af;
     font-size: 0.875rem;
 }
 
-.quantity-control {
+.chk-quantity-control {
     margin-top: 0.5rem;
     display: flex;
     align-items: center;
 }
 
-.quantity-control__button {
+.chk-quantity-control__button {
     color: #f5750c;
     background-color: rgba(124, 45, 18, 0.3);
     border-radius: 9999px;
@@ -184,58 +184,58 @@ a {
     font-size: 0.75rem;
 }
 
-.quantity-control__button:hover {
+.chk-quantity-control__button:hover {
     color: #fdba74;
 }
 
-.quantity-control__display {
+.chk-quantity-control__display {
     margin: 0 0.5rem;
     width: 2rem;
     text-align: center;
     color: #fff;
 }
 
-.order-item__price-section {
+.chk-order-item__price-section {
     text-align: right;
     margin-left: 0.5rem;
 }
 
-.order-item__price {
+.chk-order-item__price {
     font-weight: 600;
     color: #fff;
 }
 
-.order-item__ticket-type {
+.chk-order-item__ticket-type {
     color: #9ca3af;
     font-size: 0.875rem;
 }
 
 /* --- Totals Summary --- */
-.totals-summary {
+.chk-totals-summary {
     background-color: #1f2937;
     padding: 1rem;
     border-radius: 0.5rem;
     border: 1px solid #4b5563;
 }
 
-.totals-summary__row {
+.chk-totals-summary__row {
     display: flex;
     justify-content: space-between;
     margin-bottom: 0.5rem;
 }
-.totals-summary__row:last-child {
+.chk-totals-summary__row:last-child {
     margin-bottom: 0;
 }
 
-.totals-summary__label {
+.chk-totals-summary__label {
     color: #d1d5db;
 }
 
-.totals-summary__value {
+.chk-totals-summary__value {
     font-weight: 500;
 }
 
-.totals-summary__row--total {
+.chk-totals-summary__row--total {
     font-weight: 700;
     font-size: 1.125rem;
     color: #f5750c;
@@ -244,30 +244,30 @@ a {
 }
 
 /* --- Form Styles --- */
-.form-grid {
+.chk-form-grid {
     display: grid;
     grid-template-columns: 1fr;
     gap: 1rem;
 }
 
 @media (min-width: 768px) {
-    .form-grid {
+    .chk-form-grid {
         grid-template-columns: repeat(2, 1fr);
     }
-    .form-field--span-2 {
+    .chk-form-field--span-2 {
         grid-column: span 2 / span 2;
     }
 }
 
-.form-grid--halves {
+.chk-form-grid--halves {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 1rem;
-    margin-bottom: 0; /* Remove margin, gap handles spacing */
+    margin-bottom: 0;
 }
 
 /* Standardized form field margin */
-.form-field {
+.chk-form-field {
     position: relative;
     /* This margin is now the primary spacer.
       It's 1rem, and the error will add its own margin when visible.
@@ -276,16 +276,16 @@ a {
 }
 
 /* Remove margin from last field in a grid */
-.form-grid .form-field:last-child {
+.chk-form-grid .chk-form-field:last-child {
     margin-bottom: 0;
 }
 /* Ensure fields in halves grid have correct margin */
-.form-grid--halves .form-field {
+.chk-form-grid--halves .chk-form-field {
     margin-bottom: 1rem;
 }
 
 
-.form-field__input {
+.chk-form-field__input {
     width: 100%;
     padding: 0.75rem;
     background-color: #1f2937;
@@ -296,18 +296,18 @@ a {
     font-size: 1rem;
 }
 
-.form-field__input:focus {
+.chk-form-field__input:focus {
     outline: none;
     border-color: #f97316;
     box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.5);
 }
 
-.form-field__input::placeholder {
+.chk-form-field__input::placeholder {
     color: transparent;
 }
 
 /* Floating label */
-.floating-label {
+.chk-floating-label {
     transition: all 0.3s ease;
     position: absolute;
     top: 10px;
@@ -321,16 +321,16 @@ a {
     opacity: 0;
 }
 
-.form-field__input:focus + .floating-label,
-.form-field__input:not(:placeholder-shown) + .floating-label {
+.chk-form-field__input:focus + .chk-floating-label,
+.chk-form-field__input:not(:placeholder-shown) + .chk-floating-label {
     transform: translateY(-21px); /* Adjusted for better alignment */
     opacity: 1;
 }
-.form-field__input:not(:placeholder-shown):not(:focus) + .floating-label {
+.chk-form-field__input:not(:placeholder-shown):not(:focus) + .chk-floating-label {
      transform: translateY(-21px);
      opacity: 1;
 }
-.form-field__input:placeholder-shown + .floating-label {
+.chk-form-field__input:placeholder-shown + .chk-floating-label {
     top: 14px;
     left: 14px;
     font-size: 1rem;
@@ -338,7 +338,7 @@ a {
     transform: translateY(0);
     background: transparent;
 }
-.form-field__input:focus:placeholder-shown + .floating-label {
+.chk-form-field__input:focus:placeholder-shown + .chk-floating-label {
     top: 10px;
     left: 10px;
     font-size: 12px;
@@ -348,7 +348,7 @@ a {
 
 
 /* Form Field Error */
-.form-field__error {
+.chk-form-field__error {
     color: #ef4444; /* Bright red */
     font-size: 0.8rem;
     padding-left: 0.25rem;
@@ -358,41 +358,41 @@ a {
     */
     margin-top: 0.25rem;
 }
-.form-field__error--visible {
+.chk-form-field__error--visible {
     display: block; /* Shown when error occurs */
 }
 
 /* Input highlight */
-.input-highlight {
+.chk-input-highlight {
     transition: all 0.3s ease;
     position: relative;
     /* REMOVED: margin-bottom.
-      The parent .form-field now controls all vertical spacing.
+      The parent .chk-form-field now controls all vertical spacing.
     */
 }
-.input-highlight:focus-within {
+.chk-input-highlight:focus-within {
     border-color: #f97316;
     box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2);
 }
-.input-highlight.active {
+.chk-input-highlight.active {
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(249, 115, 22, 0.2);
 }
-.form-grid--halves .input-highlight {
+.chk-form-grid--halves .chk-input-highlight {
     margin-bottom: 0; /* Explicitly remove margin here too */
 }
 
 
 /* --- Payment Method Selector --- */
-.payment-method-selector {
+.chk-payment-method-selector {
     margin-bottom: 1.5rem;
 }
 
-.payment-method-selector > * + * {
+.chk-payment-method-selector > * + * {
     margin-top: 0.75rem;
 }
 
-.payment-method {
+.chk-payment-method {
     border: 2px solid #4b5563;
     border-radius: 0.75rem;
     padding: 1rem;
@@ -400,21 +400,21 @@ a {
     transition: all 0.3s ease;
 }
 
-.payment-method:hover {
+.chk-payment-method:hover {
     border-color: #f97316;
 }
 
-.payment-method.payment-method--active {
+.chk-payment-method.chk-payment-method--active {
     border-color: #f97316;
     background-color: rgba(124, 45, 18, 0.2);
 }
 
-.payment-method__content {
+.chk-payment-method__content {
     display: flex;
     align-items: center;
 }
 
-.payment-method__icon-wrapper {
+.chk-payment-method__icon-wrapper {
     width: 2.5rem;
     height: 2.5rem;
     background-color: rgba(124, 45, 18, 0.3);
@@ -425,23 +425,23 @@ a {
     margin-right: 0.75rem;
 }
 
-.payment-method__icon {
+.chk-payment-method__icon {
     color: #f5750c;
 }
 
-.payment-method__label {
+.chk-payment-method__label {
     font-weight: 600;
     color: #f5750c;
 }
 
 /* --- Credit Card Visual --- */
-.card-container {
+.chk-card-container {
     perspective: 1500px;
     width: 100%;
     max-width: 420px;
     margin: 0 auto 1.5rem auto;
 }
-.card {
+.chk-card {
     position: relative;
     width: 100%;
     height: 240px;
@@ -450,10 +450,10 @@ a {
     border-radius: 20px;
     box-shadow: 0 15px 35px rgba(0,0,0,0.2);
 }
-.card.flipped {
+.chk-card.flipped {
     transform: rotateY(180deg);
 }
-.card-front, .card-back {
+.chk-card-front, .chk-card-back {
     position: absolute;
     width: 100%;
     height: 100%;
@@ -469,7 +469,7 @@ a {
     background-position: center;
     overflow: hidden;
 }
-.card-front::before, .card-back::before {
+.chk-card-front::before, .chk-card-back::before {
     content: '';
     position: absolute;
     top: 0;
@@ -479,24 +479,24 @@ a {
     background: rgba(0,0,0,0.3);
     z-index: -1;
 }
-.card-front {
+.chk-card-front {
     background-image: url('https://media.istockphoto.com/id/2055023629/photo/4k-beautiful-color-gradient-background-with-noise-abstract-pastel-holographic-blurred-grainy.jpg?s=612x612&w=0&k=20&c=l65_0xqN76oYzun9lKf_abnquQ7i8HF3pGkCnVbPKsE=');
     z-index: 2;
 }
-.card-back {
+.chk-card-back {
     background-image: url('https://media.istockphoto.com/id/2055023629/photo/4k-beautiful-color-gradient-background-with-noise-abstract-pastel-holographic-blurred-grainy.jpg?s=612x612&w=0&k=20&c=l65_0xqN76oYzun9lKf_abnquQ7i8HF3pGkCnVbPKsE=');
     transform: rotateY(180deg);
 }
-.card-header-flex {
+.chk-card-header-flex {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1rem;
 }
-.card-issuer {
+.chk-card-issuer {
     font-size: 0.875rem;
 }
-.card-magnetic-strip {
+.chk-card-magnetic-strip {
     position: absolute;
     top: 25px;
     left: 0;
@@ -504,7 +504,7 @@ a {
     height: 40px;
     background: rgba(0,0,0,0.7);
 }
-.card-cvv-strip {
+.chk-card-cvv-strip {
     position: relative;
     height: 40px;
     background: white;
@@ -520,7 +520,7 @@ a {
     font-size: 18px;
     letter-spacing: 2px;
 }
-.card-signature {
+.chk-card-signature {
     position: relative;
     height: 30px;
     background: repeating-linear-gradient(45deg, #efefef, #efefef 5px, white 5px, white 10px);
@@ -531,29 +531,29 @@ a {
     font-style: italic;
     color: #333;
 }
-.card-number {
+.chk-card-number {
     font-family: monospace;
     font-size: 22px;
     letter-spacing: 3px;
     margin: 10px 0;
     text-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
-.card-details {
+.chk-card-details {
     display: flex;
     justify-content: space-between;
     font-size: 14px;
 }
-.card-holder, .card-expiry {
+.chk-card-holder, .chk-card-expiry {
     text-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
-.card-brand-back {
+.chk-card-brand-back {
     position: absolute;
     right: 25px;
     top: 75px;
     font-size: 36px;
     opacity: 0.8;
 }
-.card-hologram {
+.chk-card-hologram {
     position: absolute;
     right: 25px;
     top: 130px;
@@ -564,22 +564,22 @@ a {
     opacity: 0.7;
 }
 @media (max-width: 640px) {
-    .card {
+    .chk-card {
         height: 200px;
     }
-    .card-number {
+    .chk-card-number {
         font-size: 18px;
     }
 }
-.payment-section {
+.chk-payment-section {
     transition: all 0.5s ease;
     transform-origin: top;
 }
-.payment-section.active {
+.chk-payment-section.active {
     transform: scale(1.02);
     box-shadow: 0 10px 25px rgba(0,0,0,0.1);
 }
-.cvv-tooltip-trigger {
+.chk-cvv-tooltip-trigger {
     position: absolute;
     right: 0.75rem;
     top: 0.75rem;
@@ -589,51 +589,51 @@ a {
 }
 
 /* --- Checkbox --- */
-.checkbox-field {
+.chk-checkbox-field {
     display: flex;
     align-items: center;
     margin-bottom: 1.5rem;
 }
-.checkbox-field__input {
+.chk-checkbox-field__input {
     margin-right: 0.5rem;
     width: 1.25rem;
     height: 1.25rem;
     accent-color: #ea580c;
     border-radius: 0.25rem;
 }
-.checkbox-field__input:focus {
+.chk-checkbox-field__input:focus {
     box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.5);
 }
-.checkbox-field__label {
+.chk-checkbox-field__label {
     color: #d1d5db;
 }
 
 /* --- Cash Payment Info Box --- */
-.info-box {
+.chk-info-box {
     padding: 1rem;
     border-radius: 0.5rem;
     margin-bottom: 1.5rem;
 }
-.info-box--warning {
+.chk-info-box--warning {
     background-color: rgba(124, 45, 18, 0.2);
     border: 1px solid #f97316;
 }
-.info-box__content {
+.chk-info-box__content {
     display: flex;
     align-items: flex-start;
 }
-.info-box__icon {
+.chk-info-box__icon {
     color: #f5750c;
     margin-top: 0.25rem;
     margin-right: 0.5rem;
 }
-.info-box__text {
+.chk-info-box__text {
     font-size: 0.875rem;
     color: #f5750c;
 }
 
 /* --- Button --- */
-.button {
+.chk-button {
     color: #fff;
     font-weight: 700;
     padding: 0.75rem 1rem;
@@ -646,45 +646,45 @@ a {
     border: none;
     cursor: pointer;
 }
-.button--primary {
+.chk-button--primary {
 }
-.button--secondary {
+.chk-button--secondary {
     background-color: #4b5563;
     color: #fff;
 }
-.button--secondary:hover {
+.chk-button--secondary:hover {
     background-color: #6b7280;
 }
-.gradient-bg {
+.chk-gradient-bg {
     background: linear-gradient(135deg, #000000 0%, #c2410c 100%);
 }
-.gradient-bg:hover {
+.chk-gradient-bg:hover {
     opacity: 0.9;
 }
-.button--full-width {
+.chk-button--full-width {
     width: 100%;
 }
-.button__icon {
+.chk-button__icon {
     margin-left: 0.5rem;
 }
 
 /* --- Form Footer Text --- */
-.form-footer-text {
+.chk-form-footer-text {
     margin-top: 1rem;
     text-align: center;
     font-size: 0.875rem;
     color: #9ca3af;
 }
-.form-footer-text__link {
+.chk-form-footer-text__link {
     color: #fb923c;
     text-decoration: underline;
 }
-.form-footer-text__link:hover {
+.chk-form-footer-text__link:hover {
     color: #fdba74;
 }
 
 /* --- Secure Badge --- */
-.secure-payment-badge {
+.chk-secure-payment-badge {
     margin-top: 1.5rem;
     padding-top: 1rem;
     border-top: 1px solid #4b5563;
@@ -692,17 +692,17 @@ a {
     align-items: center;
     justify-content: center;
 }
-.secure-payment-badge__icon {
+.chk-secure-payment-badge__icon {
     color: #f5750c;
     margin-right: 0.5rem;
 }
-.secure-payment-badge__text {
+.chk-secure-payment-badge__text {
     font-size: 0.875rem;
     color: #9ca3af;
 }
 
 /* --- Modal Styles --- */
-.modal-overlay {
+.chk-modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
@@ -718,12 +718,12 @@ a {
     visibility: hidden;
     transition: opacity 0.3s ease, visibility 0.3s ease;
 }
-.modal-overlay:not(.hidden) {
+.chk-modal-overlay:not(.chk-hidden) {
     display: flex;
     opacity: 1;
     visibility: visible;
 }
-.modal-content {
+.chk-modal-content {
     background-color: #1f2937;
     border-radius: 0.5rem;
     padding: 1.5rem;
@@ -735,11 +735,11 @@ a {
     opacity: 0;
     transition: all 0.3s ease;
 }
-.modal-overlay:not(.hidden) .modal-content {
+.chk-modal-overlay:not(.chk-hidden) .chk-modal-content {
     transform: scale(1);
     opacity: 1;
 }
-.modal-close-button {
+.chk-modal-close-button {
     position: absolute;
     top: 0.5rem;
     right: 0.5rem;
@@ -750,34 +750,34 @@ a {
     cursor: pointer;
     line-height: 1;
 }
-.modal-close-button:hover {
+.chk-modal-close-button:hover {
     color: #fff;
 }
-.modal-header {
+.chk-modal-header {
     font-weight: 700;
     font-size: 1.125rem;
     margin-bottom: 0.5rem;
     color: #f5750c;
 }
-.modal-text {
+.chk-modal-text {
     color: #d1d5db;
     margin-bottom: 1rem;
     line-height: 1.5;
 }
-.modal-list-item {
+.chk-modal-list-item {
     display: flex;
     align-items: center;
     margin-bottom: 0.5rem;
     color: #d1d5db;
 }
-.modal-list-item:last-child {
+.chk-modal-list-item:last-child {
     margin-bottom: 0;
 }
-.modal-list-item__icon {
+.chk-modal-list-item__icon {
     color: #f5750c;
     margin-right: 0.5rem;
 }
-.modal-actions {
+.chk-modal-actions {
     display: flex;
     gap: 0.75rem;
     justify-content: flex-end;
@@ -785,23 +785,23 @@ a {
 }
 
 /* --- Animations --- */
-@keyframes pulse {
+@keyframes chk-pulse {
     0% { transform: scale(1); }
     50% { transform: scale(1.05); }
     100% { transform: scale(1); }
 }
-.pulse-animation {
-    animation: pulse 2s infinite;
+.chk-pulse-animation {
+    animation: chk-pulse 2s infinite;
 }
-@keyframes shake {
+@keyframes chk-shake {
     0%, 100% { transform: translateX(0); }
     10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
     20%, 40%, 60%, 80% { transform: translateX(5px); }
 }
-.animate-shake {
-    animation: shake 0.5s ease-in-out;
+.chk-animate-shake {
+    animation: chk-shake 0.5s ease-in-out;
 }
-.confetti {
+.chk-confetti {
     position: fixed;
     width: 10px;
     height: 10px;

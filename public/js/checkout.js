@@ -11,26 +11,52 @@ VANTA.NET({
 // Initialize feather icons
 feather.replace();
 
-// Sample event data
+// IMPORTANT: Event data MUST match your event_data.php
+// In a real app, fetch this from the server. For now, copy it.
 const events = [
     { id: 1, title: "Summer Music Festival 2023", description: "...", price: 89.99, date: "2023-08-15T18:00:00", location: "Central Park, NYC" },
-    { id: 2, title: "Tech Conference 2023", description: "...", price: 199.99, date: "2023-09-22T09:00:00", location: "Convention Center, SF" }
+    { id: 2, title: "Tech Conference 2023", description: "...", price: 199.99, date: "2023-09-22T09:00:00", location: "Convention Center, SF" },
+    // === ADD EVENT 3 HERE ===
+    { id: 3, title: "Your Event Title for ID 3", description: "Event 3 description", price: 50.00, date: "2023-11-10T20:00:00", location: "Some Venue" },
+    // === ADD ANY OTHER EVENTS HERE ===
 ];
 
-// Get event ID from URL or default to 1
+// Read 'eventId' and 'quantity' parameters from the current page's URL
 const urlParams = new URLSearchParams(window.location.search);
-const eventId = parseInt(urlParams.get('id')) || 1;
-const event = events.find(e => e.id === eventId) || events[0];
+const urlEventId = parseInt(urlParams.get('eventId')); // Get 'eventId'
+const urlQuantity = parseInt(urlParams.get('quantity')); // Get 'quantity'
 
-// Format date
-const eventDate = new Date(event.date);
-const formattedDate = eventDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-const formattedTime = eventDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+// Find the event details in the 'events' array using the ID from the URL
+const currentEvent = events.find(e => e.id === urlEventId);
 
-// Current order items
-let orderItems = [
-    { eventId: event.id, quantity: 2, ticketType: "General Admission" }
-];
+// Initialize orderItems as an empty array
+let orderItems = [];
+// Initialize default date/time variables (will be updated if event found)
+let formattedDate = 'N/A';
+let formattedTime = 'N/A';
+
+// Check if we found a valid event AND a valid quantity from the URL
+if (currentEvent && urlQuantity > 0) {
+    // If yes, create the orderItems array with the event from the URL
+     orderItems = [
+         {
+             eventId: currentEvent.id,       // Use the ID from the URL
+             quantity: urlQuantity,          // Use the quantity from the URL
+             ticketType: "Standard Ticket"   // Set a default ticket type
+         }
+    ];
+    // Also format the date/time for the specific event found
+     const eventDate = new Date(currentEvent.date);
+     formattedDate = eventDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+     formattedTime = eventDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+} else {
+    // If no valid eventId or quantity was in the URL, log an error
+    console.error("Event ID or quantity missing/invalid in URL. Order cannot be created.");
+    // You could also display an error message to the user here using showNoticeModal
+    // showNoticeModal('Error', 'Could not load order details. Please return to the event page.');
+}
+
 
 // --- Helper functions for validation ---
 
@@ -38,7 +64,7 @@ function showError(fieldId, message) {
     const errorField = document.getElementById(fieldId);
     if (errorField) {
         errorField.textContent = message;
-        errorField.classList.add('form-field__error--visible');
+        errorField.classList.add('chk-form-field__error--visible');
     }
 }
 
@@ -46,16 +72,16 @@ function hideError(fieldId) {
     const errorField = document.getElementById(fieldId);
     if (errorField) {
         errorField.textContent = '';
-        errorField.classList.remove('form-field__error--visible');
+        errorField.classList.remove('chk-form-field__error--visible');
     }
 }
 
 
 function clearErrors() {
-    const errorFields = document.querySelectorAll('.form-field__error');
+    const errorFields = document.querySelectorAll('.chk-form-field__error');
     errorFields.forEach(field => {
         field.textContent = '';
-        field.classList.remove('form-field__error--visible');
+        field.classList.remove('chk-form-field__error--visible');
     });
 }
 
@@ -75,7 +101,7 @@ function setupInputHighlights() {
     ];
     inputs.forEach(inputId => {
         const input = document.getElementById(inputId);
-        const container = input ? input.closest('.form-field') : null; // Find parent container
+        const container = input ? input.closest('.chk-form-field') : null; // Find parent container
         if (input && container) {
             input.addEventListener('focus', () => {
                 container.classList.add('active');
@@ -90,53 +116,70 @@ function setupInputHighlights() {
 // Render order items in the summary
 function renderOrderItems() {
     const orderItemsContainer = document.getElementById('orderItems');
-    orderItemsContainer.innerHTML = '';
+    orderItemsContainer.innerHTML = ''; // Always clear previous items first
+
+    // Check if the orderItems array is empty or invalid
+    if (!orderItems || orderItems.length === 0) {
+        orderItemsContainer.innerHTML = '<p style="color: #9ca3af;">No items in your order.</p>'; // Display a message, added inline style for clarity
+        return; // Stop the function here if no items
+    }
+
+    // Loop through the items received from the URL (or modified by +/- buttons)
     orderItems.forEach(item => {
+        // Find the full event details using the item's eventId
         const eventItem = events.find(e => e.id === item.eventId);
         if (eventItem) {
+            // Format date/time specifically for this item being rendered
+            const itemEventDate = new Date(eventItem.date);
+            const itemFormattedDate = itemEventDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            const itemFormattedTime = itemEventDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+            // Create the HTML for the order item
             const itemElement = document.createElement('div');
-            itemElement.className = 'order-item';
+            itemElement.className = 'chk-order-item';
             itemElement.innerHTML = `
-                <div class="order-item__icon-wrapper">
-                    <i class="fas fa-ticket-alt order-item__icon"></i>
+                <div class="chk-order-item__icon-wrapper">
+                    <i class="fas fa-ticket-alt chk-order-item__icon"></i>
                 </div>
-                <div class="order-item__info">
-                    <h3 class="order-item__title">${eventItem.title}</h3>
-                    <p class="order-item__detail">${formattedDate} at ${formattedTime}</p>
-                    <p class="order-item__detail">${eventItem.location}</p>
-                    <div class="quantity-control">
-                        <button class="quantity-control__button quantity-btn decrease" data-id="${eventItem.id}">
+                <div class="chk-order-item__info">
+                    <h3 class="chk-order-item__title">${eventItem.title}</h3>
+                    <p class="chk-order-item__detail">${itemFormattedDate} at ${itemFormattedTime}</p> {/* Use item's date/time */}
+                    <p class="chk-order-item__detail">${eventItem.location}</p>
+                    <div class="chk-quantity-control">
+                        <button class="chk-quantity-control__button chk-quantity-btn decrease" data-id="${eventItem.id}">
                             <i class="fas fa-minus"></i>
                         </button>
-                        <span class="quantity-control__display">${item.quantity}</span>
-                        <button class="quantity-control__button quantity-btn increase" data-id="${eventItem.id}">
+                        <span class="chk-quantity-control__display">${item.quantity}</span> {/* Use item's quantity */}
+                        <button class="chk-quantity-control__button chk-quantity-btn increase" data-id="${eventItem.id}">
                             <i class="fas fa-plus"></i>
                         </button>
                     </div>
                 </div>
-                <div class="order-item__price-section">
-                    <p class="order-item__price">$${(eventItem.price * item.quantity).toFixed(2)}</p>
-                    <p class="order-item__ticket-type">${item.ticketType}</p>
+                <div class="chk-order-item__price-section">
+                    <p class="chk-order-item__price">$${(eventItem.price * item.quantity).toFixed(2)}</p> {/* Calculate price */}
+                    <p class="chk-order-item__ticket-type">${item.ticketType}</p>
                 </div>
             `;
+            // Add the created item HTML to the page
             orderItemsContainer.appendChild(itemElement);
         }
     });
 
-    // Add event listeners to quantity buttons
-    document.querySelectorAll('.quantity-btn.increase').forEach(btn => {
+    // IMPORTANT: Re-attach listeners to the NEW +/- buttons after creating them
+    document.querySelectorAll('.chk-quantity-btn.increase').forEach(btn => {
         btn.addEventListener('click', function() {
             const eventId = parseInt(this.getAttribute('data-id'));
             increaseQuantity(eventId);
         });
     });
-    document.querySelectorAll('.quantity-btn.decrease').forEach(btn => {
+    document.querySelectorAll('.chk-quantity-btn.decrease').forEach(btn => {
         btn.addEventListener('click', function() {
             const eventId = parseInt(this.getAttribute('data-id'));
             decreaseQuantity(eventId);
         });
     });
 }
+
 
 // Calculate order totals
 function calculateTotals() {
@@ -153,40 +196,59 @@ function calculateTotals() {
     const processingFee = subtotal * 0.03;
     const total = subtotal + serviceFee + processingFee;
 
-    document.getElementById('subtotal').textContent = `$${subtotal.toFixed(2)}`;
-    document.getElementById('service-fee').textContent = `$${serviceFee.toFixed(2)}`;
-    document.getElementById('processing-fee').textContent = `$${processingFee.toFixed(2)}`;
-    document.getElementById('total').textContent = `$${total.toFixed(2)}`;
+    // Use querySelector for safer element finding, fallback to '0.00'
+    const subtotalEl = document.getElementById('subtotal');
+    const serviceFeeEl = document.getElementById('service-fee');
+    const processingFeeEl = document.getElementById('processing-fee');
+    const totalEl = document.getElementById('total');
+    const placeOrderBtn = document.getElementById('placeOrderBtn');
+
+    if (subtotalEl) subtotalEl.textContent = `$${subtotal.toFixed(2)}`;
+    if (serviceFeeEl) serviceFeeEl.textContent = `$${serviceFee.toFixed(2)}`;
+    if (processingFeeEl) processingFeeEl.textContent = `$${processingFee.toFixed(2)}`;
+    if (totalEl) totalEl.textContent = `$${total.toFixed(2)}`;
+
 
     // Update place order button with total
-    const placeOrderBtn = document.getElementById('placeOrderBtn');
-    const isCash = document.getElementById('cashOption').classList.contains('payment-method--active');
-    if (isCash) {
-        placeOrderBtn.innerHTML = `<span>Reserve Tickets ($${total.toFixed(2)})</span><i class="fas fa-arrow-right button__icon"></i>`;
-    } else {
-        placeOrderBtn.innerHTML = `<span>Pay $${total.toFixed(2)}</span><i class="fas fa-arrow-right button__icon"></i>`;
+    if(placeOrderBtn){
+        const isCash = document.getElementById('cashOption')?.classList.contains('chk-payment-method--active'); // Added safe navigation
+        if (isCash) {
+            placeOrderBtn.innerHTML = `<span>Reserve Tickets ($${total.toFixed(2)})</span><i class="fas fa-arrow-right chk-button__icon"></i>`;
+        } else {
+            placeOrderBtn.innerHTML = `<span>Pay $${total.toFixed(2)}</span><i class="fas fa-arrow-right chk-button__icon"></i>`;
+        }
     }
 }
 
-// Increase item quantity
+// Increase item quantity (Modify global array and re-render)
 function increaseQuantity(eventId) {
+    // Find the item in our global orderItems array
     const item = orderItems.find(i => i.eventId === eventId);
     if (item) {
+        // Increase its quantity
         item.quantity++;
+        // Re-run the functions to update the display and totals
         renderOrderItems();
         calculateTotals();
     }
 }
 
-// Decrease item quantity
+// Decrease item quantity (Modify global array and re-render)
 function decreaseQuantity(eventId) {
+    // Find the item in our global orderItems array
     const item = orderItems.find(i => i.eventId === eventId);
+    // Only decrease if quantity is more than 1
     if (item && item.quantity > 1) {
+        // Decrease its quantity
         item.quantity--;
+        // Re-run the functions to update the display and totals
         renderOrderItems();
         calculateTotals();
     }
+    // Optional: Add logic here if you want to remove item if quantity becomes 0
+    // else if (item && item.quantity === 1) { /* Remove item logic */ }
 }
+
 
 // Set up all event listeners
 function setupEventListeners() {
@@ -197,90 +259,134 @@ function setupEventListeners() {
     const paymentSection = document.getElementById('paymentSection');
 
     // Payment method toggle
-    creditCardOption.addEventListener('click', () => {
-        creditCardOption.classList.add('payment-method--active');
-        cashOption.classList.remove('payment-method--active');
-        creditCardForm.classList.remove('hidden');
-        cashForm.classList.add('hidden');
-        calculateTotals();
-        paymentSection.classList.add('active');
-        setTimeout(() => { paymentSection.classList.remove('active'); }, 500);
-    });
+    if (creditCardOption && cashOption && creditCardForm && cashForm && paymentSection) {
+        creditCardOption.addEventListener('click', () => {
+            creditCardOption.classList.add('chk-payment-method--active');
+            cashOption.classList.remove('chk-payment-method--active');
+            creditCardForm.classList.remove('chk-hidden');
+            cashForm.classList.add('chk-hidden');
+            calculateTotals();
+            paymentSection.classList.add('active');
+            setTimeout(() => { paymentSection.classList.remove('active'); }, 500);
+        });
 
-    cashOption.addEventListener('click', () => {
-        cashOption.classList.add('payment-method--active');
-        creditCardOption.classList.remove('payment-method--active');
-        cashForm.classList.remove('hidden');
-        creditCardForm.classList.add('hidden');
-        calculateTotals();
-        paymentSection.classList.add('active');
-        setTimeout(() => { paymentSection.classList.remove('active'); }, 500);
-    });
+        cashOption.addEventListener('click', () => {
+            cashOption.classList.add('chk-payment-method--active');
+            creditCardOption.classList.remove('chk-payment-method--active');
+            cashForm.classList.remove('chk-hidden');
+            creditCardForm.classList.add('chk-hidden');
+            calculateTotals();
+            paymentSection.classList.add('active');
+            setTimeout(() => { paymentSection.classList.remove('active'); }, 500);
+        });
+    }
 
-    // Card formatting and filtering
-    document.getElementById('cardNumber').addEventListener('input', formatCardNumber);
-    document.getElementById('cardHolder').addEventListener('input', formatCardHolder);
-    document.getElementById('cardExpiry').addEventListener('input', formatCardExpiry);
-    document.getElementById('cardCVV').addEventListener('input', formatCardCVV);
+
+    // Card formatting and filtering (Ensure elements exist)
+    const cardNumberInput = document.getElementById('cardNumber');
+    const cardHolderInput = document.getElementById('cardHolder');
+    const cardExpiryInput = document.getElementById('cardExpiry');
+    const cardCVVInput = document.getElementById('cardCVV');
+
+    if (cardNumberInput) cardNumberInput.addEventListener('input', formatCardNumber);
+    if (cardHolderInput) cardHolderInput.addEventListener('input', formatCardHolder);
+    if (cardExpiryInput) cardExpiryInput.addEventListener('input', formatCardExpiry);
+    if (cardCVVInput) cardCVVInput.addEventListener('input', formatCardCVV);
+
+    // FIX: Add event listeners for card flipping here instead of using inline HTML attributes
+    // 1. CVV Input: Focus to flip card to back
+    if (cardCVVInput) {
+        cardCVVInput.addEventListener('focus', () => flipCard(true));
+        cardCVVInput.addEventListener('blur', () => flipCard(false));
+    }
+    
+    // 2. Other Card Inputs: Focus to flip card to front
+    // This is the main fix. When any other card field is focused (or blurred)
+    // the card should flip back to the front view.
+    const otherCardFields = [cardNumberInput, cardHolderInput, cardExpiryInput];
+    otherCardFields.forEach(input => {
+        if (input) {
+            // When focusing on a non-CVV field, flip card to front (false)
+            input.addEventListener('focus', () => flipCard(false));
+        }
+    });
+    
+    // NOTE: The blur event on these fields is now redundant because focusing on
+    // any of them flips the card to the front, and blurring the CVV field
+    // handles flipping back from the CVV field. The focus listeners above are enough.
+
 
     // Place Order Button Logic
     const placeOrderBtn = document.getElementById('placeOrderBtn');
-    placeOrderBtn.addEventListener('click', () => {
-        clearErrors();
-        const isCash = cashOption.classList.contains('payment-method--active');
+    if (placeOrderBtn) {
+        placeOrderBtn.addEventListener('click', () => {
+            clearErrors();
+            const isCash = cashOption?.classList.contains('chk-payment-method--active'); // Safe navigation
 
-        if (orderItems.length === 0) {
-            showNoticeModal('Empty Order', 'Please add at least one ticket to your order!');
-            return;
-        }
-
-        // Validate User Info first
-        const isUserInfoValid = validateUserInfoForm();
-
-        if (isCash) {
-            if (isUserInfoValid) {
-                // User info is valid, show cash warning
-                document.getElementById('cashWarningModal').classList.remove('hidden');
-            } else {
-                // User info is invalid, shake the card
-                shakeElement(document.getElementById('userInfoCard'));
+            if (!orderItems || orderItems.length === 0) {
+                showNoticeModal('Empty Order', 'Please add at least one ticket to your order!');
+                return;
             }
-        } else {
-            // It's a Credit Card payment
-            const isCardInfoValid = validateCreditCardForm();
 
-            if (isUserInfoValid && isCardInfoValid) {
-                // Both forms are valid, process payment
-                showPaymentSuccess();
+            // Validate User Info first
+            const isUserInfoValid = validateUserInfoForm();
+
+            if (isCash) {
+                if (isUserInfoValid) {
+                    // User info is valid, show cash warning
+                    document.getElementById('cashWarningModal')?.classList.remove('chk-hidden');
+                } else {
+                    // User info is invalid, shake the card
+                    shakeElement(document.getElementById('userInfoCard'));
+                }
             } else {
-                // Shake the invalid sections
-                if (!isUserInfoValid) shakeElement(document.getElementById('userInfoCard'));
-                if (!isCardInfoValid) shakeElement(document.getElementById('paymentSection'));
+                // It's a Credit Card payment
+                const isCardInfoValid = validateCreditCardForm();
+
+                if (isUserInfoValid && isCardInfoValid) {
+                    // Both forms are valid, process payment
+                    showPaymentSuccess();
+                } else {
+                    // Shake the invalid sections
+                    if (!isUserInfoValid) shakeElement(document.getElementById('userInfoCard'));
+                    if (!isCardInfoValid) shakeElement(document.getElementById('paymentSection'));
+                }
             }
-        }
-    });
+        });
+    }
 
     // Cash Warning Modal Listeners
     const cashModal = document.getElementById('cashWarningModal');
-    document.getElementById('confirmReservationBtn').addEventListener('click', () => {
-        cashModal.classList.add('hidden');
-        showReservationSuccess();
-    });
-    document.getElementById('cancelReservationBtn').addEventListener('click', () => {
-        cashModal.classList.add('hidden');
-    });
-    document.getElementById('cancelReservationBtnSecondary').addEventListener('click', () => {
-        cashModal.classList.add('hidden');
-    });
+    const confirmReservationBtn = document.getElementById('confirmReservationBtn');
+    const cancelReservationBtn = document.getElementById('cancelReservationBtn');
+    const cancelReservationBtnSecondary = document.getElementById('cancelReservationBtnSecondary');
+
+    if (cashModal && confirmReservationBtn && cancelReservationBtn && cancelReservationBtnSecondary) {
+        confirmReservationBtn.addEventListener('click', () => {
+            cashModal.classList.add('chk-hidden');
+            showReservationSuccess();
+        });
+        cancelReservationBtn.addEventListener('click', () => {
+            cashModal.classList.add('chk-hidden');
+        });
+        cancelReservationBtnSecondary.addEventListener('click', () => {
+            cashModal.classList.add('chk-hidden');
+        });
+    }
 
     // Notice Modal Listeners
     const noticeModal = document.getElementById('noticeModal');
-    document.getElementById('noticeModalCloseBtn').addEventListener('click', () => {
-        noticeModal.classList.add('hidden');
-    });
-    document.getElementById('noticeModalOkBtn').addEventListener('click', () => {
-        noticeModal.classList.add('hidden');
-    });
+    const noticeModalCloseBtn = document.getElementById('noticeModalCloseBtn');
+    const noticeModalOkBtn = document.getElementById('noticeModalOkBtn');
+
+    if (noticeModal && noticeModalCloseBtn && noticeModalOkBtn) {
+        noticeModalCloseBtn.addEventListener('click', () => {
+            noticeModal.classList.add('chk-hidden');
+        });
+        noticeModalOkBtn.addEventListener('click', () => {
+            noticeModal.classList.add('chk-hidden');
+        });
+    }
 
     // Add listeners to clear errors on input
     const fieldsToWatch = [
@@ -314,10 +420,10 @@ function validateUserInfoForm() {
     let isValid = true;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Simple email regex
 
-    const firstName = document.getElementById('firstName').value;
-    const lastName = document.getElementById('lastName').value;
-    const email = document.getElementById('email').value;
-    const phone = document.getElementById('phone').value;
+    const firstName = document.getElementById('firstName')?.value ?? '';
+    const lastName = document.getElementById('lastName')?.value ?? '';
+    const email = document.getElementById('email')?.value ?? '';
+    const phone = document.getElementById('phone')?.value ?? '';
 
     if (!firstName) {
         showError('firstNameError', 'First name is required');
@@ -344,10 +450,11 @@ function validateUserInfoForm() {
  */
 function validateCreditCardForm() {
     let isValid = true;
-    const cardNumber = document.getElementById('cardNumber').value.replace(/\s/g, '');
-    const cardHolder = document.getElementById('cardHolder').value;
-    const cardExpiry = document.getElementById('cardExpiry').value;
-    const cardCVV = document.getElementById('cardCVV').value;
+    const cardNumber = (document.getElementById('cardNumber')?.value ?? '').replace(/\s/g, '');
+    const cardHolder = document.getElementById('cardHolder')?.value ?? '';
+    const cardExpiry = document.getElementById('cardExpiry')?.value ?? '';
+    const cardCVV = document.getElementById('cardCVV')?.value ?? '';
+
 
     // Card Number
     if (!cardNumber || cardNumber.length < 16 || !/^\d+$/.test(cardNumber)) {
@@ -387,7 +494,7 @@ function validateCreditCardForm() {
     }
 
     // Shake container if not valid
-    if (!isValid && document.getElementById('paymentSection')) {
+    if (!isValid) {
         shakeElement(document.getElementById('paymentSection'));
     }
 
@@ -399,17 +506,25 @@ function validateCreditCardForm() {
  */
 function resetForms() {
     // Clear all text inputs
-    const inputs = document.querySelectorAll('.form-field__input');
+    const inputs = document.querySelectorAll('.chk-form-field__input');
     inputs.forEach(input => input.value = '');
 
     // Uncheck "save card"
-    document.getElementById('saveCard').checked = false;
+    const saveCardCheckbox = document.getElementById('saveCard');
+    if (saveCardCheckbox) saveCardCheckbox.checked = false;
 
-    // Reset credit card visual
-    document.getElementById('displayCardNumber').textContent = '•••• •••• •••• ••••';
-    document.getElementById('displayCardHolder').textContent = 'FULL NAME';
-    document.getElementById('displayCardExpiry').textContent = 'MM/YY';
-    document.getElementById('displayCardCVV').textContent = '•••';
+
+    // Reset credit card visual (Check elements exist first)
+    const displayCardNumber = document.getElementById('displayCardNumber');
+    const displayCardHolder = document.getElementById('displayCardHolder');
+    const displayCardExpiry = document.getElementById('displayCardExpiry');
+    const displayCardCVV = document.getElementById('displayCardCVV');
+
+    if(displayCardNumber) displayCardNumber.textContent = '•••• •••• •••• ••••';
+    if(displayCardHolder) displayCardHolder.textContent = 'FULL NAME';
+    if(displayCardExpiry) displayCardExpiry.textContent = 'MM/YY';
+    if(displayCardCVV) displayCardCVV.textContent = '•••';
+
 
     // Flip card back to front
     flipCard(false);
@@ -423,9 +538,10 @@ function resetForms() {
 
 function showPaymentSuccess() {
     const paymentSection = document.getElementById('paymentSection');
-    paymentSection.classList.add('animate-pulse');
+    if(paymentSection) paymentSection.classList.add('chk-animate-pulse'); // Check existence
+
     setTimeout(() => {
-        paymentSection.classList.remove('animate-pulse');
+        if(paymentSection) paymentSection.classList.remove('chk-animate-pulse');
         showConfetti();
         showNoticeModal('Payment Successful', 'Your payment has been processed! Your tickets will be emailed to you shortly.');
         resetForms(); // Reset all forms
@@ -434,9 +550,10 @@ function showPaymentSuccess() {
 
 function showReservationSuccess() {
     const paymentSection = document.getElementById('paymentSection');
-    paymentSection.classList.add('animate-pulse');
+     if(paymentSection) paymentSection.classList.add('chk-animate-pulse'); // Check existence
+
     setTimeout(() => {
-        paymentSection.classList.remove('animate-pulse');
+        if(paymentSection) paymentSection.classList.remove('chk-animate-pulse');
         showConfetti();
         showNoticeModal('Reservation Confirmed', 'Your reservation is confirmed! Please bring your ID to the venue.');
         resetForms(); // Reset all forms
@@ -473,7 +590,8 @@ function formatCardHolder(e) {
 
 // Renamed to avoid conflict with the event handler name
 function updateCardHolderDisplay() {
-    document.getElementById('displayCardHolder').textContent = this.value.toUpperCase() || 'FULL NAME';
+    const displayCardHolder = document.getElementById('displayCardHolder');
+    if(displayCardHolder) displayCardHolder.textContent = this.value.toUpperCase() || 'FULL NAME';
 }
 
 function formatCardExpiry(e) {
@@ -483,7 +601,8 @@ function formatCardExpiry(e) {
         value = value.substring(0, 2) + '/' + value.substring(2, 4);
     }
     e.target.value = value;
-    document.getElementById('displayCardExpiry').textContent = value || 'MM/YY';
+    const displayCardExpiry = document.getElementById('displayCardExpiry');
+    if(displayCardExpiry) displayCardExpiry.textContent = value || 'MM/YY';
 }
 
 /**
@@ -500,22 +619,28 @@ function formatCardCVV(e) {
 
 // Renamed to avoid conflict with the event handler name
 function updateCardCVVDisplay() {
-    document.getElementById('displayCardCVV').textContent = this.value.replace(/./g, '•') || '•••';
+     const displayCardCVV = document.getElementById('displayCardCVV');
+     if(displayCardCVV) displayCardCVV.textContent = this.value.replace(/./g, '•') || '•••';
 }
 
 
 function updateCardDisplay() {
-    const cardNumber = document.getElementById('cardNumber').value;
+    const cardNumberValue = document.getElementById('cardNumber')?.value ?? ''; // Safe navigation
     const displayNumber = document.getElementById('displayCardNumber');
-    if (cardNumber) {
-        displayNumber.textContent = cardNumber;
-    } else {
-        displayNumber.textContent = '•••• •••• •••• ••••';
+    if (displayNumber) {
+        if (cardNumberValue) {
+            displayNumber.textContent = cardNumberValue; // Show the formatted number
+        } else {
+            displayNumber.textContent = '•••• •••• •••• ••••';
+        }
     }
 }
 
+
 function detectCardType(cardNumber) {
     const brandIconBack = document.getElementById('cardBrandIconBack');
+    if (!brandIconBack) return; // Exit if element not found
+
     let iconClass = 'fa-cc-visa';
     if (/^4/.test(cardNumber)) {
         iconClass = 'fa-cc-visa';
@@ -526,8 +651,12 @@ function detectCardType(cardNumber) {
     } else if (/^6(?:011|5)/.test(cardNumber)) {
         iconClass = 'fa-cc-discover';
     }
-    if (brandIconBack) { // Check if element exists before setting className
-      brandIconBack.className = `fab ${iconClass} card-brand-back`;
+    brandIconBack.className = `fab ${iconClass} chk-card-brand-back`;
+
+    // Also update the front icon if it exists (though it's missing in your latest HTML)
+    const brandIconFront = document.getElementById('cardBrandIcon');
+    if(brandIconFront) {
+         brandIconFront.className = `fab ${iconClass} chk-card-brand`;
     }
 }
 
@@ -539,16 +668,19 @@ function flipCard(flip) {
       if (flip) {
           creditCard.classList.add('flipped');
       } else {
-          creditCard.classList.remove('flipped');
+          // Check if the card is currently flipped before removing the class
+          if (creditCard.classList.contains('flipped')) {
+              creditCard.classList.remove('flipped');
+          }
       }
     }
 }
 
 function shakeElement(element) {
     if (element) {
-        element.classList.add('animate-shake');
+        element.classList.add('chk-animate-shake');
         setTimeout(() => {
-            element.classList.remove('animate-shake');
+            element.classList.remove('chk-animate-shake');
         }, 500);
     }
 }
@@ -557,16 +689,16 @@ function shakeElement(element) {
 function showCVVTooltip() {
     const cvvTooltip = document.getElementById('cvvTooltip');
     if (cvvTooltip) { // Check if element exists
-      cvvTooltip.classList.remove('hidden');
+      cvvTooltip.classList.remove('chk-hidden');
     }
 }
 
 // Hide CVV tooltip
 function hideCVVTooltip() {
     const cvvTooltip = document.getElementById('cvvTooltip');
-     if (cvvTooltip) { // Check if element exists
-       cvvTooltip.classList.add('hidden');
-     }
+      if (cvvTooltip) { // Check if element exists
+        cvvTooltip.classList.add('chk-hidden');
+      }
 }
 
 function showNoticeModal(title, message) {
@@ -577,16 +709,21 @@ function showNoticeModal(title, message) {
     if (noticeModalHeader && noticeModalText && noticeModal) { // Check if elements exist
       noticeModalHeader.textContent = title;
       noticeModalText.textContent = message;
-      noticeModal.classList.remove('hidden');
+      noticeModal.classList.remove('chk-hidden');
     }
 }
 
 
 // Show confetti effect
 function showConfetti() {
+    // Check if confetti elements might already exist to prevent duplicates if clicked quickly
+    if (document.querySelector('.chk-confetti')) {
+        return;
+    }
+
     for (let i = 0; i < 150; i++) {
         const confetti = document.createElement('div');
-        confetti.className = 'confetti';
+        confetti.className = 'chk-confetti';
         confetti.style.left = Math.random() * 100 + 'vw';
         confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
         confetti.style.width = Math.random() * 8 + 4 + 'px';
@@ -595,13 +732,13 @@ function showConfetti() {
         document.body.appendChild(confetti);
 
         const animation = confetti.animate([
-            { transform: `translateY(0) rotate(0deg)`, opacity: 1 },
-            { transform: `translateY(100vh) rotate(${Math.random() * 720}deg)`, opacity: 0 }
+            { transform: `translateY(-20px) rotate(0deg)`, opacity: 1 }, // Start slightly above viewport
+            { transform: `translateY(105vh) rotate(${Math.random() * 720}deg)`, opacity: 0 } // Go slightly below
         ], {
-            duration: Math.random() * 2000 + 3000,
+            duration: Math.random() * 2000 + 3000, // Duration between 3-5 seconds
             easing: 'ease-out'
         });
+        // Remove the element after animation finishes
         animation.onfinish = () => confetti.remove();
     }
 }
-   
