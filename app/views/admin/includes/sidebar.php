@@ -67,8 +67,8 @@
     <div class="user-profile-sidebar">
         <div class="profile-info">
             <div class="avatar">
-                <img src="default-avatar.png" alt="Admin" id="user-avatar">
-            </div>
+    <div class="avatar-initials">A</div>
+</div>
             <div>
                 <p class="username">Admin</p>
                 <p class="user-email">admin@egzly.com</p>

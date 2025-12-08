@@ -1,34 +1,67 @@
 <!-- Categories Section -->
 <div id="categories-section" class="section-content">
     <div class="content-card">
-        <div class="table-container">
-            <table class="data-table" id="categories-table">
-                <thead>
-                    <tr>
-                        <th>Category</th>
-                        <th>Description</th>
-                        <th>Events</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="categories-table-body">
-                    <!-- Categories will be populated by JavaScript -->
-                </tbody>
-            </table>
+        <!-- Sports Category Section -->
+        <div class="category-section" id="sports-section">
+            <div class="category-header">
+                <h3><i data-feather="activity"></i> Sports Categories</h3>
+                <button class="primary-btn add-subcategory-btn" data-main-category="1">
+                    <i data-feather="plus"></i>
+                    Add Sports Subcategory
+                </button>
+            </div>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Subcategory Name</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sports-categories-body">
+                        <!-- Sports subcategories will be populated by JavaScript -->
+                        <tr>
+                            <td colspan="3" class="empty-state">
+                                <i data-feather="folder"></i>
+                                <p>No subcategories found</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
-        <div class="table-footer">
-            <div class="table-info">
-                Showing <span id="categories-start">1</span> to <span id="categories-end">4</span> of <span id="categories-total">8</span> categories
+        <!-- Entertainment Category Section -->
+        <div class="category-section" id="entertainment-section">
+            <div class="category-header">
+                <h3><i data-feather="film"></i> Entertainment Categories</h3>
+                <button class="primary-btn add-subcategory-btn" data-main-category="2">
+                    <i data-feather="plus"></i>
+                    Add Entertainment Subcategory
+                </button>
             </div>
-            <div class="pagination">
-                <button class="pagination-btn" id="categories-prev">Previous</button>
-                <button class="pagination-btn active">1</button>
-                <button class="pagination-btn">2</button>
-                <button class="pagination-btn" id="categories-next">Next</button>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Subcategory Name</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="entertainment-categories-body">
+                        <!-- Entertainment subcategories will be populated by JavaScript -->
+                        <tr>
+                            <td colspan="3" class="empty-state">
+                                <i data-feather="folder"></i>
+                                <p>No subcategories found</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 </div>
-
+<!-- After your main script -->

@@ -45,11 +45,7 @@ $currentTitle = isset($headerTitles[$currentSection]) ? $headerTitles[$currentSe
                 <i data-feather="plus"></i>
                 <span>Add New Event</span>
             </button>
-        <?php elseif ($currentSection === 'categories'): ?>
-            <button id="add-category-btn" class="primary-btn">
-                <i data-feather="plus"></i>
-                <span>Add New Category</span>
-            </button>
+       
         <?php elseif ($currentSection === 'locations'): ?>
             <button id="add-location-btn" class="primary-btn">
                 <i data-feather="plus"></i>

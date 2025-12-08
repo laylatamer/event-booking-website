@@ -1,16 +1,18 @@
 <?php
-require_once 'models/MainCategory.php';
-require_once 'models/Subcategory.php';
-require_once 'models/Venue.php';
-require_once 'models/Event.php';
+require_once __DIR__ . '/../models/MainCategory.php';
+require_once __DIR__ . '/../models/Subcategory.php';
+require_once __DIR__ . '/../models/Venue.php';
+require_once __DIR__ . '/../models/Event.php';
 
 class AdminController {
     private $mainCategory;
     private $subcategory;
     private $venue;
     private $event;
+    private $db; // Add database connection reference
 
     public function __construct(PDO $db) {
+        $this->db = $db; // Store database connection
         $this->mainCategory = new MainCategory($db);
         $this->subcategory = new Subcategory($db);
         $this->venue = new Venue($db);
@@ -59,7 +61,7 @@ class AdminController {
         return null;
     }
 
-    // Subcategories CRUD
+    // Subcategories CRUD - UPDATED for database
     public function createSubcategory($data) {
         $this->subcategory->main_category_id = $data['main_category_id'];
         $this->subcategory->name = $data['name'];
@@ -92,6 +94,7 @@ class AdminController {
     }
 
     public function getSubcategory($id) {
+        $this->subcategory->id = $id;
         return $this->subcategory->readOne();
     }
 
@@ -104,7 +107,49 @@ class AdminController {
         return $subcategories;
     }
 
-    // Venues CRUD
+    // Add this new method to check if subcategory exists
+    public function subcategoryExists($main_category_id, $name, $exclude_id = null) {
+        $query = "SELECT id FROM subcategories 
+                  WHERE main_category_id = :main_category_id 
+                  AND name = :name";
+        
+        if ($exclude_id) {
+            $query .= " AND id != :exclude_id";
+        }
+        
+        $query .= " LIMIT 1";
+        
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(":main_category_id", $main_category_id);
+        $stmt->bindParam(":name", $name);
+        
+        if ($exclude_id) {
+            $stmt->bindParam(":exclude_id", $exclude_id);
+        }
+        
+        $stmt->execute();
+        
+        return $stmt->rowCount() > 0;
+    }
+
+    // Add this new method to get subcategories count
+    public function getSubcategoriesCount($main_category_id = null) {
+        if ($main_category_id) {
+            $query = "SELECT COUNT(*) as count FROM subcategories 
+                      WHERE main_category_id = :main_category_id";
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(":main_category_id", $main_category_id);
+        } else {
+            $query = "SELECT COUNT(*) as count FROM subcategories";
+            $stmt = $this->db->prepare($query);
+        }
+        
+        $stmt->execute();
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result['count'] ?? 0;
+    }
+
+    // Venues CRUD (keep as is)
     public function createVenue($data) {
         $this->venue->name = $data['name'];
         $this->venue->address = $data['address'];
@@ -170,7 +215,7 @@ class AdminController {
         return null;
     }
 
-    // Events CRUD
+    // Events CRUD (keep as is)
     public function createEvent($data) {
         $this->event->title = $data['title'];
         $this->event->description = $data['description'];
