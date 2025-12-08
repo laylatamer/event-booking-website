@@ -41,7 +41,15 @@ if ($event) {
     $eventDescription = $event['description'];
     $eventImage = $event['image'];
     $eventPrice = $event['price'];
-    $formattedPrice = '$' . number_format($eventPrice, 2);
+    
+    // NEW: Calculate General and VIP prices for display
+    $generalPrice = $eventPrice;
+    $formattedGeneralPrice = '$' . number_format($generalPrice, 2);
+    $vipPrice = $eventPrice * 1.5;
+    $formattedVipPrice = '$' . number_format($vipPrice, 2);
+    
+    $formattedPrice = '$' . number_format($eventPrice, 2); // Base price for detail section
+
     $categoryClass = getCategoryClass($event['category']);
     $categoryName = ucfirst($event['category']);
     $eventLocation = $event['location'];
@@ -59,6 +67,10 @@ if ($event) {
     $eventDescription = 'The requested event could not be found. Please return to the events page.';
     $eventImage = 'https://placehold.co/1200x630/1f2937/f1f1f1?text=Event+Not+Found';
     $formattedPrice = '$0.00';
+    $generalPrice = 0;
+    $formattedGeneralPrice = '$0.00';
+    $vipPrice = 0;
+    $formattedVipPrice = '$0.00';
     $categoryClass = 'bg-gray-600';
     $categoryName = 'N/A';
     $eventLocation = 'N/A';
@@ -85,10 +97,8 @@ if ($event) {
     
 </head>
 <body class="min-h-screen text-white overflow-x-hidden">
-    <!-- Vanta Background container -->
     <div id="vanta-bg"></div> 
 
-    <!-- Assuming includes/header.php and includes/footer.php exist relative to this file's location -->
     <?php
 // Assuming 'includes/' is relative to the root, and this file is in 'src/views/'
 include 'partials/header.php'; 
@@ -145,44 +155,42 @@ include 'partials/header.php';
                         <div class="bg-black bg-opacity-50 p-6 rounded-xl sticky top-6 border border-gray-700">
                             <h3 class="text-xl font-bold mb-4">Get Tickets</h3>
                             <div class="space-y-4">
+                                
                                 <div class="flex justify-between items-center pb-2 border-b border-gray-700">
                                     <div>
-                                        <span class="block font-medium">Standard Ticket</span>
-                                        <span class="text-xs text-gray-400">General Admission</span>
+                                        <span class="block font-medium">General Ticket</span>
+                                        <span class="text-xs text-gray-400">Row D-H Admission</span>
                                     </div>
-                                    <div class="text-right">
-                                        <span id="ticket-price" class="block font-bold" data-base-price="<?php echo $event ? $event['price'] : 0; ?>"><?php echo $formattedPrice; ?></span>
-                                        <span class="text-xs text-gray-400">+ $5.99 fees</span>
+                                    <div class="text-right flex items-center space-x-4">
+                                        <span class="block font-bold" data-ticket-type="general" data-base-price="<?php echo $generalPrice; ?>"><?php echo $formattedGeneralPrice; ?></span>
+                                        <span id="general-ticket-count" class="text-lg font-bold text-orange-400 w-6 text-center">0</span>
                                     </div>
                                 </div>
-                                <div class="flex items-center">
-                                    <!-- 
-                                        FIX: Removed onclick="" and added id="decrease-btn" 
-                                        This now matches what booking.js is looking for.
-                                    -->
-                                    <button id="decrease-btn" class="px-3 py-1 bg-gray-700 rounded-l">
-                                        <i data-feather="minus" class="w-4 h-4"></i>
-                                    </button>
-                                    <span id="ticket-count" class="px-4 py-1 bg-gray-800">1</span>
-                                    <!-- 
-                                        FIX: Removed onclick="" and added id="increase-btn" 
-                                        This now matches what booking.js is looking for.
-                                    -->
-                                    <button id="increase-btn" class="px-3 py-1 bg-gray-700 rounded-r">
-                                        <i data-feather="plus" class="w-4 h-4"></i>
-                                    </button>
+                                
+                                <div class="flex justify-between items-center pb-2 border-b border-gray-700">
+                                    <div>
+                                        <span class="block font-medium">VIP Ticket</span>
+                                        <span class="text-xs text-gray-400">Row A-C Admission</span>
+                                    </div>
+                                    <div class="text-right flex items-center space-x-4">
+                                        <span class="block font-bold" data-ticket-type="vip" data-base-price="<?php echo $vipPrice; ?>"><?php echo $formattedVipPrice; ?></span>
+                                        <span id="vip-ticket-count" class="text-lg font-bold text-orange-400 w-6 text-center">0</span>
+                                    </div>
                                 </div>
 
-                                <!-- 
-                                    FIX: Added data-event-id attribute to store the event ID for javascript
-                                -->
-                                <button  id="checkout-btn"
-                                         data-event-id="<?php echo $eventId; ?>"
-                                         class="w-full gradient-bg hover:bg-opacity-90 text-white font-bold py-3 px-4 rounded-lg transition duration-300 transform hover:scale-105">
-                                    Proceed to Checkout
-                                </button>
-
-                                <!-- TERMS AND CONDITIONS LINK - Opens the new modal -->
+                                <div class="text-center text-sm text-gray-400 font-medium mb-4 pt-2">
+                                    <span id="selected-seats-count" class="text-orange-400 font-bold">0</span> Total Tickets Selected (+$5.99 Fee/Ticket)
+                                </div>
+                                
+                                <div class="flex space-x-2">
+                                    <button id="open-seat-modal-btn" class="w-1/3 py-3 px-4 text-md font-bold rounded-lg text-white bg-orange-600 transition duration-300 hover:bg-orange-700 hover:shadow-lg flex items-center justify-center" aria-label="Open Seat Selection Map">
+                                        <i data-feather="grid" class="w-5 h-5"></i>
+                                    </button>
+                                    <button id="checkout-btn" data-event-id="<?php echo $eventId; ?>" class="w-2/3 py-3 text-md font-bold rounded-lg text-white transition duration-300 gradient-bg opacity-50 cursor-not-allowed hover:shadow-lg hover:shadow-orange-700/50" disabled>
+                                        Proceed to Checkout
+                                    </button>
+                                </div>
+                                
                                 <p class="text-center text-xs text-gray-400 mb-4">
                                     By proceeding, you agree to the <a href="#" id="open-terms-modal" class="text-orange-400 hover:text-orange-300 underline font-medium">Terms & Conditions</a>.
                                 </p>
@@ -264,13 +272,156 @@ include 'partials/header.php';
                         ?>
                     </div>
                 </div>
+                
             </div>
         </main>
 
     </div>
-     <!-- Terms and Conditions Modal Structure (Hidden by default) -->
+    
+    <div id="seating-modal" class="modal-overlay hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-sm p-4" aria-modal="true" role="dialog">
+        <div class="bg-gray-800 rounded-xl p-8 max-w-5xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-orange-500">
+            <div class="flex justify-between items-center mb-6 border-b border-gray-700 pb-3">
+                <h3 class="text-2xl font-bold text-orange-400">Select Your Seats</h3>
+                <button id="close-seating-modal-btn" class="text-gray-400 hover:text-white transition">
+                    <i data-feather="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            
+            <div class="flex justify-center mb-6">
+                <div class="inline-flex rounded-lg bg-gray-900 p-1 shadow-inner" role="group">
+                    <button id="layout-theatre-btn" data-layout="theatre" class="layout-toggle-btn active-layout px-4 py-2 text-sm font-medium rounded-l-md text-white bg-orange-600 transition duration-150">
+                        Theatre View
+                    </button>
+                    <button id="layout-stadium-btn" data-layout="stadium" class="layout-toggle-btn px-4 py-2 text-sm font-medium rounded-r-md text-gray-400 hover:text-white hover:bg-gray-700 transition duration-150">
+                        Stadium View
+                    </button>
+                </div>
+            </div>
+            <div class="p-0">
+                <div id="seating-map-views">
+
+                    <div id="layout-theatre" class="seating-layout-view">
+                        <div id="seating-builder-container" class="bg-gray-900 rounded-xl p-8 shadow-inner">
+                            <div class="seating-map-area">
+                                
+                                <div class="stage-container">
+                                    <span class="stage-label">STAGE / SCREEN</span>
+                                </div>
+
+                                <div class="flex justify-center flex-wrap space-x-6 text-sm text-gray-300 mb-8 mt-4">
+                                    <div class="flex items-center mt-2">
+                                        <div class="seat legend available mr-2"></div> Available (General)
+                                    </div>
+                                    <div class="flex items-center mt-2">
+                                        <div class="seat legend selected mr-2"></div> Selected
+                                    </div>
+                                    <div class="flex items-center mt-2">
+                                        <div class="seat legend reserved mr-2"></div> Reserved
+                                    </div>
+                                    <div class="flex items-center mt-2">
+                                        <div class="seat legend vip mr-2"></div> VIP (Higher Price)
+                                    </div>
+                                </div>
+
+                                <div class="seating-rows-container">
+                                    
+                                    <div class="seating-section vip-section">
+                                        <?php 
+                                        // Price calculated as 1.5 times the base price
+                                        $vipPrice = ($event && isset($eventPrice)) ? $eventPrice * 1.5 : 0;
+                                        ?>
+                                        <div class="section-label">VIP (A-C) - $<?php echo number_format($vipPrice, 2); ?></div>
+                                        <?php for ($i = 65; $i <= 67; $i++): // Rows A, B, C ?>
+                                            <div class="seat-row" data-row="<?php echo chr($i); ?>">
+                                                <span class="row-label"><?php echo chr($i); ?></span>
+                                                <?php for ($j = 1; $j <= 10; $j++): ?>
+                                                    <?php $status = ($j % 5 === 0) ? 'reserved' : 'available'; ?>
+                                                    <div class="seat vip <?php echo $status; ?>" data-seat-type="vip" data-price="<?php echo $vipPrice; ?>" data-seat-id="<?php echo chr($i) . $j; ?>"></div>
+                                                <?php endfor; ?>
+                                                <span class="row-label"><?php echo chr($i); ?></span>
+                                            </div>
+                                        <?php endfor; ?>
+                                    </div>
+
+                                    <div class="aisle-space">AISLE</div>
+
+                                    <div class="seating-section general-section">
+                                        <?php 
+                                        // General price is the base price
+                                        $generalPrice = ($event && isset($eventPrice)) ? $eventPrice : 0;
+                                        ?>
+                                        <div class="section-label">General (D-H) - <?php echo $formattedPrice; ?></div>
+                                        <?php for ($i = 68; $i <= 72; $i++): // Rows D, E, F, G, H ?>
+                                            <div class="seat-row" data-row="<?php echo chr($i); ?>">
+                                                <span class="row-label"><?php echo chr($i); ?></span>
+                                                <?php for ($j = 1; $j <= 12; $j++): ?>
+                                                    <?php $status = ($j % 7 === 0 || $j % 8 === 0) ? 'reserved' : 'available'; ?>
+                                                    <div class="seat <?php echo $status; ?>" data-seat-type="general" data-price="<?php echo $generalPrice; ?>" data-seat-id="<?php echo chr($i) . $j; ?>"></div>
+                                                <?php endfor; ?>
+                                                <span class="row-label"><?php echo chr($i); ?></span>
+                                            </div>
+                                        <?php endfor; ?>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="layout-stadium" class="seating-layout-view hidden">
+                        <div id="stadium-builder-container" class="bg-gray-900 rounded-xl p-8 shadow-inner">
+                            <div class="seating-map-area">
+                                
+                                <div class="stage-container">
+                                    <span class="stage-label">FIELD / PITCH</span>
+                                </div>
+                                
+                                <div class="seating-rows-container stadium-seating">
+                                    
+                                    <div class="seating-section vip-section">
+                                        <?php $vipPrice = ($event && isset($eventPrice)) ? $eventPrice * 1.5 : 0; ?>
+                                        <div class="section-label">Lower Tier VIP (1-5) - $<?php echo number_format($vipPrice, 2); ?></div>
+                                        <?php for ($i = 1; $i <= 5; $i++): // Rows 1-5 ?>
+                                            <div class="seat-row" data-row="<?php echo $i; ?>">
+                                                <span class="row-label"><?php echo $i; ?></span>
+                                                <?php for ($j = 1; $j <= 15; $j++): ?>
+                                                    <?php $status = ($j % 8 === 0) ? 'reserved' : 'available'; ?>
+                                                    <div class="seat vip <?php echo $status; ?>" data-seat-type="vip" data-price="<?php echo $vipPrice; ?>" data-seat-id="<?php echo 'S' . $i . '-' . $j; ?>"></div>
+                                                <?php endfor; ?>
+                                                <span class="row-label"><?php echo $i; ?></span>
+                                            </div>
+                                        <?php endfor; ?>
+                                    </div>
+
+                                    <div class="aisle-space">CONCOURSE</div>
+
+                                    <div class="seating-section general-section">
+                                        <?php $generalPrice = ($event && isset($eventPrice)) ? $eventPrice : 0; ?>
+                                        <div class="section-label">Upper Tier General (6-12) - <?php echo $formattedPrice; ?></div>
+                                        <?php for ($i = 6; $i <= 12; $i++): // Rows 6-12 ?>
+                                            <div class="seat-row" data-row="<?php echo $i; ?>">
+                                                <span class="row-label"><?php echo $i; ?></span>
+                                                <?php for ($j = 1; $j <= 20; $j++): ?>
+                                                    <?php $status = ($j % 10 === 0 || $j % 11 === 0) ? 'reserved' : 'available'; ?>
+                                                    <div class="seat <?php echo $status; ?>" data-seat-type="general" data-price="<?php echo $generalPrice; ?>" data-seat-id="<?php echo 'S' . $i . '-' . $j; ?>"></div>
+                                                <?php endfor; ?>
+                                                <span class="row-label"><?php echo $i; ?></span>
+                                            </div>
+                                        <?php endfor; ?>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+            
+            <div class="flex justify-end pt-4">
+                 <button id="done-selecting-btn" class="px-6 py-3 text-lg font-bold rounded-lg text-white bg-orange-500 hover:bg-orange-600 transition">
+                    Done Selecting
+                </button>
+            </div>
+        </div>
+    </div>
     <div id="terms-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-sm p-4">
-        <!-- MODAL SIZE ADJUSTED HERE: max-w-xl is slightly wider than max-w-lg -->
         <div class="bg-gray-800 rounded-xl p-8 max-w-xl w-full max-h-[80vh] overflow-y-auto shadow-2xl border border-orange-500">
             <div class="flex justify-between items-center mb-6 border-b border-gray-700 pb-3">
                 <h2 class="text-2xl font-bold text-orange-400">Event Terms & Conditions</h2>
@@ -279,15 +430,13 @@ include 'partials/header.php';
                 </button>
             </div>
             <div class="prose max-w-none text-gray-300">
-                <!-- CONCISE TERMS -->
                 <p><strong>1. Ticket Purchase:</strong> All sales are final. *Refunds/exchanges only if the event is canceled or postponed*.</p>
                 <p><strong>2. Entry & ID:</strong> Requires a *valid ticket* (printed/mobile) and *government-issued photo ID*. Admission may be refused.</p>
                 <p><strong>3. Conduct:</strong> Follow all rules. *Disorderly conduct/non-compliance will result in immediate ejection without refund*.</p>
                 <p><strong>4. Photography/Recording:</strong> Professional cameras, video, or audio recording devices are *prohibited without organizer consent*.</p>
                 <p><strong>5. Personal Liability:</strong> Organizers are *not responsible* for lost/stolen property or injuries. Attend at your own risk.</p>
                 <p><strong>6. Rescheduling/Cancellation:</strong> Rescheduled tickets remain valid. *Canceled events will be refunded* per organizer policy.</p>
-                <!-- END CONCISE TERMS -->
-            </div>
+                </div>
         </div>
     </div>
 
