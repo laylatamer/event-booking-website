@@ -4,8 +4,8 @@
 // Features added: Admin Secret Login (via Ctrl+Alt+A modal)
 // =========================================================================
 
-// Include the database connection file (CRITICAL STEP)
-require_once '../../helper/db_connect.php'; 
+// In event-booking-website/app/views/auth.php
+require_once '../../config/db_connect.php';
 
 // Start the session (essential for maintaining user login state)
 // MUST be the absolute first thing before any HTML output
@@ -14,8 +14,8 @@ session_start();
 // --- ADMIN CONSTANTS (CRITICAL SECURITY NOTE: Use environment variables or a secure vault in production!) ---
 // NOTE: Change this password immediately! This is only hardcoded to meet the specific request.
 define('ADMIN_SECRET_PASSWORD', 'Admin@1234!'); // CRITICAL: Strong secret password for admin access
-define('ADMIN_REDIRECT_PATH', 'adminPanel.php'); // Path to redirect admin users upon login
-define('ADMIN_FEATURE_ENABLED', false); // Temporarily disable admin-specific functionality
+define('ADMIN_REDIRECT_PATH', 'admin/index.php'); // Path to redirect admin users upon login
+define('ADMIN_FEATURE_ENABLED', true); // Admin-specific functionality is ENABLED
 // --- END ADMIN CONSTANTS ---
 
 
