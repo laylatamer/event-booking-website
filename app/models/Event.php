@@ -1,7 +1,7 @@
 <?php
 class Event {
-    private $conn;
-    private $table_name = "events";
+    private PDO $conn;
+    private string $table_name = "events";
 
     public $id;
     public $title;
@@ -22,7 +22,7 @@ class Event {
     public $additional_info;
     public $status;
 
-    public function __construct($db) {
+    public function __construct(PDO $db) {
         $this->conn = $db;
     }
 

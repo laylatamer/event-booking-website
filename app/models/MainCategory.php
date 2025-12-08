@@ -1,13 +1,13 @@
 <?php
 class MainCategory {
-    private $conn;
-    private $table_name = "main_categories";
+    private PDO $conn;
+    private string $table_name = "main_categories";
 
     public $id;
     public $name;
     public $status;
 
-    public function __construct($db) {
+    public function __construct(PDO $db) {
         $this->conn = $db;
     }
 

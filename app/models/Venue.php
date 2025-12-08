@@ -1,7 +1,7 @@
 <?php
 class Venue {
-    private $conn;
-    private $table_name = "venues";
+    private PDO $conn;
+    private string $table_name = "venues";
 
     public $id;
     public $name;
@@ -15,7 +15,7 @@ class Venue {
     public $image_url;
     public $status;
 
-    public function __construct($db) {
+    public function __construct(PDO $db) {
         $this->conn = $db;
     }
 

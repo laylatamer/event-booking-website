@@ -29,4 +29,16 @@ try {
 }
 
 // The $pdo object is now successfully connected and ready to use.
+
+class Database {
+    private $connection;
+
+    public function __construct() {
+        $this->connection = $GLOBALS['pdo'];
+    }
+
+    public function getConnection() {
+        return $this->connection;
+    }
+}
 ?>

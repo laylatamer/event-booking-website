@@ -1,14 +1,14 @@
 <?php
 class Subcategory {
-    private $conn;
-    private $table_name = "subcategories";
+    private PDO $conn;
+    private string $table_name = "subcategories";
 
     public $id;
     public $main_category_id;
     public $name;
     public $status;
 
-    public function __construct($db) {
+    public function __construct(PDO $db) {
         $this->conn = $db;
     }
 
