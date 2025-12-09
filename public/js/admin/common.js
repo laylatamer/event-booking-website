@@ -16,7 +16,8 @@ let currentPage = {
     events: 1,
     categories: 1,
     locations: 1,
-    tickets: 1
+    tickets: 1,
+    messages: 1
 };
 
 // Initialize the application

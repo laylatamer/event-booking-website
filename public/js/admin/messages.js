@@ -1,12 +1,22 @@
 // Messages Section Scripts
+(function() {
+'use strict';
 
 let messages = [];
 let filteredMessages = [];
-let currentPage = { messages: 1 };
 const itemsPerPage = 10;
-const apiUrl = '../../../public/api/contact_messages.php';
+const apiUrl = '/event-booking-website/public/api/contact_messages.php';
+
+if (typeof currentPage !== 'undefined' && !currentPage.messages) {
+    currentPage.messages = 1;
+}
 
 document.addEventListener('DOMContentLoaded', function() {
+    const messagesSection = document.getElementById('messages-section');
+    if (!messagesSection) {
+        return;
+    }
+    
     initializeMessagesEventListeners();
     loadMessages();
 });
@@ -45,17 +55,35 @@ function initializeMessagesEventListeners() {
 
 // Load messages from API
 async function loadMessages() {
+    const messagesTableBody = document.getElementById('messages-table-body');
+    
+    if (!messagesTableBody) {
+        return;
+    }
+    
     try {
         const response = await fetch(apiUrl);
+        
         if (!response.ok) {
             throw new Error('Failed to load messages');
         }
-        messages = await response.json();
+        
+        const data = await response.json();
+        
+        // Handle both array and object responses
+        if (Array.isArray(data)) {
+            messages = data;
+        } else if (data.data && Array.isArray(data.data)) {
+            messages = data.data;
+        } else if (data.messages && Array.isArray(data.messages)) {
+            messages = data.messages;
+        } else {
+            messages = [];
+        }
+        
         filteredMessages = [...messages];
         displayMessages();
     } catch (error) {
-        console.error('Error loading messages:', error);
-        const messagesTableBody = document.getElementById('messages-table-body');
         if (messagesTableBody) {
             messagesTableBody.innerHTML = `
                 <tr>
@@ -193,7 +221,7 @@ async function viewMessage(messageId) {
                 return;
             }
         } catch (error) {
-            console.error('Error fetching message:', error);
+            // Silent fail
         }
         alert('Message not found');
         return;
@@ -274,7 +302,6 @@ async function markAllAsRead() {
         await loadMessages();
         alert('All messages marked as read');
     } catch (error) {
-        console.error('Error marking all as read:', error);
         alert('Error marking messages as read');
     }
 }
@@ -308,7 +335,6 @@ async function updateMessageStatus(messageId, status) {
         }
         throw new Error('Failed to update message status');
     } catch (error) {
-        console.error('Error updating message status:', error);
         alert('Error updating message status');
         return false;
     }
@@ -341,7 +367,6 @@ function deleteMessage(messageId) {
                 throw new Error('Failed to delete message');
             }
         } catch (error) {
-            console.error('Error deleting message:', error);
             alert('Error deleting message');
         }
     });
@@ -391,4 +416,6 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
+
+})(); // End of IIFE
 
