@@ -40,6 +40,7 @@ $currentTitle = isset($headerTitles[$currentSection]) ? $headerTitles[$currentSe
                 <i data-feather="download"></i>
                 <span>Export</span>
             </button>
+            
         <?php elseif ($currentSection === 'events'): ?>
             <button id="add-event-btn" class="primary-btn">
                 <i data-feather="plus"></i>
@@ -49,7 +50,7 @@ $currentTitle = isset($headerTitles[$currentSection]) ? $headerTitles[$currentSe
         <?php elseif ($currentSection === 'locations'): ?>
             <button id="add-location-btn" class="primary-btn">
                 <i data-feather="plus"></i>
-                <span>Add New Location</span>
+                <span>Add New location</span>
             </button>
         <?php elseif ($currentSection === 'tickets'): ?>
             <button id="add-ticket-btn" class="primary-btn">
