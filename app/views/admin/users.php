@@ -15,12 +15,6 @@
                 </select>
             </div>
             <div class="controls-right">
-                <button class="icon-btn">
-                    <i data-feather="download"></i>
-                </button>
-                <button class="icon-btn">
-                    <i data-feather="filter"></i>
-                </button>
             </div>
         </div>
 
@@ -37,6 +31,7 @@
                         <th>Email</th>
                         <th>Role</th>
                         <th>Joined</th>
+                        <th>Last Login</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>

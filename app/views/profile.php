@@ -6,7 +6,7 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-require_once __DIR__ . '/../../helper/db_connect.php';
+require_once __DIR__ . '/../../config/db_connect.php';
 
 function ensureUserColumn(PDO $pdo, string $column, string $definition): void
 {
@@ -203,9 +203,14 @@ if ($fullName === '') {
     $fullName = $user['email'];
 }
 
-$profileImageSrc = !empty($user['profile_image_path'])
-    ? '../../' . ltrim($user['profile_image_path'], '/\\')
-    : 'https://via.placeholder.com/150/16181d/9aa3af?text=User';
+// Use image proxy for default avatar when profile_image_path is NULL or empty
+if (!empty($user['profile_image_path']) && $user['profile_image_path'] !== null) {
+    $cleanPath = ltrim($user['profile_image_path'], '/\\');
+    $profileImageSrc = '../../public/image.php?path=' . urlencode($cleanPath);
+} else {
+    // Use image proxy with empty path to get default avatar
+    $profileImageSrc = '../../public/image.php?path=';
+}
 
 $email = $user['email'] ?? '';
 $phone = $user['phone_number'] ?? '';

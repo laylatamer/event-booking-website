@@ -21,7 +21,7 @@ define('ADMIN_FEATURE_ENABLED', true); // Admin-specific functionality is ENABLE
 
 // Define a directory for uploaded profile pictures
 // NOTE: You must ensure this directory exists and is writable by the web server!
-$uploadDir = 'uploads/profile_pics/'; // Assumes a folder named 'uploads/profile_pics' exists in the root of your project
+$uploadDir = __DIR__ . '/../../uploads/profile_pics/'; // Absolute path to uploads directory
 
 // Function to safely check if the request method is POST
 function isPost() {
@@ -110,33 +110,68 @@ if (isPost() && isset($_POST['action']) && $_POST['action'] === 'register') {
             // --- Image Upload Handling (Only if no prior error) ---
             if ($can_register_user && isset($_FILES['profileImage']) && $_FILES['profileImage']['error'] === UPLOAD_ERR_OK) {
                 $file = $_FILES['profileImage'];
-                $allowedMimes = ['image/jpeg', 'image/png', 'image/gif'];
                 $maxFileSize = 2 * 1024 * 1024; // 2MB
                 
-                if (!in_array($file['type'], $allowedMimes)) {
-                    $message = ['text' => 'Image upload failed: Only JPG, PNG, and GIF files are allowed.', 'type' => 'error'];
-                    $can_register_user = false;
-                } elseif ($file['size'] > $maxFileSize) {
+                // Validate file size
+                if ($file['size'] > $maxFileSize) {
                     $message = ['text' => 'Image upload failed: File size must be less than 2MB.', 'type' => 'error'];
                     $can_register_user = false;
                 } else {
-                    // Generate a unique file name
-                    $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
-                    $newFileName = uniqid('user_') . '.' . $ext;
-                    $targetPath = $uploadDir . $newFileName;
+                    // Use finfo to detect actual MIME type (more secure than trusting $file['type'])
+                    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                    $mime = finfo_file($finfo, $file['tmp_name']);
+                    finfo_close($finfo);
                     
-                    // Check if upload directory exists, if not, try to create it
-                    if (!is_dir($uploadDir)) {
-                          mkdir($uploadDir, 0777, true);
-                    }
+                    $allowedMimes = ['image/jpeg', 'image/png', 'image/gif'];
+                    $mimeToExt = [
+                        'image/jpeg' => 'jpg',
+                        'image/png'  => 'png',
+                        'image/gif'  => 'gif',
+                    ];
                     
-                    if (move_uploaded_file($file['tmp_name'], $targetPath)) {
-                        $imagePath = $targetPath; // Save the relative path to the database
-                    } else {
-                        $message = ['text' => 'Image upload failed due to a server error.', 'type' => 'error'];
+                    if (!in_array($mime, $allowedMimes)) {
+                        $message = ['text' => 'Image upload failed: Only JPG, PNG, and GIF files are allowed.', 'type' => 'error'];
                         $can_register_user = false;
+                    } else {
+                        // Generate a unique file name using the detected extension
+                        $ext = $mimeToExt[$mime];
+                        $newFileName = uniqid('user_') . '.' . $ext;
+                        $targetPath = $uploadDir . $newFileName;
+                        
+                        // Check if upload directory exists, if not, try to create it
+                        if (!is_dir($uploadDir)) {
+                            if (!mkdir($uploadDir, 0777, true)) {
+                                error_log("Failed to create upload directory: $uploadDir");
+                                $message = ['text' => 'Image upload failed: Could not create upload directory.', 'type' => 'error'];
+                                $can_register_user = false;
+                            }
+                        }
+                        
+                        if ($can_register_user && move_uploaded_file($file['tmp_name'], $targetPath)) {
+                            // Save the relative path to the database (for web access)
+                            $imagePath = 'uploads/profile_pics/' . $newFileName;
+                            error_log("Profile image uploaded successfully: $imagePath");
+                        } else {
+                            error_log("Failed to move uploaded file from {$file['tmp_name']} to {$targetPath}. Upload error: " . $file['error']);
+                            $message = ['text' => 'Image upload failed due to a server error. Please try again.', 'type' => 'error'];
+                            $can_register_user = false;
+                        }
                     }
                 }
+            } elseif ($can_register_user && isset($_FILES['profileImage']) && $_FILES['profileImage']['error'] !== UPLOAD_ERR_OK && $_FILES['profileImage']['error'] !== UPLOAD_ERR_NO_FILE) {
+                // Handle upload errors (but don't fail registration if no file was uploaded)
+                $uploadErrors = [
+                    UPLOAD_ERR_INI_SIZE => 'File exceeds upload_max_filesize directive.',
+                    UPLOAD_ERR_FORM_SIZE => 'File exceeds MAX_FILE_SIZE directive.',
+                    UPLOAD_ERR_PARTIAL => 'File was only partially uploaded.',
+                    UPLOAD_ERR_NO_TMP_DIR => 'Missing temporary folder.',
+                    UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk.',
+                    UPLOAD_ERR_EXTENSION => 'A PHP extension stopped the file upload.',
+                ];
+                $errorMsg = $uploadErrors[$_FILES['profileImage']['error']] ?? 'Unknown upload error.';
+                error_log("Profile image upload error: " . $errorMsg);
+                $message = ['text' => 'Image upload failed: ' . $errorMsg, 'type' => 'error'];
+                $can_register_user = false;
             }
             
             // --- Final Database Insertion (Only if all checks passed) ---
@@ -215,6 +250,10 @@ if (isPost() && isset($_POST['action']) && $_POST['action'] === 'login') {
             
             // Check if user exists and password verifies
             if ($user && password_verify($password, $user['password_hash'])) {
+                
+                // Update last_login timestamp
+                $updateLogin = $pdo->prepare('UPDATE users SET last_login = NOW() WHERE id = :id');
+                $updateLogin->execute([':id' => $user['id']]);
                 
                 // 2b. Success: Store user info in session
                 $_SESSION['user_id'] = $user['id'];

@@ -11,25 +11,33 @@
         <form id="add-user-form">
             <div class="form-grid">
                 <div class="form-group">
-                    <label>Full Name</label>
-                    <input type="text" id="user-name" required>
+                    <label>First Name</label>
+                    <input type="text" id="user-first-name" required>
+                </div>
+                <div class="form-group">
+                    <label>Last Name</label>
+                    <input type="text" id="user-last-name" required>
                 </div>
                 <div class="form-group">
                     <label>Email</label>
                     <input type="email" id="user-email" required>
                 </div>
                 <div class="form-group">
-                    <label>Role</label>
-                    <select id="user-role" required>
-                        <option value="">Select Role</option>
-                        <option value="admin">Admin</option>
-                        <option value="user">User</option>
-                        <option value="organizer">Organizer</option>
-                    </select>
+                    <label>Phone Number</label>
+                    <input type="tel" id="user-phone">
                 </div>
                 <div class="form-group">
                     <label>Password</label>
-                    <input type="password" id="user-password" required>
+                    <input type="password" id="user-password" required minlength="8">
+                    <small style="color: #999; font-size: 12px;">Must be at least 8 characters with one uppercase letter and one symbol</small>
+                </div>
+                <div class="form-group">
+                    <label>Address</label>
+                    <input type="text" id="user-address">
+                </div>
+                <div class="form-group">
+                    <label>City</label>
+                    <input type="text" id="user-city">
                 </div>
             </div>
             <div class="modal-actions">
@@ -73,7 +81,6 @@
                     <select id="edit-user-status" required>
                         <option value="active">Active</option>
                         <option value="inactive">Inactive</option>
-                        <option value="pending">Pending</option>
                     </select>
                 </div>
             </div>
