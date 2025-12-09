@@ -661,57 +661,452 @@ body {
 }
 
 /* Locations Grid */
+/* Add this at the end of your existing adminPanel.css file */
+
+/* ==================== LOCATIONS SECTION STYLES ==================== */
+
+/* Location Cards */
 .locations-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
 }
 
 .location-card {
-    background-color: #222;
-    border-radius: 12px;
+    background: #222; /* Changed from var(--card-bg) */
+    border-radius: 0.75rem;
     overflow: hidden;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border: 1px solid #333; /* Changed from var(--border-color) */
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.location-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    border-color: #ff5722; /* Changed from var(--primary-color) */
 }
 
 .location-image {
-    height: 160px;
-    background-color: #333;
+    position: relative;
+    height: 180px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #374151, #1f2937);
+}
+
+.venue-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.location-card:hover .venue-image {
+    transform: scale(1.05);
+}
+
+.venue-placeholder {
+    width: 100%;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
+    color: #6b7280;
 }
 
-.location-image i {
-    width: 32px;
-    height: 32px;
-    color: #666;
+.venue-placeholder i {
+    width: 48px;
+    height: 48px;
+}
+
+.status-badge {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-badge.active {
+    background: #10b981;
+    color: white;
+}
+
+.status-badge.inactive {
+    background: #6b7280;
+    color: white;
+}
+
+.status-badge.under_maintenance {
+    background: #f59e0b;
+    color: white;
 }
 
 .location-content {
-    padding: 20px;
+    padding: 1.25rem;
 }
 
 .location-title {
-    font-size: 18px;
-    font-weight: bold;
-    margin-bottom: 5px;
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: #fff; /* Changed from var(--text-color) */
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
-.location-meta {
-    color: #888;
-    font-size: 14px;
-    margin-bottom: 15px;
+.location-meta, 
+.location-address {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: #9ca3af;
+    margin-bottom: 0.5rem;
+}
+
+.location-meta i,
+.location-address i {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
 }
 
 .location-info {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #333; /* Changed from var(--border-color) */
 }
 
-.location-capacity {
-    font-size: 14px;
+.venue-stats {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.capacity-badge, 
+.event-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.375rem 0.75rem;
+    background: #333; /* Changed from var(--secondary-bg) */
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #9ca3af;
+}
+
+.capacity-badge i,
+.event-badge i {
+    width: 14px;
+    height: 14px;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.action-btn {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.375rem;
+    border: none;
+    background: #333; /* Changed from var(--secondary-bg) */
+    color: #fff; /* Changed from var(--text-color) */
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+    background: #ff5722; /* Changed from var(--primary-color) */
+    color: white;
+    transform: scale(1.05);
+}
+
+.action-btn.delete:hover {
+    background: #ef4444;
+}
+
+.action-btn i {
+    width: 16px;
+    height: 16px;
+}
+
+/* Table Header */
+.table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.section-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #fff; /* Changed from var(--text-color) */
+    margin: 0;
+}
+
+/* Form Styles for Venue Modals */
+.facilities-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 0.5rem;
+    background: #333; /* Changed from var(--secondary-bg) */
+    border-radius: 0.375rem;
+}
+
+.facility-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+    background: #222; /* Changed from var(--hover-bg) */
+    transition: background 0.2s ease;
+    user-select: none;
+}
+
+.facility-checkbox:hover {
+    background: #ff5722; /* Changed from var(--primary-color) */
+    color: white;
+}
+
+.facility-checkbox input[type="checkbox"] {
+    width: 1rem;
+    height: 1rem;
+    accent-color: #ff5722; /* Changed from var(--primary-color) */
+}
+
+.facility-checkbox span {
+    font-size: 0.875rem;
+}
+
+/* Custom Facility Input */
+.custom-facility-input {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+.custom-facility-input input {
+    flex: 1;
+}
+
+.custom-facility-input button {
+    white-space: nowrap;
+}
+
+/* Venue Events Modal */
+#venue-events-modal .modal-content {
+    max-width: 800px;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    color: #9ca3af;
+    grid-column: 1 / -1;
+}
+
+.empty-state i {
+    width: 3rem;
+    height: 3rem;
+    margin-bottom: 1rem;
+    color: #6b7280;
+}
+
+.empty-state p {
+    margin-bottom: 1.5rem;
+    font-size: 1.125rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .locations-grid {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    }
+    
+    .table-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .section-title {
+        text-align: center;
+    }
+    
+    .venue-stats {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .action-buttons {
+        justify-content: flex-end;
+    }
+}
+
+@media (max-width: 480px) {
+    .locations-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .facilities-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    }
+}
+/* Modal styles */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-content {
+    background: var(--card-bg);
+    border-radius: 0.75rem;
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+
+.modal-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-color);
+}
+
+.close-modal {
+    background: none;
+    border: none;
+    color: #9ca3af;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0;
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.375rem;
+    transition: all 0.2s ease;
+}
+
+.close-modal:hover {
+    background: var(--secondary-bg);
+    color: var(--text-color);
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-footer {
+    padding: 1.5rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+}
+
+/* Button styles */
+.primary-btn {
+    background: var(--primary-color);
+    color: white;
+    padding: 0.625rem 1.25rem;
+    border-radius: 0.375rem;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.primary-btn:hover {
+    background: var(--primary-hover);
+    transform: translateY(-1px);
+}
+
+.secondary-btn {
+    background: var(--secondary-bg);
+    color: var(--text-color);
+    padding: 0.625rem 1.25rem;
+    border-radius: 0.375rem;
+    border: 1px solid var(--border-color);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.secondary-btn:hover {
+    background: var(--hover-bg);
+}
+
+/* Empty state */
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: #9ca3af;
+}
+
+.empty-state i {
+    width: 3rem;
+    height: 3rem;
+    margin-bottom: 1rem;
+    color: #6b7280;
+}
+
+.empty-state p {
+    margin-bottom: 1.5rem;
+    font-size: 1.125rem;
 }
 
 /* Modal Styles */

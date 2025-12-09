@@ -51,7 +51,9 @@ if (!in_array($currentSection, $validSections)) {
         </div>
     </div>
 
+    <?php if ($currentSection !== 'locations'): ?>
     <?php include 'includes/modals.php'; ?>
+<?php endif; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
     <script src="../../../public/js/admin/common.js"></script>
