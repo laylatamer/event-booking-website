@@ -57,7 +57,17 @@ if (!in_array($currentSection, $validSections)) {
 
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
     <script src="../../../public/js/admin/common.js"></script>
-    <script src="../../../public/js/admin/<?php echo $currentSection; ?>.js"></script>
+    
+    <?php
+    // Only include specific section JS files
+    if ($currentSection === 'categories') {
+        // For categories page, use absolute URL
+        echo '<script src="/event-booking-website/public/js/admin/categories.js"></script>';
+    } else if (file_exists(__DIR__ . '/../../../public/js/admin/' . $currentSection . '.js')) {
+        // For other sections, use relative path
+        echo '<script src="../../../public/js/admin/' . $currentSection . '.js"></script>';
+    }
+    ?>
+    
 </body>
 </html>
-

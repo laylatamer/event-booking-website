@@ -606,3 +606,78 @@
         </div>
     </div>
 </div>
+
+<!-- Add Subcategory Modal -->
+<div id="add-subcategory-modal" class="modal hidden">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Add New Subcategory</h3>
+            <button type="button" class="close-modal" data-modal="add-subcategory">
+                <i data-feather="x"></i>
+            </button>
+        </div>
+        <form id="add-subcategory-form">
+            <input type="hidden" id="subcategory-main-category-id">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Main Category</label>
+                    <input type="text" id="subcategory-main-category-name" readonly class="readonly-input">
+                </div>
+                <div class="form-group">
+                    <label>Subcategory Name</label>
+                    <input type="text" id="subcategory-name" required>
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select id="subcategory-status" required>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="secondary-btn" data-modal="add-subcategory">Cancel</button>
+                <button type="submit" class="primary-btn">Add Subcategory</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Subcategory Modal -->
+<div id="edit-subcategory-modal" class="modal hidden">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Edit Subcategory</h3>
+            <button type="button" class="close-modal" data-modal="edit-subcategory">
+                <i data-feather="x"></i>
+            </button>
+        </div>
+        <form id="edit-subcategory-form">
+            <input type="hidden" id="edit-subcategory-id">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Main Category</label>
+                    <select id="edit-subcategory-main-category" required>
+                        <option value="1">Sports</option>
+                        <option value="2">Entertainment</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Subcategory Name</label>
+                    <input type="text" id="edit-subcategory-name" required>
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select id="edit-subcategory-status" required>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="secondary-btn" data-modal="edit-subcategory">Cancel</button>
+                <button type="submit" class="primary-btn">Update Subcategory</button>
+            </div>
+        </form>
+    </div>
+</div>
