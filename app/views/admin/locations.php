@@ -12,112 +12,110 @@ $venues = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <!-- Locations Section -->
-        <div class="table-controls">
-            <div class="controls-left">
-                <div class="search-container">
-                    <input type="text" id="venue-search" placeholder="Search venues..." class="search-input">
-                    <i data-feather="search" class="search-icon"></i>
-                </div>
-                <select id="venue-status-filter" class="filter-select">
-                    <option value="">All Status</option>
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                    <option value="under_maintenance">Under Maintenance</option>
-                </select>
-            </div>
-            <div class="controls-right">
-                <button class="icon-btn" id="refresh-venues-btn">
-                    <i data-feather="refresh-cw"></i>
-                </button>
-            </div>
+<div class="location-table-controls">
+    <div class="controls-left">
+        <div class="search-container">
+            <input type="text" id="venue-search" placeholder="Search venues..." class="search-input">
+            <i data-feather="search" class="search-icon"></i>
         </div>
+        <select id="venue-status-filter" class="filter-select">
+            <option value="">All Status</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="under_maintenance">Under Maintenance</option>
+        </select>
+    </div>
+    <div class="controls-right">
+        <button class="icon-btn" id="refresh-venues-btn">
+            <i data-feather="refresh-cw"></i>
+        </button>
+    </div>
+</div>
 
-        <div class="locations-grid" id="locations-grid">
-            <?php if (empty($venues)): ?>
-                <div class="empty-state" style="grid-column: 1 / -1;">
-                    <i data-feather="map-pin"></i>
-                    <p>No venues found</p>
-                    <button class="primary-btn" id="add-first-venue-btn">Add Your First Venue</button>
-                </div>
-            <?php else: ?>
-                <?php foreach ($venues as $venueItem): ?>
-                <div class="location-card" data-id="<?php echo $venueItem['id']; ?>" 
-                     data-status="<?php echo $venueItem['status']; ?>">
-                    <div class="location-image">
-                        <?php if (!empty($venueItem['image_url'])): ?>
-                            <img src="<?php echo htmlspecialchars($venueItem['image_url']); ?>" 
-                                 alt="<?php echo htmlspecialchars($venueItem['name']); ?>" 
-                                 class="venue-image">
-                        <?php else: ?>
-                            <div class="venue-placeholder">
-                                <i data-feather="map-pin"></i>
-                            </div>
-                        <?php endif; ?>
-                        <span class="status-badge <?php echo $venueItem['status']; ?>">
-                            <?php echo ucfirst(str_replace('_', ' ', $venueItem['status'])); ?>
+<div class="locations-grid" id="locations-grid">
+    <?php if (empty($venues)): ?>
+        <div class="location-empty-state">
+            <i data-feather="map-pin"></i>
+            <p>No venues found</p>
+            <button class="primary-btn" id="add-first-venue-btn">Add Your First Venue</button>
+        </div>
+    <?php else: ?>
+        <?php foreach ($venues as $venueItem): ?>
+        <div class="location-card" data-id="<?php echo $venueItem['id']; ?>" 
+             data-status="<?php echo $venueItem['status']; ?>">
+            <div class="location-image">
+                <?php if (!empty($venueItem['image_url'])): ?>
+                    <img src="<?php echo htmlspecialchars($venueItem['image_url']); ?>" 
+                         alt="<?php echo htmlspecialchars($venueItem['name']); ?>" 
+                         class="venue-image">
+                <?php else: ?>
+                    <div class="venue-placeholder">
+                        <i data-feather="map-pin"></i>
+                    </div>
+                <?php endif; ?>
+                <span class="location-status-badge <?php echo $venueItem['status']; ?>">
+                    <?php echo ucfirst(str_replace('_', ' ', $venueItem['status'])); ?>
+                </span>
+            </div>
+            <div class="location-content">
+                <h3 class="location-title"><?php echo htmlspecialchars($venueItem['name']); ?></h3>
+                <p class="location-meta">
+                    <i data-feather="map-pin" class="w-4 h-4"></i>
+                    <?php echo htmlspecialchars($venueItem['city'] . ', ' . $venueItem['country']); ?>
+                </p>
+                <p class="location-address">
+                    <i data-feather="home" class="w-4 h-4"></i>
+                    <?php echo htmlspecialchars($venueItem['address']); ?>
+                </p>
+                <div class="location-info">
+                    <div class="venue-stats">
+                        <span class="venue-capacity-badge">
+                            <i data-feather="users" class="w-3 h-3"></i>
+                            <?php echo number_format($venueItem['capacity']); ?> capacity
+                        </span>
+                        <?php
+                        // Get event count for this venue
+                        $venueObj = new Venue($pdo);
+                        $venueObj->id = $venueItem['id'];
+                        $eventCount = $venueObj->getEventCount();
+                        ?>
+                        <span class="venue-event-badge">
+                            <i data-feather="calendar" class="w-3 h-3"></i>
+                            <?php echo $eventCount; ?> event<?php echo $eventCount != 1 ? 's' : ''; ?>
                         </span>
                     </div>
-                    <div class="location-content">
-                        <h3 class="location-title"><?php echo htmlspecialchars($venueItem['name']); ?></h3>
-                        <p class="location-meta">
-                            <i data-feather="map-pin" class="w-4 h-4"></i>
-                            <?php echo htmlspecialchars($venueItem['city'] . ', ' . $venueItem['country']); ?>
-                        </p>
-                        <p class="location-address">
-                            <i data-feather="home" class="w-4 h-4"></i>
-                            <?php echo htmlspecialchars($venueItem['address']); ?>
-                        </p>
-                        <div class="location-info">
-                            <div class="venue-stats">
-                                <span class="capacity-badge">
-                                    <i data-feather="users" class="w-3 h-3"></i>
-                                    <?php echo number_format($venueItem['capacity']); ?> capacity
-                                </span>
-                                <?php
-                                // Get event count for this venue
-                                $venueObj = new Venue($pdo);
-                                $venueObj->id = $venueItem['id'];
-                                $eventCount = $venueObj->getEventCount();
-                                ?>
-                                <span class="event-badge">
-                                    <i data-feather="calendar" class="w-3 h-3"></i>
-                                    <?php echo $eventCount; ?> event<?php echo $eventCount != 1 ? 's' : ''; ?>
-                                </span>
-                            </div>
-                            <div class="action-buttons">
-                                <button class="action-btn edit-location" 
-                                        data-id="<?php echo $venueItem['id']; ?>" 
-                                        title="Edit Venue">
-                                    <i data-feather="edit-2"></i>
-                                </button>
-                                <button class="action-btn view-events" 
-                                        data-id="<?php echo $venueItem['id']; ?>" 
-                                        title="View Events">
-                                    <i data-feather="calendar"></i>
-                                </button>
-                                <button class="action-btn delete delete-location" 
-                                        data-id="<?php echo $venueItem['id']; ?>" 
-                                        data-name="<?php echo htmlspecialchars($venueItem['name']); ?>" 
-                                        title="Delete Venue">
-                                    <i data-feather="trash-2"></i>
-                                </button>
-                            </div>
-                        </div>
+                    <div class="location-action-buttons">
+                        <button class="location-action-btn edit-location" 
+                                data-id="<?php echo $venueItem['id']; ?>" 
+                                title="Edit Venue">
+                            <i data-feather="edit-2"></i>
+                        </button>
+                        <button class="location-action-btn view-events" 
+                                data-id="<?php echo $venueItem['id']; ?>" 
+                                title="View Events">
+                            <i data-feather="calendar"></i>
+                        </button>
+                        <button class="location-action-btn delete delete-location" 
+                                data-id="<?php echo $venueItem['id']; ?>" 
+                                data-name="<?php echo htmlspecialchars($venueItem['name']); ?>" 
+                                title="Delete Venue">
+                            <i data-feather="trash-2"></i>
+                        </button>
                     </div>
                 </div>
-                <?php endforeach; ?>
-            <?php endif; ?>
+            </div>
         </div>
+        <?php endforeach; ?>
+    <?php endif; ?>
+</div>
 
-        <div class="table-footer">
-            <div class="table-info">
-                Showing <span id="locations-start">1</span> to <span id="locations-end"><?php echo count($venues); ?></span> 
-                of <span id="locations-total"><?php echo count($venues); ?></span> venues
-            </div>
-            <div class="pagination">
-                <!-- Pagination will be handled by JavaScript -->
-            </div>
-        </div>
+<div class="table-footer">
+    <div class="table-info">
+        Showing <span id="locations-start">1</span> to <span id="locations-end"><?php echo count($venues); ?></span> 
+        of <span id="locations-total"><?php echo count($venues); ?></span> venues
+    </div>
+    <div class="pagination">
+        <!-- Pagination will be handled by JavaScript -->
     </div>
 </div>
 
@@ -177,7 +175,7 @@ $venues = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 </div>
                 <div class="form-group full-width">
                     <label>Facilities</label>
-                    <div class="facilities-grid">
+                    <div class="location-facilities-grid">
                         <?php 
                         $commonFacilities = [
                             'WiFi', 'Parking', 'AC', 'Heating', 'Restrooms', 
@@ -186,13 +184,13 @@ $venues = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             'First Aid', 'Coat Check', 'Wheelchair Access', 'Elevator'
                         ];
                         foreach ($commonFacilities as $facility): ?>
-                        <label class="facility-checkbox">
+                        <label class="location-facility-checkbox">
                             <input type="checkbox" name="facilities[]" value="<?php echo htmlspecialchars($facility); ?>">
                             <span><?php echo htmlspecialchars($facility); ?></span>
                         </label>
                         <?php endforeach; ?>
                     </div>
-                    <div class="custom-facility-input">
+                    <div class="location-custom-facility-input">
                         <input type="text" id="custom-facility" placeholder="Add custom facility">
                         <button type="button" id="add-custom-facility" class="secondary-btn">Add</button>
                     </div>
@@ -262,9 +260,9 @@ $venues = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 </div>
                 <div class="form-group full-width">
                     <label>Facilities</label>
-                    <div class="facilities-grid" id="edit-facilities-grid">
+                    <div class="location-facilities-grid" id="edit-facilities-grid">
                         <?php foreach ($commonFacilities as $facility): ?>
-                        <label class="facility-checkbox">
+                        <label class="location-facility-checkbox">
                             <input type="checkbox" name="facilities[]" value="<?php echo htmlspecialchars($facility); ?>">
                             <span><?php echo htmlspecialchars($facility); ?></span>
                         </label>
@@ -420,7 +418,7 @@ function initializeVenueEventListeners() {
     }
 }
 
-// Modal functions (these should be in common.js, but defined here for safety)
+// Modal functions
 function openModal(modalId) {
     const modal = document.getElementById(modalId + '-modal');
     if (modal) {
@@ -514,10 +512,10 @@ function addCustomFacility() {
     
     if (facility) {
         // Add to add form
-        const addGrid = document.querySelector('#add-location-form .facilities-grid');
+        const addGrid = document.querySelector('#add-location-form .location-facilities-grid');
         if (addGrid) {
             const newCheckbox = document.createElement('label');
-            newCheckbox.className = 'facility-checkbox';
+            newCheckbox.className = 'location-facility-checkbox';
             newCheckbox.innerHTML = `
                 <input type="checkbox" name="facilities[]" value="${facility}" checked>
                 <span>${facility}</span>
@@ -526,10 +524,10 @@ function addCustomFacility() {
         }
         
         // Add to edit form
-        const editGrid = document.querySelector('#edit-location-form .facilities-grid');
+        const editGrid = document.querySelector('#edit-location-form .location-facilities-grid');
         if (editGrid) {
             const newCheckbox = document.createElement('label');
-            newCheckbox.className = 'facility-checkbox';
+            newCheckbox.className = 'location-facility-checkbox';
             newCheckbox.innerHTML = `
                 <input type="checkbox" name="facilities[]" value="${facility}">
                 <span>${facility}</span>
