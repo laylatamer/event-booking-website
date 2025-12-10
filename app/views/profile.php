@@ -1,10 +1,7 @@
 <?php
-session_start();
-
-if (!isset($_SESSION['user_id'])) {
-    header('Location: auth.php');
-    exit;
-}
+// Start session and require login
+require_once __DIR__ . '/../../database/session_init.php';
+requireLogin();
 
 require_once __DIR__ . '/../../config/db_connect.php';
 
@@ -36,6 +33,12 @@ function loadUser(PDO $pdo, int $userId): ?array
 
 ensureUserColumn($pdo, 'country', "VARCHAR(120) NULL");
 ensureUserColumn($pdo, 'state', "VARCHAR(120) NULL");
+
+// Check if user is admin - redirect to admin panel
+if (isAdmin()) {
+    header('Location: admin/index.php');
+    exit;
+}
 
 $userId = (int) $_SESSION['user_id'];
 $user = loadUser($pdo, $userId);

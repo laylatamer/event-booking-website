@@ -74,7 +74,7 @@ async function loadUsers() {
                 id: user.id,
                 name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Unknown',
                 email: user.email || '',
-                role: 'user',
+                role: (user.is_admin === 1 || user.is_admin === '1' || user.is_admin === true) ? 'admin' : 'user',
                 joined: user.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A',
                 lastLogin: user.last_login ? new Date(user.last_login).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Never',
                 status: user.status || 'active',
@@ -162,7 +162,7 @@ function displayUsers() {
                 </div>
             </td>
             <td>${escapeHtml(user.email)}</td>
-            <td>${escapeHtml(user.role)}</td>
+            <td><span class="role-badge ${user.role === 'admin' ? 'admin' : 'user'}">${user.role.charAt(0).toUpperCase() + user.role.slice(1)}</span></td>
             <td>${escapeHtml(user.joined)}</td>
             <td>${escapeHtml(user.lastLogin)}</td>
             <td><span class="status-badge ${user.status}">${user.status.charAt(0).toUpperCase() + user.status.slice(1)}</span></td>

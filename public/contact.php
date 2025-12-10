@@ -1,8 +1,8 @@
 <?php
+// Start session
+require_once __DIR__ . '/../config/session_init.php';
 
 require_once __DIR__ . '/../app/controllers/ContactController.php';
-
-session_start();
 
 $controller = new ContactController(new ContactMessage($pdo));
 

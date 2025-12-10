@@ -60,6 +60,30 @@ try {
             }
             break;
 
+        case 'PUT':
+        case 'PATCH':
+            $input = file_get_contents('php://input');
+            $data = json_decode($input, true);
+            
+            if (json_last_error() !== JSON_ERROR_NONE || !is_array($data)) {
+                parse_str($input, $data);
+            }
+            
+            if (!isset($data['id'])) {
+                http_response_code(400);
+                echo json_encode(['ok' => false, 'message' => 'User ID is required']);
+                break;
+            }
+            
+            $result = $controller->update((int) $data['id'], $data);
+            if ($result['ok']) {
+                echo json_encode(['ok' => true, 'message' => 'User updated successfully']);
+            } else {
+                http_response_code(400);
+                echo json_encode(['ok' => false, 'message' => $result['message'] ?? 'Failed to update user']);
+            }
+            break;
+
         case 'DELETE':
             $input = file_get_contents('php://input');
             

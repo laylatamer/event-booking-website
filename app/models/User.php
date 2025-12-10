@@ -13,7 +13,7 @@ class User
 
     public function all(): array
     {
-        $stmt = $this->db->query('SELECT id, first_name, last_name, email, phone_number, profile_image_path, created_at, last_login FROM users ORDER BY created_at DESC');
+        $stmt = $this->db->query('SELECT id, first_name, last_name, email, phone_number, profile_image_path, created_at, last_login, is_admin FROM users ORDER BY created_at DESC');
         $users = $stmt->fetchAll();
         
         // Calculate status based on last_login (inactive if 2+ months ago or never logged in and account is 2+ months old)
@@ -46,7 +46,7 @@ class User
 
     public function find(int $id): ?array
     {
-        $stmt = $this->db->prepare('SELECT id, first_name, last_name, email, phone_number, profile_image_path, created_at, last_login FROM users WHERE id = :id LIMIT 1');
+        $stmt = $this->db->prepare('SELECT id, first_name, last_name, email, phone_number, profile_image_path, created_at, last_login, is_admin FROM users WHERE id = :id LIMIT 1');
         $stmt->execute([':id' => $id]);
         $row = $stmt->fetch();
 
@@ -71,6 +71,58 @@ class User
         ]);
 
         return (int) $this->db->lastInsertId();
+    }
+
+    public function update(int $id, array $payload): bool
+    {
+        // Build update query dynamically based on provided fields
+        $fields = [];
+        $params = [':id' => $id];
+        
+        if (isset($payload['first_name'])) {
+            $fields[] = 'first_name = :first_name';
+            $params[':first_name'] = $payload['first_name'];
+        }
+        if (isset($payload['last_name'])) {
+            $fields[] = 'last_name = :last_name';
+            $params[':last_name'] = $payload['last_name'];
+        }
+        if (isset($payload['email'])) {
+            $fields[] = 'email = :email';
+            $params[':email'] = $payload['email'];
+        }
+        if (isset($payload['phone_number'])) {
+            $fields[] = 'phone_number = :phone_number';
+            $params[':phone_number'] = $payload['phone_number'] ?: null;
+        }
+        if (isset($payload['address'])) {
+            $fields[] = 'address = :address';
+            $params[':address'] = $payload['address'] ?: null;
+        }
+        if (isset($payload['city'])) {
+            $fields[] = 'city = :city';
+            $params[':city'] = $payload['city'] ?: null;
+        }
+        if (isset($payload['country'])) {
+            $fields[] = 'country = :country';
+            $params[':country'] = $payload['country'] ?: null;
+        }
+        if (isset($payload['state'])) {
+            $fields[] = 'state = :state';
+            $params[':state'] = $payload['state'] ?: null;
+        }
+        if (isset($payload['profile_image_path'])) {
+            $fields[] = 'profile_image_path = :profile_image_path';
+            $params[':profile_image_path'] = $payload['profile_image_path'] ?: null;
+        }
+        
+        if (empty($fields)) {
+            return false;
+        }
+        
+        $sql = 'UPDATE users SET ' . implode(', ', $fields) . ' WHERE id = :id';
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute($params);
     }
 
     public function delete(int $id): bool

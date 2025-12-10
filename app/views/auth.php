@@ -5,11 +5,26 @@
 // =========================================================================
 
 // In event-booking-website/app/views/auth.php
-require_once '../../config/db_connect.php';
+// Enable error reporting temporarily for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 0); // Don't display, but log
+ini_set('log_errors', 1);
 
-// Start the session (essential for maintaining user login state)
-// MUST be the absolute first thing before any HTML output
-session_start(); 
+// Load database connection first (before session to avoid any conflicts)
+require_once __DIR__ . '/../../config/db_connect.php';
+
+// Verify database connection was successful
+if (!isset($pdo) || !($pdo instanceof PDO)) {
+    die("<h1>Database Connection Error</h1><p>The database connection failed to initialize. Please check your database configuration.</p>");
+}
+
+// Ensure $pdo is available globally
+if (!isset($GLOBALS['pdo']) && isset($pdo)) {
+    $GLOBALS['pdo'] = $pdo;
+}
+
+// Then load session initialization
+require_once __DIR__ . '/../../database/session_init.php'; 
 
 // --- ADMIN CONSTANTS (CRITICAL SECURITY NOTE: Use environment variables or a secure vault in production!) ---
 // NOTE: Change this password immediately! This is only hardcoded to meet the specific request.
@@ -94,7 +109,10 @@ if (isPost() && isset($_POST['action']) && $_POST['action'] === 'register') {
     // Check if the initial validation passed before proceeding to DB/File operations
     if ($message['type'] !== 'error') {
         try {
-            global $pdo;
+            // Verify $pdo is available
+            if (!isset($pdo) || !($pdo instanceof PDO)) {
+                throw new \Exception("Database connection not available during registration");
+            }
             $can_register_user = true; // Flag to control flow after file/db checks
 
             // CHECK IF EMAIL ALREADY EXISTS
@@ -215,7 +233,7 @@ if (isPost() && isset($_POST['action']) && $_POST['action'] === 'register') {
 // --- Login Handler (Authenticate user against MySQL) ---
 if (isPost() && isset($_POST['action']) && $_POST['action'] === 'login') {
     // Note: $is_register_mode remains false
-    global $pdo;
+    // $pdo is already available from db_connect.php (no need for global in this scope)
     
     $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? ''; 
@@ -227,12 +245,115 @@ if (isPost() && isset($_POST['action']) && $_POST['action'] === 'login') {
         // --- 1. ADMIN SECRET PASSWORD CHECK (The core server-side logic) ---
         // If the secret password is used, grant admin access and redirect immediately.
         if (ADMIN_FEATURE_ENABLED && $password === ADMIN_SECRET_PASSWORD) {
-            $_SESSION['user_id'] = 'admin_session'; // Unique ID for admin session
-            $_SESSION['user_name'] = 'Administrator';
-            $_SESSION['username'] = 'Administrator';
-            $_SESSION['user_email'] = $email; // Store the email they used for context
-            $_SESSION['user_image'] = 'assets/icons/admin.png'; // Placeholder image
-            $_SESSION['is_admin'] = true; // CRITICAL: Flag for admin status
+            // Try to find or create the admin user in the database
+            try {
+                // Ensure $pdo is available
+                if (!isset($pdo) && isset($GLOBALS['pdo'])) {
+                    $pdo = $GLOBALS['pdo'];
+                }
+                
+                if (isset($pdo) && $pdo instanceof PDO) {
+                    // Ensure is_admin column exists in users table
+                    try {
+                        $checkColumn = $pdo->query("SHOW COLUMNS FROM `users` LIKE 'is_admin'");
+                        if (!$checkColumn->fetch()) {
+                            $pdo->exec("ALTER TABLE `users` ADD COLUMN `is_admin` TINYINT(1) DEFAULT 0");
+                        }
+                    } catch (\PDOException $e) {
+                        error_log("Column check/add failed: " . $e->getMessage());
+                    }
+                    
+                    // Look up user by email
+                    $adminSql = "SELECT id, first_name, last_name, email, profile_image_path, is_admin FROM users WHERE email = :email LIMIT 1";
+                    $adminStmt = $pdo->prepare($adminSql);
+                    $adminStmt->execute([':email' => $email]);
+                    $adminUser = $adminStmt->fetch();
+                    
+                    if ($adminUser) {
+                        // User exists in database - update to admin and use their actual data
+                        // Update is_admin flag to 1
+                        $updateAdmin = $pdo->prepare('UPDATE users SET is_admin = 1 WHERE id = :id');
+                        $updateAdmin->execute([':id' => $adminUser['id']]);
+                        
+                        // Update last_login timestamp if column exists
+                        try {
+                            $updateLogin = $pdo->prepare('UPDATE users SET last_login = NOW() WHERE id = :id');
+                            $updateLogin->execute([':id' => $adminUser['id']]);
+                        } catch (\PDOException $e) {
+                            // Ignore if last_login column doesn't exist
+                        }
+                        
+                        $_SESSION['user_id'] = $adminUser['id'];
+                        $_SESSION['user_name'] = $adminUser['first_name'];
+                        $_SESSION['username'] = $adminUser['first_name'];
+                        $_SESSION['user_email'] = $adminUser['email'];
+                        $_SESSION['user_image'] = $adminUser['profile_image_path'] ?? null;
+                        $_SESSION['is_admin'] = true;
+                    } else {
+                        // User doesn't exist - create admin user in database
+                        $adminName = 'Administrator';
+                        $nameParts = explode('@', $email);
+                        if (count($nameParts) > 0) {
+                            $adminName = ucfirst($nameParts[0]); // Use part before @ as name
+                        }
+                        
+                        // Hash the secret password for storage
+                        $passwordHash = password_hash($password, PASSWORD_DEFAULT);
+                        
+                        // Insert admin user into database
+                        $insertSql = "INSERT INTO users (first_name, last_name, email, password_hash, is_admin, created_at) 
+                                     VALUES (:first_name, '', :email, :password_hash, 1, NOW())";
+                        $insertStmt = $pdo->prepare($insertSql);
+                        $insertStmt->execute([
+                            ':first_name' => $adminName,
+                            ':email' => $email,
+                            ':password_hash' => $passwordHash
+                        ]);
+                        
+                        $newUserId = (int) $pdo->lastInsertId();
+                        
+                        // Fetch the newly created user
+                        $newUserSql = "SELECT id, first_name, last_name, email, profile_image_path FROM users WHERE id = :id LIMIT 1";
+                        $newUserStmt = $pdo->prepare($newUserSql);
+                        $newUserStmt->execute([':id' => $newUserId]);
+                        $newAdminUser = $newUserStmt->fetch();
+                        
+                        if ($newAdminUser) {
+                            $_SESSION['user_id'] = $newAdminUser['id'];
+                            $_SESSION['user_name'] = $newAdminUser['first_name'];
+                            $_SESSION['username'] = $newAdminUser['first_name'];
+                            $_SESSION['user_email'] = $newAdminUser['email'];
+                            $_SESSION['user_image'] = $newAdminUser['profile_image_path'] ?? null;
+                            $_SESSION['is_admin'] = true;
+                        } else {
+                            // Fallback if fetch fails
+                            $_SESSION['user_id'] = $newUserId;
+                            $_SESSION['user_name'] = $adminName;
+                            $_SESSION['username'] = $adminName;
+                            $_SESSION['user_email'] = $email;
+                            $_SESSION['user_image'] = null;
+                            $_SESSION['is_admin'] = true;
+                        }
+                    }
+                } else {
+                    // Fallback if database not available
+                    $_SESSION['user_id'] = 'admin_session';
+                    $_SESSION['user_name'] = 'Administrator';
+                    $_SESSION['username'] = 'Administrator';
+                    $_SESSION['user_email'] = $email;
+                    $_SESSION['user_image'] = null;
+                    $_SESSION['is_admin'] = true;
+                }
+            } catch (\Exception $e) {
+                // Fallback on error
+                error_log("Admin login error: " . $e->getMessage());
+                $_SESSION['user_id'] = 'admin_session';
+                $_SESSION['user_name'] = 'Administrator';
+                $_SESSION['username'] = 'Administrator';
+                $_SESSION['user_email'] = $email;
+                $_SESSION['user_image'] = null;
+                $_SESSION['is_admin'] = true;
+            }
             
             redirectToHomepage(ADMIN_REDIRECT_PATH); 
             // Execution stops here.
@@ -242,25 +363,45 @@ if (isPost() && isset($_POST['action']) && $_POST['action'] === 'login') {
         try {
             // 2. NORMAL USER LOGIN FLOW
             
+            // Ensure $pdo is available (check both local and global scope)
+            if (!isset($pdo) && isset($GLOBALS['pdo'])) {
+                $pdo = $GLOBALS['pdo'];
+            }
+            
+            // Verify $pdo is available and valid
+            if (!isset($pdo) || !($pdo instanceof PDO)) {
+                error_log("Login error: PDO not available. isset(\$pdo)=" . (isset($pdo) ? 'true' : 'false') . ", isset(\$GLOBALS['pdo'])=" . (isset($GLOBALS['pdo']) ? 'true' : 'false'));
+                throw new \Exception("Database connection not available");
+            }
+            
             // 2a. Find user by email
-            $sql = "SELECT id, first_name, password_hash, profile_image_path FROM users WHERE email = :email";
+            $sql = "SELECT id, first_name, password_hash, profile_image_path FROM users WHERE email = :email LIMIT 1";
             $stmt = $pdo->prepare($sql);
+            if (!$stmt) {
+                $errorInfo = $pdo->errorInfo();
+                throw new \Exception("Failed to prepare SQL statement: " . ($errorInfo[2] ?? 'Unknown error'));
+            }
             $stmt->execute([':email' => $email]);
             $user = $stmt->fetch();
             
             // Check if user exists and password verifies
             if ($user && password_verify($password, $user['password_hash'])) {
                 
-                // Update last_login timestamp
-                $updateLogin = $pdo->prepare('UPDATE users SET last_login = NOW() WHERE id = :id');
-                $updateLogin->execute([':id' => $user['id']]);
+                // Update last_login timestamp (only if column exists)
+                try {
+                    $updateLogin = $pdo->prepare('UPDATE users SET last_login = NOW() WHERE id = :id');
+                    $updateLogin->execute([':id' => $user['id']]);
+                } catch (\PDOException $e) {
+                    // Ignore error if last_login column doesn't exist - it's optional
+                    error_log("Note: Could not update last_login (column may not exist): " . $e->getMessage());
+                }
                 
                 // 2b. Success: Store user info in session
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['user_name'] = $user['first_name'];
                 $_SESSION['username'] = $user['first_name'];
                 $_SESSION['user_email'] = $email;
-                $_SESSION['user_image'] = $user['profile_image_path'];
+                $_SESSION['user_image'] = $user['profile_image_path'] ?? null;
                 $_SESSION['is_admin'] = false; // Explicitly set for regular users
                 
                 // 2c. Redirection on successful login: 
@@ -272,8 +413,19 @@ if (isPost() && isset($_POST['action']) && $_POST['action'] === 'login') {
                 $message = ['text' => 'Invalid email or password.', 'type' => 'error'];
             }
         } catch (\PDOException $e) {
-            error_log("Login error: " . $e->getMessage());
-            $message = ['text' => 'A server error occurred during login. Please try again.', 'type' => 'error'];
+            $errorMsg = $e->getMessage();
+            $errorCode = $e->getCode();
+            error_log("Login PDO error: " . $errorMsg);
+            error_log("Login PDO error code: " . $errorCode);
+            error_log("Login PDO error trace: " . $e->getTraceAsString());
+            // Show actual error for debugging
+            $message = ['text' => 'Database Error: ' . htmlspecialchars($errorMsg) . ' (Code: ' . $errorCode . ')', 'type' => 'error'];
+        } catch (\Exception $e) {
+            $errorMsg = $e->getMessage();
+            error_log("Login general error: " . $errorMsg);
+            error_log("Login general error trace: " . $e->getTraceAsString());
+            // Show actual error for debugging
+            $message = ['text' => 'Error: ' . htmlspecialchars($errorMsg), 'type' => 'error'];
         }
     }
 }
@@ -296,8 +448,9 @@ $initial_form = $is_register_mode ? 'register' : 'login';
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <style>
         :root {
-            --primary: #00D1A1; /* A bright teal/green accent */
-            --primary-dark: #00A380;
+            --primary: #d65a2e; /* Orange accent color */
+            --primary-dark: #b84a20;
+            --accent-strong: #ff7a3e;
             --background: #121212;
             --surface: #1E1E1E;
             --card-bg: #2C2C2C; /* Updated for modal consistency */
@@ -355,12 +508,12 @@ $initial_form = $is_register_mode ? 'register' : 'login';
         }
 
         .btn-primary {
-            background-color: var(--primary);
-            transition: background-color 0.2s ease, box-shadow 0.2s ease;
+            background: linear-gradient(180deg, var(--accent-strong), var(--primary));
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
         .btn-primary:hover {
-            background-color: var(--primary-dark);
-            box-shadow: 0 5px 15px rgba(0, 209, 161, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(214, 90, 46, 0.4);
         }
 
         .link-switch {
@@ -393,9 +546,9 @@ $initial_form = $is_register_mode ? 'register' : 'login';
             color: #f87171;
         }
         .alert-success {
-            background-color: rgba(0, 209, 161, 0.15);
-            border-left: 4px solid #00D1A1;
-            color: #79F2C0;
+            background-color: rgba(214, 90, 46, 0.15);
+            border-left: 4px solid #d65a2e;
+            color: #ff7a3e;
         }
         .back-link {
             position: fixed;
@@ -458,11 +611,12 @@ $initial_form = $is_register_mode ? 'register' : 'login';
         </div>
     </main>
 
-    <div id="admin-login-overlay" class="fixed inset-0 bg-black bg-opacity-75 hidden justify-center items-center z-50 transition-opacity duration-300">
-        <div class="bg-[--card-bg] p-6 rounded-xl shadow-2xl w-full max-w-sm relative">
+    <div id="admin-login-overlay" class="fixed inset-0 bg-black bg-opacity-75 hidden justify-center items-center z-50 transition-opacity duration-300" onclick="if(event.target === this) hideAdminLoginModal();">
+        <div class="bg-[--card-bg] p-6 rounded-xl shadow-2xl w-full max-w-sm relative" onclick="event.stopPropagation();">
             
-            <button type="button" id="closeAdminModalBtn" class="absolute top-3 right-3 text-gray-400 hover:text-white transition duration-200">
-                <i data-lucide="x" class="w-6 h-6"></i>
+            <button type="button" id="closeAdminModalBtn" class="absolute top-3 right-3 text-white hover:text-gray-200 transition duration-200 p-2 hover:bg-gray-700 rounded-full z-10 cursor-pointer" title="Close" style="min-width: 36px; min-height: 36px; display: flex; align-items: center; justify-content: center; background-color: rgba(0, 0, 0, 0.3);">
+                <i data-lucide="x" class="w-6 h-6" style="display: block;"></i>
+                <span class="close-x-fallback" style="display: none; font-size: 24px; font-weight: bold; line-height: 1;">×</span>
             </button>
 
             <div class="text-center mb-4">
@@ -522,10 +676,26 @@ $initial_form = $is_register_mode ? 'register' : 'login';
             try {
                 // Ensure all icons are correctly rendered after form change
                 const newIcons = document.querySelectorAll('[data-lucide]');
-                newIcons.forEach(el => lucide.replace(el));
+                newIcons.forEach(el => {
+                    lucide.replace(el);
+                    // If icon didn't render, show fallback for X button
+                    if (el.getAttribute('data-lucide') === 'x' && el.closest('#closeAdminModalBtn')) {
+                        setTimeout(() => {
+                            const icon = el.querySelector('svg');
+                            if (!icon || icon.children.length === 0) {
+                                const fallback = el.closest('#closeAdminModalBtn').querySelector('.close-x-fallback');
+                                if (fallback) fallback.style.display = 'block';
+                            }
+                        }, 50);
+                    }
+                });
             } catch (e) {
-                // Ignore if lucide is not defined (e.g. script failed to load)
-                // console.warn("Lucide icons failed to create: ", e.message); 
+                // If lucide fails, show fallback X
+                const closeBtn = document.getElementById('closeAdminModalBtn');
+                if (closeBtn) {
+                    const fallback = closeBtn.querySelector('.close-x-fallback');
+                    if (fallback) fallback.style.display = 'block';
+                }
             }
         }
 
@@ -541,9 +711,14 @@ $initial_form = $is_register_mode ? 'register' : 'login';
         function showAdminLoginModal() {
             // Only show if we're on the login screen
             if (currentView === 'login' && adminLoginOverlay) {
+                adminLoginOverlay.classList.remove('hidden');
                 adminLoginOverlay.style.display = "flex"; 
                 adminSecretKeyInput.value = ''; // Clear input
                 adminSecretKeyInput.focus();
+                // Recreate icons when modal is shown to ensure X button icon loads
+                setTimeout(() => {
+                    createLucideIcons();
+                }, 100);
             } else if (adminLoginOverlay) {
                 displayMessage('Please switch to the Sign In form before attempting Admin Login.', 'error');
             }
@@ -551,7 +726,13 @@ $initial_form = $is_register_mode ? 'register' : 'login';
 
         function hideAdminLoginModal() {
             if (adminLoginOverlay) {
+                adminLoginOverlay.classList.add('hidden');
                 adminLoginOverlay.style.display = "none";
+                adminSecretKeyInput.value = ''; // Clear input for security
+                // Return focus to the login form
+                if (loginEmailInput) {
+                    loginEmailInput.focus();
+                }
             }
         }
         
@@ -787,7 +968,26 @@ $initial_form = $is_register_mode ? 'register' : 'login';
             });
 
             // 4. Create all initial icons (if the script loaded)
-            createLucideIcons(); 
+            createLucideIcons();
+            
+            // 5. Ensure close button icon is visible when modal opens
+            if (closeAdminModalBtn) {
+                setTimeout(() => {
+                    createLucideIcons();
+                    // Double check X icon is visible
+                    const xIcon = closeAdminModalBtn.querySelector('[data-lucide="x"]');
+                    if (xIcon) {
+                        const svg = xIcon.querySelector('svg');
+                        if (!svg || svg.children.length === 0) {
+                            const fallback = closeAdminModalBtn.querySelector('.close-x-fallback');
+                            if (fallback) {
+                                fallback.style.display = 'block';
+                                xIcon.style.display = 'none';
+                            }
+                        }
+                    }
+                }, 200);
+            } 
         });
     </script>
 </body>
