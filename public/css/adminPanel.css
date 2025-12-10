@@ -1,5 +1,6 @@
 /* ==========================================================================
    EVENT BOOKING WEBSITE - ADMIN PANEL CSS
+   CUSTOM SCROLLBAR STYLING ADDED
    ========================================================================== */
 
 /* ==========================================================================
@@ -61,7 +62,7 @@ body {
 }
 
 /* ==========================================================================
-   3. SIDEBAR
+   3. SIDEBAR - CUSTOM SCROLLBAR
    ========================================================================== */
 
 .sidebar {
@@ -74,6 +75,31 @@ body {
     height: 100vh;
     z-index: 1000;
     overflow-y: auto;
+}
+
+/* Custom scrollbar for sidebar */
+.sidebar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 3px;
+    transition: background 0.3s ease;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+    background: #444;
+}
+
+/* Firefox scrollbar for sidebar */
+.sidebar {
+    scrollbar-width: thin;
+    scrollbar-color: #333 transparent;
 }
 
 /* Sidebar Header */
@@ -609,6 +635,32 @@ body {
     border-radius: 12px;
     border: 1px solid #333;
     background-color: rgba(0, 0, 0, 0.3);
+}
+
+/* Custom scrollbar for table container */
+.table-container::-webkit-scrollbar {
+    height: 8px;
+}
+
+.table-container::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 0 10px;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 4px;
+    transition: background 0.3s ease;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+    background: #444;
+}
+
+/* Firefox scrollbar for table container */
+.table-container {
+    scrollbar-width: thin;
+    scrollbar-color: #333 transparent;
 }
 
 .data-table {
@@ -1149,6 +1201,25 @@ body {
     border: 1px solid #333;
 }
 
+/* Custom scrollbar for location facilities */
+.location-facilities-grid::-webkit-scrollbar {
+    width: 6px;
+}
+
+.location-facilities-grid::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.location-facilities-grid::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 3px;
+}
+
+.location-facilities-grid {
+    scrollbar-width: thin;
+    scrollbar-color: #333 transparent;
+}
+
 .location-facility-checkbox {
     display: flex;
     align-items: center;
@@ -1234,9 +1305,10 @@ body {
 }
 
 /* ==========================================================================
-   14. MODALS
+   14. MODALS - CUSTOM SCROLLBAR FOR MODALS
    ========================================================================== */
 
+/* Modal Background */
 .modal {
     position: fixed;
     top: 0;
@@ -1258,6 +1330,7 @@ body {
     to { opacity: 1; backdrop-filter: blur(8px); }
 }
 
+/* Modal Container */
 .modal-content {
     background: linear-gradient(135deg, #111, #1a1a1a);
     border-radius: 20px;
@@ -1268,6 +1341,32 @@ body {
     border: 1px solid #333;
     box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
     animation: modalSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Custom scrollbar for modal content */
+.modal-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 20px 0;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 4px;
+    transition: background 0.3s ease;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+    background: #444;
+}
+
+/* Firefox scrollbar for modal content */
+.modal-content {
+    scrollbar-width: thin;
+    scrollbar-color: #333 transparent;
 }
 
 @keyframes modalSlideIn {
@@ -1283,6 +1382,7 @@ body {
     max-width: 400px;
 }
 
+/* Modal Header */
 .modal-header {
     display: flex;
     justify-content: space-between;
@@ -1297,6 +1397,18 @@ body {
     font-weight: 700;
     color: #fff;
     margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.modal-header h3::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 24px;
+    background: #ff5722;
+    border-radius: 3px;
 }
 
 .close-modal {
@@ -1325,30 +1437,66 @@ body {
 }
 
 /* ==========================================================================
-   15. FORMS
+   15. ENHANCED FORM STYLES (Modern Form Design)
    ========================================================================== */
 
+/* Form Container */
 form {
     padding: 30px;
+    max-height: 70vh;
+    overflow-y: auto;
 }
 
+/* Custom scrollbar for form content */
+form::-webkit-scrollbar {
+    width: 6px;
+}
+
+form::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+form::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 3px;
+}
+
+form {
+    scrollbar-width: thin;
+    scrollbar-color: #333 transparent;
+}
+
+/* Enhanced Form Grid Layout */
 .form-grid {
     display: flex;
     flex-direction: column;
     gap: 25px;
 }
 
+/* Two Columns Grid for Wide Forms */
 .form-grid.two-columns {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 25px;
+    gap: 2rem;
+}
+
+/* Form Sections with Modern Card Design */
+.form-section {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: linear-gradient(145deg, #151515, #1a1a1a);
+    border-radius: 12px;
+    border: 1px solid #333;
+    position: relative;
+    transition: all 0.3s ease;
 }
 
 .form-section:hover {
     border-color: #444;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 
+/* Form Section Headers */
 .form-section h4 {
     font-size: 16px;
     font-weight: 600;
@@ -1367,19 +1515,42 @@ form {
     gap: 15px;
 }
 
-/* Form Group Styles for ALL Modals */
+/* Form Group Enhancements */
 .form-group {
-    margin-bottom: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.form-group:last-child {
+    margin-bottom: 0;
 }
 
 .form-group label {
-    font-size: 14px;
+    display: block;
+    font-size: 13px;
     font-weight: 600;
-    color: #ccc;
+    color: #aaa;
+    margin-bottom: 0.5rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
+/* Required Field Indicator */
+.form-group label::after {
+    content: ' *';
+    color: #ff5722;
+    font-weight: bold;
+    margin-left: 2px;
+}
+
+.form-group label[for*="end_date"],
+.form-group label[for*="discounted_price"],
+.form-group label[for*="gallery_images"],
+.form-group label[for*="terms"],
+.form-group label[for*="additional_info"]::after {
+    content: '';
+}
+
+/* Form Inputs with Modern Styling */
 .form-group input,
 .form-group select,
 .form-group textarea {
@@ -1388,53 +1559,30 @@ form {
     border-radius: 10px;
     padding: 14px 18px;
     color: #fff;
-    font-size: 15px;
+    font-size: 14px;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     font-family: inherit;
     font-weight: 500;
 }
 
+/* Input Focus States */
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
     outline: none;
     border-color: #ff5722;
-    background-color: #000;
-    box-shadow: 0 0 0 4px rgba(255, 87, 34, 0.2);
+    box-shadow: 0 0 0 4px rgba(255, 87, 34, 0.15);
+    background: #1a1a1a;
 }
 
+/* Input Hover Effects */
 .form-group input:hover,
 .form-group select:hover,
 .form-group textarea:hover {
     border-color: #444;
 }
 
-/* Calendar Input Styling (Orange Theme) */
-input[type="date"],
-input[type="datetime-local"] {
-    color-scheme: dark;
-}
-
-input[type="date"]::-webkit-calendar-picker-indicator,
-input[type="datetime-local"]::-webkit-calendar-picker-indicator {
-    filter: invert(0.5) sepia(1) saturate(5) hue-rotate(-10deg);
-    cursor: pointer;
-    opacity: 0.8;
-    transition: opacity 0.3s ease;
-}
-
-input[type="date"]::-webkit-calendar-picker-indicator:hover,
-input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
-    opacity: 1;
-    filter: invert(0.5) sepia(1) saturate(10) hue-rotate(-10deg);
-}
-
-input[type="date"]:focus::-webkit-calendar-picker-indicator,
-input[type="datetime-local"]:focus::-webkit-calendar-picker-indicator {
-    filter: invert(0.5) sepia(1) saturate(15) hue-rotate(-10deg);
-}
-
-/* Two columns layout improvements */
+/* Two Column Form Layouts */
 .form-group.two-columns {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -1442,37 +1590,87 @@ input[type="datetime-local"]:focus::-webkit-calendar-picker-indicator {
     margin-bottom: 1.5rem;
 }
 
-/* Textarea specific styles */
+/* Textarea Specific Styling */
 .form-group textarea {
     resize: vertical;
-    min-height: 100px;
+    min-height: 120px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     line-height: 1.6;
 }
 
-/* Price Input */
+/* Enhanced Calendar Input Styling (Orange Theme) */
+input[type="date"],
+input[type="datetime-local"] {
+    color-scheme: dark;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.5) sepia(1) saturate(8) hue-rotate(-10deg);
+    cursor: pointer;
+    opacity: 0.9;
+    transition: opacity 0.3s ease;
+    padding: 4px;
+    border-radius: 4px;
+    background: rgba(255, 87, 34, 0.1);
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+    filter: invert(0.5) sepia(1) saturate(12) hue-rotate(-10deg);
+    background: rgba(255, 87, 34, 0.2);
+}
+
+input[type="date"]:focus::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]:focus::-webkit-calendar-picker-indicator {
+    filter: invert(0.5) sepia(1) saturate(15) hue-rotate(-10deg);
+    background: rgba(255, 87, 34, 0.3);
+}
+
+/* Enhanced Price Input Container */
 .price-input {
     position: relative;
 }
 
-.price-input-container span {
+.price-input span {
     position: absolute;
     left: 18px;
     top: 50%;
     transform: translateY(-50%);
-    color: #888;
+    color: #ff5722;
     font-weight: 600;
-    font-size: 15px;
+    font-size: 14px;
 }
 
 .price-input input {
-    padding-left: 40px;
+    padding-left: 2.5rem;
 }
 
-/* File Upload */
+/* Disabled State Styling */
+.form-group select:disabled {
+    background: #2a2a2a;
+    border-color: #444;
+    color: #666;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* JSON Textarea Specific Styling */
+.form-group textarea[name="gallery_images"],
+.form-group textarea[name="additional_info"] {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 13px;
+    background: #1a1a1a;
+    padding: 1rem;
+    border-radius: 8px;
+}
+
+/* File Upload Enhanced Design */
 .file-upload {
     border: 3px dashed #333;
     border-radius: 12px;
-    padding: 40px 20px;
+    padding: 2.5rem 2rem;
     text-align: center;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1485,18 +1683,29 @@ input[type="datetime-local"]:focus::-webkit-calendar-picker-indicator {
     transform: translateY(-2px);
 }
 
+.file-upload.drag-over {
+    border-color: #ff5722;
+    background: rgba(255, 87, 34, 0.1);
+    box-shadow: 0 8px 24px rgba(255, 87, 34, 0.2);
+}
+
 .file-upload i {
     width: 48px;
     height: 48px;
     color: #666;
-    margin-bottom: 15px;
+    margin-bottom: 1rem;
 }
 
 .file-upload p {
     font-size: 15px;
     color: #888;
     font-weight: 500;
-    margin: 0;
+    margin: 0 0 0.5rem 0;
+}
+
+.file-upload small {
+    font-size: 12px;
+    color: #666;
 }
 
 .file-upload input {
@@ -1519,7 +1728,7 @@ input[type="datetime-local"]:focus::-webkit-calendar-picker-indicator {
     height: 120px;
     border-radius: 50%;
     overflow: hidden;
-    margin: 0 auto 20px;
+    margin: 0 auto 1.5rem;
     border: 4px solid #333;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
     transition: all 0.3s ease;
@@ -1552,9 +1761,10 @@ input[type="datetime-local"]:focus::-webkit-calendar-picker-indicator {
     font-size: 17px;
     color: #ccc;
     line-height: 1.6;
-    margin-bottom: 20px;
+    margin-bottom: 1.5rem;
 }
 
+/* Status Select Styling */
 .status-select {
     width: 100%;
     background-color: #111;
@@ -1567,6 +1777,12 @@ input[type="datetime-local"]:focus::-webkit-calendar-picker-indicator {
     font-weight: 500;
     cursor: pointer;
     transition: all 0.3s ease;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 16px;
+    padding-right: 2.5rem;
 }
 
 .status-select:focus {
@@ -1583,6 +1799,7 @@ input[type="datetime-local"]:focus::-webkit-calendar-picker-indicator {
     padding: 25px 30px;
     border-top: 1px solid #333;
     background: rgba(0, 0, 0, 0.3);
+    border-radius: 0 0 20px 20px;
 }
 
 /* ==========================================================================
@@ -1639,6 +1856,25 @@ input[type="datetime-local"]:focus::-webkit-calendar-picker-indicator {
     padding: 30px;
     max-height: 60vh;
     overflow-y: auto;
+}
+
+/* Custom scrollbar for booking details */
+.booking-details-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.booking-details-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.booking-details-container::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 3px;
+}
+
+.booking-details-container {
+    scrollbar-width: thin;
+    scrollbar-color: #333 transparent;
 }
 
 .booking-details-grid {
@@ -1845,41 +2081,121 @@ input[type="datetime-local"]:focus::-webkit-calendar-picker-indicator {
 }
 
 /* ==========================================================================
-   17. RESPONSIVE DESIGN
+   17. GLOBAL CUSTOM SCROLLBAR STYLES
    ========================================================================== */
 
-/* Large Desktop */
-@media (max-width: 1440px) {
-    .sidebar {
-        width: 240px;
-    }
-    
-    .main-content {
-        margin-left: 240px;
-    }
+/* Custom scrollbar for all scrollable containers */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
 }
 
-/* Desktop */
-@media (max-width: 1200px) {
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 4px;
+    transition: background 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #444;
+}
+
+/* Firefox scrollbar styles */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #333 transparent;
+}
+
+/* Hide scrollbar but keep functionality for specific elements */
+.scrollbar-hidden::-webkit-scrollbar {
+    display: none;
+}
+
+.scrollbar-hidden {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+/* ==========================================================================
+   18. ENHANCED RESPONSIVE DESIGN
+   ========================================================================== */
+
+/* Extra Large Screens (≥1920px) */
+@media screen and (min-width: 1920px) {
+    .main-content {
+        padding: 40px;
+        margin-left: 280px;
+    }
+    
+    .sidebar {
+        width: 280px;
+    }
+    
     .events-grid,
     .locations-grid {
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
     }
     
-    .charts-grid {
-        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    .modal-content.large {
+        max-width: 900px;
     }
 }
 
-/* Tablet */
-@media (max-width: 1024px) {
+/* Large Desktop (1440px - 1919px) */
+@media screen and (max-width: 1919px) and (min-width: 1440px) {
+    .main-content {
+        padding: 35px;
+        margin-left: 260px;
+    }
+    
+    .sidebar {
+        width: 260px;
+    }
+    
+    .events-grid,
+    .locations-grid {
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    }
+    
+    .modal-content.large {
+        max-width: 800px;
+    }
+}
+
+/* Desktop (1200px - 1439px) */
+@media screen and (max-width: 1439px) and (min-width: 1200px) {
+    .main-content {
+        padding: 30px;
+        margin-left: 250px;
+    }
+    
+    .sidebar {
+        width: 250px;
+    }
+    
+    .events-grid,
+    .locations-grid {
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    }
+    
+    .modal-content.large {
+        max-width: 750px;
+    }
+}
+
+/* Small Desktop (1024px - 1199px) */
+@media screen and (max-width: 1199px) and (min-width: 1024px) {
     .sidebar {
         width: 80px;
         transition: width 0.3s ease;
     }
     
     .sidebar:hover {
-        width: 240px;
+        width: 250px;
     }
     
     .sidebar:hover .subtitle,
@@ -1916,16 +2232,47 @@ input[type="datetime-local"]:focus::-webkit-calendar-picker-indicator {
     
     .main-content {
         margin-left: 80px;
+        padding: 25px;
     }
     
     .sidebar:hover ~ .main-content {
-        margin-left: 240px;
+        margin-left: 250px;
+    }
+    
+    .events-grid,
+    .locations-grid {
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    }
+    
+    .modal-content.large {
+        max-width: 700px;
     }
 }
 
-/* Small Tablet */
-@media (max-width: 768px) {
+/* Tablet Landscape (768px - 1023px) */
+@media screen and (max-width: 1023px) and (min-width: 768px) {
+    .sidebar {
+        width: 70px;
+    }
+    
+    .sidebar .subtitle,
+    .sidebar .sidebar-nav span,
+    .sidebar .username,
+    .sidebar .user-email {
+        display: none;
+    }
+    
+    .sidebar-nav .nav-btn {
+        justify-content: center;
+        padding: 12px 10px;
+    }
+    
+    .profile-info {
+        justify-content: center;
+    }
+    
     .main-content {
+        margin-left: 70px;
         padding: 20px;
     }
     
@@ -1947,16 +2294,12 @@ input[type="datetime-local"]:focus::-webkit-calendar-picker-indicator {
     }
     
     .stats-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
     }
     
-    .form-grid.two-columns {
+    .form-grid.two-columns,
+    .form-group.two-columns {
         grid-template-columns: 1fr;
-    }
-    
-    .modal-content {
-        margin: 0;
-        border-radius: 16px;
     }
     
     .table-controls {
@@ -1976,11 +2319,19 @@ input[type="datetime-local"]:focus::-webkit-calendar-picker-indicator {
     
     .events-grid,
     .locations-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
     }
     
     .location-facilities-grid {
-        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    }
+    
+    .modal-content {
+        max-width: 90%;
+    }
+    
+    .modal-content.large {
+        max-width: 90%;
     }
     
     .booking-details-grid {
@@ -1998,28 +2349,96 @@ input[type="datetime-local"]:focus::-webkit-calendar-picker-indicator {
     }
 }
 
-/* Mobile */
-@media (max-width: 480px) {
+/* Tablet Portrait (576px - 767px) */
+@media screen and (max-width: 767px) and (min-width: 576px) {
+    .sidebar {
+        width: 60px;
+    }
+    
+    .sidebar .subtitle,
+    .sidebar .sidebar-nav span,
+    .sidebar .username,
+    .sidebar .user-email {
+        display: none;
+    }
+    
+    .sidebar-nav .nav-btn {
+        justify-content: center;
+        padding: 10px 8px;
+        font-size: 0;
+    }
+    
+    .sidebar-nav .nav-btn i {
+        margin: 0;
+    }
+    
+    .profile-info {
+        justify-content: center;
+    }
+    
+    .avatar {
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
+    }
+    
     .main-content {
+        margin-left: 60px;
         padding: 15px;
+    }
+    
+    .content-header h2 {
+        font-size: 24px;
+    }
+    
+    .content-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 15px;
+    }
+    
+    .header-actions {
+        width: 100%;
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .search-container {
+        width: 100%;
+    }
+    
+    .search-input {
+        width: 100%;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
     }
     
     .content-card {
         padding: 20px;
     }
     
-    .modal {
-        padding: 10px;
+    .card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
     }
     
-    .modal-header,
-    form,
-    .booking-details-container {
-        padding: 20px;
+    .table-controls {
+        flex-direction: column;
+        gap: 12px;
     }
     
-    .modal-actions {
-        padding: 20px;
+    .controls-left,
+    .controls-right {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .filter-select {
+        min-width: auto;
+        flex: 1;
     }
     
     .table-footer {
@@ -2033,44 +2452,446 @@ input[type="datetime-local"]:focus::-webkit-calendar-picker-indicator {
         flex-wrap: wrap;
     }
     
-    .action-buttons {
-        flex-wrap: wrap;
-        justify-content: center;
+    .events-grid,
+    .locations-grid {
+        grid-template-columns: 1fr;
     }
     
-    .location-action-buttons {
-        justify-content: center;
+    .location-facilities-grid {
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    }
+    
+    /* Modal Responsive for Tablet */
+    .modal {
+        padding: 10px;
+    }
+    
+    .modal-content {
+        max-width: 95%;
+        border-radius: 16px;
+    }
+    
+    .table-controls {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 15px;
+    }
+    
+    .modal-header,
+    form,
+    .modal-actions,
+    .booking-details-container {
+        padding: 20px;
+    }
+    
+    .form-section {
+        padding: 1rem;
+    }
+    
+    .modal-actions {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .modal-actions button {
+        width: 100%;
+    }
+    
+    .booking-details-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .message-header-info {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .category-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 15px;
     }
 }
 
-/* Print Styles */
-@media print {
-    .sidebar,
-    .header-actions,
-    .action-buttons,
-    .modal-actions .secondary-btn {
-        display: none !important;
+/* Mobile Devices (375px - 575px) */
+@media screen and (max-width: 575px) and (min-width: 375px) {
+    .sidebar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 60px;
+        flex-direction: row;
+        border-right: none;
+        border-top: 1px solid #333;
+        z-index: 1000;
+    }
+    
+    .sidebar-header,
+    .user-profile-sidebar {
+        display: none;
+    }
+    
+    .sidebar-nav {
+        flex: 1;
+        padding: 0;
+    }
+    
+    .sidebar-nav ul {
+        display: flex;
+        justify-content: space-around;
+        height: 100%;
+    }
+    
+    .sidebar-nav li {
+        margin: 0;
+        flex: 1;
+    }
+    
+    .nav-btn {
+        height: 60px;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 8px;
+        border-left: none;
+        border-top: 3px solid transparent;
+        font-size: 10px;
+    }
+    
+    .nav-btn:hover,
+    .nav-btn.active {
+        border-left: none;
+        border-top-color: #ff5722;
+    }
+    
+    .nav-btn i {
+        margin-bottom: 4px;
     }
     
     .main-content {
         margin-left: 0;
-        padding: 0;
+        margin-bottom: 60px;
+        padding: 15px;
+        width: 100%;
     }
     
-    body {
-        background: white;
-        color: black;
+    .content-header h2 {
+        font-size: 22px;
+    }
+    
+    .content-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 15px;
+    }
+    
+    .header-actions {
+        width: 100%;
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .search-container {
+        width: 100%;
+    }
+    
+    .search-input {
+        width: 100%;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
     }
     
     .content-card {
-        background: white;
-        box-shadow: none;
-        border: 1px solid #ddd;
+        padding: 15px;
+    }
+    
+    .card-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 15px;
+    }
+    
+    .table-controls {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .controls-left,
+    .controls-right {
+        width: 100%;
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .filter-select {
+        width: 100%;
+    }
+    
+    .data-table {
+        min-width: 600px;
+    }
+    
+    .table-container {
+        margin: 0 -15px;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+    }
+    
+    .table-footer {
+        flex-direction: column;
+        gap: 15px;
+        align-items: stretch;
+    }
+    
+    .pagination {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .events-grid,
+    .locations-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .location-facilities-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    }
+    
+    /* Mobile Modal Responsive */
+    .modal {
+        padding: 5px;
+    }
+    
+    .modal-content {
+        max-width: 100%;
+        max-height: 100vh;
+        border-radius: 12px;
+    }
+    
+    .modal-content.large {
+        max-width: 100%;
+    }
+    
+    .modal-header,
+    form,
+    .modal-actions,
+    .booking-details-container {
+        padding: 15px;
+    }
+    
+    .form-grid {
+        gap: 1rem;
+    }
+    
+    .form-section {
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .form-section h4 {
+        font-size: 14px;
+        margin-bottom: 1rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    
+    .form-group label {
+        font-size: 12px;
+    }
+    
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        padding: 0.75rem;
+        font-size: 14px;
+    }
+    
+    .modal-actions {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .modal-actions button {
+        width: 100%;
+    }
+    
+    .booking-details-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .detail-row {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .detail-label {
+        min-width: auto;
+    }
+    
+    .detail-value {
+        text-align: left;
+    }
+    
+    .message-header-info {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    .category-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+}
+
+/* Small Mobile Devices (< 375px) */
+@media screen and (max-width: 374px) {
+    .sidebar {
+        height: 55px;
+    }
+    
+    .nav-btn {
+        height: 55px;
+        font-size: 9px;
+        padding: 6px;
+    }
+    
+    .nav-btn i {
+        width: 16px;
+        height: 16px;
+    }
+    
+    .main-content {
+        padding: 10px;
+        margin-bottom: 55px;
+    }
+    
+    .content-header h2 {
+        font-size: 20px;
+    }
+    
+    .primary-btn,
+    .secondary-btn,
+    .danger-btn {
+        padding: 10px 16px;
+        font-size: 13px;
+    }
+    
+    .stats-grid.small {
+        grid-template-columns: 1fr;
+    }
+    
+    .stat-value {
+        font-size: 28px;
+    }
+    
+    .event-title,
+    .location-title {
+        font-size: 16px;
+    }
+    
+    .modal-header h3 {
+        font-size: 18px;
+    }
+    
+    .form-section h4 {
+        font-size: 13px;
+    }
+    
+    .booking-detail-section {
+        padding: 15px;
+    }
+}
+
+/* Print Styles for Reports */
+@media print {
+    .sidebar,
+    .header-actions,
+    .action-buttons,
+    .modal-actions .secondary-btn,
+    .nav-btn:not(.active),
+    .search-container,
+    .table-controls,
+    .pagination,
+    .view-all-btn {
+        display: none !important;
+    }
+    
+    .main-content {
+        margin-left: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+    }
+    
+    body {
+        background: white !important;
+        color: black !important;
+        font-size: 12px !important;
+    }
+    
+    .content-card {
+        background: white !important;
+        box-shadow: none !important;
+        border: 1px solid #ddd !important;
+        margin: 10px 0 !important;
+        break-inside: avoid;
+    }
+    
+    .stat-card,
+    .event-card,
+    .location-card {
+        background: white !important;
+        border: 1px solid #ddd !important;
+        box-shadow: none !important;
     }
     
     .status-badge {
         background: white !important;
         color: black !important;
         border: 1px solid #ddd !important;
+        padding: 2px 8px !important;
+    }
+    
+    .data-table {
+        border: 1px solid #ddd !important;
+    }
+    
+    .data-table th {
+        background: #f5f5f5 !important;
+        color: #333 !important;
+        border-bottom: 2px solid #ddd !important;
+    }
+    
+    .data-table td {
+        border-bottom: 1px solid #ddd !important;
+        color: #333 !important;
+    }
+    
+    .modal {
+        position: relative !important;
+        background: white !important;
+    }
+    
+    .modal-content {
+        box-shadow: none !important;
+        border: 1px solid #ddd !important;
+        max-width: 100% !important;
+        max-height: none !important;
+    }
+    
+    a {
+        color: #000 !important;
+        text-decoration: underline !important;
+    }
+    
+    .no-print {
+        display: none !important;
     }
 }
