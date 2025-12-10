@@ -1,7 +1,7 @@
 <?php
-require_once 'models/Event.php';
-require_once 'models/Subcategory.php';
-require_once 'models/Venue.php';
+require_once __DIR__ . '/../models/Event.php';
+require_once __DIR__ . '/../models/Subcategory.php';
+require_once __DIR__ . '/../models/Venue.php';
 
 class EventController {
     private $event;
