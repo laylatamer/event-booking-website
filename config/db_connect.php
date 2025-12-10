@@ -22,7 +22,7 @@ try {
     $pdo = new PDO($dsn, $user, $pass, $options);
 } catch (\PDOException $e) {
     // If the connection fails, terminate the script and show an error.
-    die("<h1>Database Connection Failed</h1><p>Please check your credentials in **db_connect.php**.<br>Detailed Error: " . htmlspecialchars($e->getMessage()) . "</p>");
+    die("<h1>Database Connection Failed</h1><p>Please check your credentials in *db_connect.php*.<br>Detailed Error: " . htmlspecialchars($e->getMessage()) . "</p>");
 }
 
 // The $pdo object is now successfully connected and ready to use.

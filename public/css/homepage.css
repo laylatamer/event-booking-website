@@ -417,3 +417,67 @@
         grid-template-columns: repeat(2, 1fr); 
     }
 }
+
+/* Cookie Banner Styles */
+
+.cookie-banner {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #333;
+    color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    max-width: 350px;
+    z-index: 1000; /* Ensure it's on top of other elements */
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    transform: translateY(100px);
+}
+
+.cookie-banner.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.cookie-banner p {
+    margin-bottom: 15px;
+    font-size: 14px;
+}
+
+.cookie-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.cookie-btn {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+.cookie-btn.accept {
+    background-color: #ff5722; /* Your primary brand color */
+    color: white;
+}
+
+.cookie-btn.accept:hover {
+    background-color: #e64a19;
+}
+
+.cookie-btn.deny {
+    background-color: #555;
+    color: white;
+}
+
+.cookie-btn.deny:hover {
+    background-color: #444;
+}
+
+.hidden {
+    display: none !important;
+}
