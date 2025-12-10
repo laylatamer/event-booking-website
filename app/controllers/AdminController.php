@@ -107,7 +107,7 @@ class AdminController {
         return $subcategories;
     }
 
-    // Add this new method to check if subcategory exists
+    // this new method to check if subcategory exists
     public function subcategoryExists($main_category_id, $name, $exclude_id = null) {
         $query = "SELECT id FROM subcategories 
                   WHERE main_category_id = :main_category_id 
@@ -132,7 +132,7 @@ class AdminController {
         return $stmt->rowCount() > 0;
     }
 
-    // Add this new method to get subcategories count
+    // this new method to get subcategories count
     public function getSubcategoriesCount($main_category_id = null) {
         if ($main_category_id) {
             $query = "SELECT COUNT(*) as count FROM subcategories 
@@ -149,7 +149,7 @@ class AdminController {
         return $result['count'] ?? 0;
     }
 
-    // Venues CRUD (keep as is)
+    // Venues CRUD 
     public function createVenue($data) {
         $this->venue->name = $data['name'];
         $this->venue->address = $data['address'];
@@ -279,5 +279,56 @@ class AdminController {
         $this->event->id = $id;
         return $this->event->readOne();
     }
+
+
+public function getAllEventsWithDetails() {
+    $query = "SELECT e.*, 
+                     s.name as subcategory_name,
+                     s.main_category_id,
+                     mc.name as main_category_name,
+                     v.name as venue_name,
+                     v.city as venue_city,
+                     v.capacity as venue_capacity
+              FROM events e
+              JOIN subcategories s ON e.subcategory_id = s.id
+              JOIN main_categories mc ON s.main_category_id = mc.id
+              JOIN venues v ON e.venue_id = v.id
+              ORDER BY e.date DESC";
+    
+    $stmt = $this->db->prepare($query);
+    $stmt->execute();
+    
+    $events = [];
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $events[] = $row;
+    }
+    return $events;
+}
+
+public function getEventWithDetails($id) {
+    $query = "SELECT e.*, 
+                     s.name as subcategory_name,
+                     s.main_category_id,
+                     mc.name as main_category_name,
+                     v.name as venue_name,
+                     v.address as venue_address,
+                     v.city as venue_city,
+                     v.country as venue_country,
+                     v.capacity as venue_capacity,
+                     v.description as venue_description,
+                     v.facilities as venue_facilities,
+                     v.google_maps_url as venue_google_maps_url
+              FROM events e
+              JOIN subcategories s ON e.subcategory_id = s.id
+              JOIN main_categories mc ON s.main_category_id = mc.id
+              JOIN venues v ON e.venue_id = v.id
+              WHERE e.id = ? LIMIT 1";
+    
+    $stmt = $this->db->prepare($query);
+    $stmt->bindParam(1, $id);
+    $stmt->execute();
+    
+    return $stmt->fetch(PDO::FETCH_ASSOC);
+}
 }
 ?>

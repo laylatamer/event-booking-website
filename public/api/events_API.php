@@ -1,5 +1,5 @@
 <?php
-// /event-booking-website/public/api/events_API.php
+// /public/api/admin_events_API.php - Admin Events CRUD API
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
@@ -27,11 +27,11 @@ if (!file_exists($configPath)) {
 
 require_once $configPath;
 
-// Include EventController
-$controllerPath = $projectRoot . '/app/controllers/EventController.php';
+// Include AdminController
+$controllerPath = $projectRoot . '/app/controllers/AdminController.php';
 if (!file_exists($controllerPath)) {
     http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'EventController not found']);
+    echo json_encode(['success' => false, 'message' => 'AdminController not found']);
     exit;
 }
 
@@ -41,29 +41,31 @@ try {
     $database = new Database();
     $db = $database->getConnection();
     
-    $eventController = new EventController($db);
+    $adminController = new AdminController($db);
     
     $action = $_GET['action'] ?? '';
+    $method = $_SERVER['REQUEST_METHOD'];
     
-    switch ($_SERVER['REQUEST_METHOD']) {
+    switch ($method) {
         case 'GET':
-            handleGetRequest($eventController, $action);
+            handleGetRequest($adminController, $action);
             break;
             
         case 'POST':
-            handlePostRequest($eventController, $action);
+            handlePostRequest($adminController, $action);
             break;
             
         case 'PUT':
-            handlePutRequest($eventController, $action);
+            handlePutRequest($adminController, $action);
             break;
             
         case 'DELETE':
-            handleDeleteRequest($eventController, $action);
+            handleDeleteRequest($adminController, $action);
             break;
             
         default:
-            echo json_encode(['success' => false, 'message' => 'Invalid method']);
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Method not allowed']);
     }
     
 } catch (Exception $e) {
@@ -74,11 +76,29 @@ try {
     ]);
 }
 
-function handleGetRequest($controller, $action) {
+function handleGetRequest($adminController, $action) {
     switch ($action) {
+        case 'getEvent':
+            $id = $_GET['id'] ?? 0;
+            if ($id) {
+                try {
+                    $event = $adminController->getEvent($id);
+                    if ($event) {
+                        echo json_encode(['success' => true, 'event' => $event]);
+                    } else {
+                        echo json_encode(['success' => false, 'message' => 'Event not found']);
+                    }
+                } catch (Exception $e) {
+                    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+                }
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Event ID required']);
+            }
+            break;
+            
         case 'getAll':
             try {
-                $events = $controller->getAllEvents();
+                $events = $adminController->getAllEvents();
                 echo json_encode([
                     'success' => true,
                     'events' => $events,
@@ -89,68 +109,88 @@ function handleGetRequest($controller, $action) {
             }
             break;
             
-        case 'getOne':
-            $id = $_GET['id'] ?? 0;
-            if ($id) {
+        case 'getSubcategories':
+            $main_category_id = $_GET['main_category_id'] ?? 0;
+            if ($main_category_id) {
                 try {
-                    $event = $controller->getEventById($id);
-                    if ($event) {
-                        echo json_encode(['success' => true, 'event' => $event]);
-                    } else {
-                        echo json_encode(['success' => false, 'message' => 'Event not found']);
-                    }
+                    $subcategories = $adminController->getSubcategoriesByMainCategory($main_category_id);
+                    echo json_encode([
+                        'success' => true,
+                        'subcategories' => $subcategories
+                    ]);
                 } catch (Exception $e) {
                     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
                 }
             } else {
-                echo json_encode(['success' => false, 'message' => 'ID required']);
+                echo json_encode(['success' => false, 'message' => 'Main category ID required']);
             }
             break;
             
-        case 'getByCategory':
-            $category = $_GET['category'] ?? '';
-            if ($category) {
-                try {
-                    $events = $controller->getEventsByMainCategory($category);
-                    echo json_encode(['success' => true, 'events' => $events]);
-                } catch (Exception $e) {
-                    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
-                }
-            } else {
-                echo json_encode(['success' => false, 'message' => 'Category required']);
-            }
-            break;
-            
-        case 'getUpcoming':
-            $limit = $_GET['limit'] ?? 10;
+        default:
+            echo json_encode(['success' => false, 'message' => 'Invalid action']);
+    }
+}
+
+function handlePostRequest($adminController, $action) {
+    switch ($action) {
+        case 'addEvent':
             try {
-                $events = $controller->getUpcomingEvents($limit);
-                echo json_encode(['success' => true, 'events' => $events]);
-            } catch (Exception $e) {
-                echo json_encode(['success' => false, 'message' => $e->getMessage()]);
-            }
-            break;
-            
-        case 'getFilters':
-            // Get all categories, subcategories, venues for filters
-            try {
-                $categories = [];
-                $subcategories = $controller->getAllSubcategories();
-                $venues = $controller->getAllVenues();
+                $eventData = [
+                    'title' => $_POST['title'] ?? '',
+                    'description' => $_POST['description'] ?? '',
+                    'subcategory_id' => $_POST['subcategory_id'] ?? 0,
+                    'venue_id' => $_POST['venue_id'] ?? 0,
+                    'date' => $_POST['date'] ?? '',
+                    'end_date' => $_POST['end_date'] ?? null,
+                    'price' => $_POST['price'] ?? 0,
+                    'discounted_price' => $_POST['discounted_price'] ?? null,
+                    'image_url' => $_POST['image_url'] ?? '',
+                    'gallery_images' => !empty($_POST['gallery_images']) ? json_decode($_POST['gallery_images'], true) : [],
+                    'total_tickets' => $_POST['total_tickets'] ?? 0,
+                    'available_tickets' => $_POST['available_tickets'] ?? $_POST['total_tickets'] ?? 0,
+                    'min_tickets_per_booking' => $_POST['min_tickets_per_booking'] ?? 1,
+                    'max_tickets_per_booking' => $_POST['max_tickets_per_booking'] ?? 10,
+                    'terms_conditions' => $_POST['terms_conditions'] ?? '',
+                    'additional_info' => !empty($_POST['additional_info']) ? json_decode($_POST['additional_info'], true) : [],
+                    'status' => $_POST['status'] ?? 'draft'
+                ];
                 
-                // Extract unique main categories from subcategories
-                foreach ($subcategories as $sub) {
-                    if (!in_array($sub['main_category_name'], $categories)) {
-                        $categories[] = $sub['main_category_name'];
+                // Validate required fields
+                $required = ['title', 'description', 'subcategory_id', 'venue_id', 'date', 'price', 'total_tickets'];
+                foreach ($required as $field) {
+                    if (empty($eventData[$field])) {
+                        echo json_encode(['success' => false, 'message' => "Missing required field: $field"]);
+                        return;
                     }
                 }
                 
-                echo json_encode([
-                    'success' => true,
-                    'categories' => $categories,
-                    'subcategories' => $subcategories,
-                    'venues' => $venues
-                ]);
+                // Check if venue exists and is active
+                $venue = $adminController->getVenue($eventData['venue_id']);
+                if (!$venue || ($venue['status'] ?? '') !== 'active') {
+                    echo json_encode(['success' => false, 'message' => 'Selected venue is not available']);
+                    return;
+                }
+                
+                // Check if subcategory exists
+                $subcategory = $adminController->getSubcategory($eventData['subcategory_id']);
+                if (!$subcategory) {
+                    echo json_encode(['success' => false, 'message' => 'Selected subcategory does not exist']);
+                    return;
+                }
+                
+                // Create event
+                $result = $adminController->createEvent($eventData);
+                
+                if ($result) {
+                    echo json_encode([
+                        'success' => true,
+                        'message' => 'Event created successfully',
+                        'eventId' => $result
+                    ]);
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'Failed to create event']);
+                }
+                
             } catch (Exception $e) {
                 echo json_encode(['success' => false, 'message' => $e->getMessage()]);
             }
@@ -161,8 +201,8 @@ function handleGetRequest($controller, $action) {
     }
 }
 
-function handlePostRequest($controller, $action) {
-    if ($action === 'create') {
+function handlePutRequest($adminController, $action) {
+    if ($action === 'updateEvent') {
         try {
             $json = file_get_contents('php://input');
             $data = json_decode($json, true);
@@ -171,101 +211,20 @@ function handlePostRequest($controller, $action) {
                 throw new Exception('Invalid JSON data');
             }
             
-            // Validate required fields
-            $required = ['title', 'description', 'subcategory_id', 'venue_id', 'date', 'price', 'total_tickets'];
-            foreach ($required as $field) {
-                if (empty($data[$field])) {
-                    echo json_encode(['success' => false, 'message' => "Missing required field: $field"]);
-                    return;
-                }
-            }
-            
-            // Create event using Event model
-            require_once __DIR__ . '/../../app/models/Event.php';
-            $database = new Database();
-            $db = $database->getConnection();
-            
-            $event = new Event($db);
-            
-            // Set properties
-            $event->title = $data['title'];
-            $event->description = $data['description'];
-            $event->subcategory_id = $data['subcategory_id'];
-            $event->venue_id = $data['venue_id'];
-            $event->date = $data['date'];
-            $event->end_date = $data['end_date'] ?? null;
-            $event->price = $data['price'];
-            $event->discounted_price = $data['discounted_price'] ?? null;
-            $event->image_url = $data['image_url'] ?? 'https://placehold.co/600x400/2a2a2a/f97316?text=Event';
-            $event->gallery_images = $data['gallery_images'] ?? [];
-            $event->total_tickets = $data['total_tickets'];
-            $event->available_tickets = $data['total_tickets']; // Initially same as total
-            $event->min_tickets_per_booking = $data['min_tickets_per_booking'] ?? 1;
-            $event->max_tickets_per_booking = $data['max_tickets_per_booking'] ?? 10;
-            $event->terms_conditions = $data['terms_conditions'] ?? '';
-            $event->additional_info = $data['additional_info'] ?? [];
-            $event->status = $data['status'] ?? 'active';
-            
-            // Create event
-            $eventId = $event->create();
-            
-            if ($eventId) {
-                echo json_encode([
-                    'success' => true,
-                    'message' => 'Event created successfully',
-                    'eventId' => $eventId
-                ]);
-            } else {
-                echo json_encode(['success' => false, 'message' => 'Failed to create event']);
-            }
-            
-        } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
-        }
-    }
-}
-
-function handlePutRequest($controller, $action) {
-    if ($action === 'update') {
-        try {
-            $id = $_GET['id'] ?? 0;
-            $json = file_get_contents('php://input');
-            $data = json_decode($json, true);
-            
-            if (!$id) {
+            $eventId = $data['id'] ?? 0;
+            if (!$eventId) {
                 echo json_encode(['success' => false, 'message' => 'Event ID required']);
                 return;
             }
             
             // Update event
-            require_once __DIR__ . '/../../app/models/Event.php';
-            $database = new Database();
-            $db = $database->getConnection();
+            $result = $adminController->updateEvent($eventId, $data);
             
-            $event = new Event($db);
-            $event->id = $id;
-            
-            // Only update provided fields
-            if (isset($data['title'])) $event->title = $data['title'];
-            if (isset($data['description'])) $event->description = $data['description'];
-            if (isset($data['subcategory_id'])) $event->subcategory_id = $data['subcategory_id'];
-            if (isset($data['venue_id'])) $event->venue_id = $data['venue_id'];
-            if (isset($data['date'])) $event->date = $data['date'];
-            if (isset($data['end_date'])) $event->end_date = $data['end_date'];
-            if (isset($data['price'])) $event->price = $data['price'];
-            if (isset($data['discounted_price'])) $event->discounted_price = $data['discounted_price'];
-            if (isset($data['image_url'])) $event->image_url = $data['image_url'];
-            if (isset($data['gallery_images'])) $event->gallery_images = $data['gallery_images'];
-            if (isset($data['total_tickets'])) $event->total_tickets = $data['total_tickets'];
-            if (isset($data['available_tickets'])) $event->available_tickets = $data['available_tickets'];
-            if (isset($data['min_tickets_per_booking'])) $event->min_tickets_per_booking = $data['min_tickets_per_booking'];
-            if (isset($data['max_tickets_per_booking'])) $event->max_tickets_per_booking = $data['max_tickets_per_booking'];
-            if (isset($data['terms_conditions'])) $event->terms_conditions = $data['terms_conditions'];
-            if (isset($data['additional_info'])) $event->additional_info = $data['additional_info'];
-            if (isset($data['status'])) $event->status = $data['status'];
-            
-            if ($event->update()) {
-                echo json_encode(['success' => true, 'message' => 'Event updated successfully']);
+            if ($result) {
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Event updated successfully'
+                ]);
             } else {
                 echo json_encode(['success' => false, 'message' => 'Failed to update event']);
             }
@@ -276,25 +235,30 @@ function handlePutRequest($controller, $action) {
     }
 }
 
-function handleDeleteRequest($controller, $action) {
-    if ($action === 'delete') {
+function handleDeleteRequest($adminController, $action) {
+    if ($action === 'deleteEvent') {
         try {
-            $id = $_GET['id'] ?? 0;
+            $json = file_get_contents('php://input');
+            $data = json_decode($json, true);
             
-            if (!$id) {
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new Exception('Invalid JSON data');
+            }
+            
+            $eventId = $data['id'] ?? 0;
+            if (!$eventId) {
                 echo json_encode(['success' => false, 'message' => 'Event ID required']);
                 return;
             }
             
-            require_once __DIR__ . '/../../app/models/Event.php';
-            $database = new Database();
-            $db = $database->getConnection();
+            // Delete event
+            $result = $adminController->deleteEvent($eventId);
             
-            $event = new Event($db);
-            $event->id = $id;
-            
-            if ($event->delete()) {
-                echo json_encode(['success' => true, 'message' => 'Event deleted successfully']);
+            if ($result) {
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Event deleted successfully'
+                ]);
             } else {
                 echo json_encode(['success' => false, 'message' => 'Failed to delete event']);
             }

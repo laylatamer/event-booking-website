@@ -1,34 +1,28 @@
 <?php
-// events.php - Updated with database integration
+// events.php - Admin Events Management
 require_once __DIR__ . '/../../../config/db_connect.php';
-require_once __DIR__ . '/../../../app/controllers/EventController.php';
 require_once __DIR__ . '/../../../app/controllers/AdminController.php';
 
 // Create controllers
 $database = new Database();
 $db = $database->getConnection();
-$eventController = new EventController($db);
 $adminController = new AdminController($db);
 
-// Get all events (AdminController returns an array)
-$events = $adminController->getAllEvents();
+// Get all events with details
+$events = $adminController->getAllEventsWithDetails();
 
-// Get categories and subcategories for filters
-$categories = $adminController->getAllMainCategories();
-$subcategories = $adminController->getAllSubcategories();
+// Get main categories, subcategories, and venues for forms
+$mainCategories = $adminController->getAllMainCategories();
 $venues = $adminController->getAllVenues();
+
+// Filter active venues only
+$activeVenues = array_filter($venues, function($venue) {
+    return ($venue['status'] ?? '') === 'active';
+});
 ?>
 
 <!-- Events Section -->
-<div id="events-section" class="section-content active">
-    <div class="content-card">
-        <div class="table-header">
-            <h2>Events Management</h2>
-            <button class="primary-btn" id="add-event-btn">
-                <i data-feather="plus"></i>
-                Add New Event
-            </button>
-        </div>
+
 
         <div class="table-controls">
             <div class="controls-left">
@@ -38,7 +32,7 @@ $venues = $adminController->getAllVenues();
                 </div>
                 <select id="event-category-filter" class="filter-select">
                     <option value="">All Categories</option>
-                    <?php foreach ($categories as $category): ?>
+                    <?php foreach ($mainCategories as $category): ?>
                     <option value="<?php echo htmlspecialchars($category['name']); ?>">
                         <?php echo htmlspecialchars($category['name']); ?>
                     </option>
@@ -107,22 +101,25 @@ $venues = $adminController->getAllVenues();
                                 </div>
                             </td>
                             <td>
-                                <?php 
-                                // Get main category name from joined data
-                                $mainCategoryName = $event['main_category_name'] ?? 'Unknown';
-                                ?>
-                                <span class="category-badge <?php echo $adminController->getCategoryClass($mainCategoryName); ?>">
-                                    <?php echo htmlspecialchars($mainCategoryName); ?>
+                                <span class="category-badge">
+                                    <?php echo htmlspecialchars($event['main_category_name']); ?>
                                 </span>
-                                <small><?php echo htmlspecialchars($event['subcategory_name'] ?? 'Unknown'); ?></small>
+                                <br>
+                                <small><?php echo htmlspecialchars($event['subcategory_name']); ?></small>
                             </td>
                             <td>
                                 <?php echo $date->format('M d, Y'); ?>
+                                <br>
+                                <small><?php echo $date->format('h:i A'); ?></small>
                                 <?php if ($endDate && $date->format('Y-m-d') != $endDate->format('Y-m-d')): ?>
-                                <br><small>to <?php echo $endDate->format('M d'); ?></small>
+                                <br><small>to <?php echo $endDate->format('M d, h:i A'); ?></small>
                                 <?php endif; ?>
                             </td>
-                            <td><?php echo htmlspecialchars($event['venue_name']); ?></td>
+                            <td>
+                                <?php echo htmlspecialchars($event['venue_name']); ?>
+                                <br>
+                                <small>Capacity: <?php echo number_format($event['venue_capacity']); ?></small>
+                            </td>
                             <td>
                                 <div class="ticket-info">
                                     <span class="ticket-count"><?php echo $event['available_tickets']; ?>/<?php echo $event['total_tickets']; ?></span>
@@ -134,6 +131,7 @@ $venues = $adminController->getAllVenues();
                             <td>
                                 <?php if (!empty($event['discounted_price']) && $event['discounted_price'] < $event['price']): ?>
                                 <span class="original-price">$<?php echo number_format($event['price'], 2); ?></span>
+                                <br>
                                 <span class="discounted-price">$<?php echo number_format($event['discounted_price'], 2); ?></span>
                                 <?php else: ?>
                                 $<?php echo number_format($event['price'], 2); ?>
@@ -169,45 +167,77 @@ $venues = $adminController->getAllVenues();
 
         <div class="table-footer">
             <div class="table-info">
-                Showing <span id="events-start">1</span> to <span id="events-end"><?php echo count($events); ?></span> 
+                Showing <span id="events-start"><?php echo count($events) > 0 ? '1' : '0'; ?></span> 
+                to <span id="events-end"><?php echo count($events); ?></span> 
                 of <span id="events-total"><?php echo count($events); ?></span> events
             </div>
-            <div class="pagination">
-                <button class="pagination-btn" id="events-prev">Previous</button>
-                <span class="pagination-info">Page 1</span>
-                <button class="pagination-btn" id="events-next">Next</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- View Event Modal (Keep this one - it's not in modals.php) -->
-<div id="view-event-modal" class="modal hidden">
-    <div class="modal-content large">
-        <div class="modal-header">
-            <h3>Event Details</h3>
-            <button class="close-modal" data-modal="view-event">
-                <i data-feather="x"></i>
-            </button>
-        </div>
-        <div id="event-details-content">
-            <!-- Event details will be loaded here -->
         </div>
     </div>
 </div>
 
 <script>
-// Debug: Check what's loaded
+// Populate dropdowns on page load
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Events page loaded');
-    console.log('Add event form exists:', document.getElementById('add-event-form') ? 'Yes' : 'No');
-    console.log('Admin event title exists:', document.getElementById('admin-event-title') ? 'Yes' : 'No');
+    // Populate main categories dropdown
+    const mainCategorySelect = document.getElementById('admin-event-main-category');
+    const editMainCategorySelect = document.getElementById('admin-edit-event-main-category');
     
-    // Test if JavaScript file loaded
-    if (typeof editEvent === 'function') {
-        console.log('events.js functions are available');
-    } else {
-        console.log('events.js NOT loaded properly');
+    <?php foreach ($mainCategories as $category): ?>
+    if (mainCategorySelect) {
+        const option = document.createElement('option');
+        option.value = <?php echo $category['id']; ?>;
+        option.textContent = '<?php echo addslashes($category['name']); ?>';
+        mainCategorySelect.appendChild(option);
     }
+    if (editMainCategorySelect) {
+        const option = document.createElement('option');
+        option.value = <?php echo $category['id']; ?>;
+        option.textContent = '<?php echo addslashes($category['name']); ?>';
+        editMainCategorySelect.appendChild(option);
+    }
+    <?php endforeach; ?>
+    
+    // Populate venues dropdown
+    const venueSelect = document.getElementById('admin-event-venue');
+    const editVenueSelect = document.getElementById('admin-edit-event-venue');
+    
+    <?php foreach ($activeVenues as $venue): ?>
+    if (venueSelect) {
+        const option = document.createElement('option');
+        option.value = <?php echo $venue['id']; ?>;
+        option.textContent = '<?php echo addslashes($venue['name'] . ' - ' . $venue['city'] . ' (Cap: ' . $venue['capacity'] . ')'); ?>';
+        venueSelect.appendChild(option);
+    }
+    if (editVenueSelect) {
+        const option = document.createElement('option');
+        option.value = <?php echo $venue['id']; ?>;
+        option.textContent = '<?php echo addslashes($venue['name'] . ' - ' . $venue['city'] . ' (Cap: ' . $venue['capacity'] . ')'); ?>';
+        editVenueSelect.appendChild(option);
+    }
+    <?php endforeach; ?>
+    
+    // Check if venues exist
+    const noVenuesMessage = document.createElement('div');
+    noVenuesMessage.className = 'alert-message';
+    noVenuesMessage.style.cssText = 'background: #fef3c7; color: #92400e; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;';
+    
+    <?php if (empty($activeVenues)): ?>
+    noVenuesMessage.innerHTML = '<strong>⚠️ No Active Venues Found!</strong><br>You need to add at least one active venue before creating events. Go to Locations section to add venues.';
+    document.querySelector('.table-header').insertAdjacentElement('afterend', noVenuesMessage);
+    document.getElementById('add-event-btn').disabled = true;
+    document.getElementById('add-event-btn').style.opacity = '0.5';
+    document.getElementById('add-event-btn').style.cursor = 'not-allowed';
+    <?php endif; ?>
+    
+    // Check if categories exist
+    <?php if (empty($mainCategories)): ?>
+    if (!document.querySelector('.alert-message')) {
+        noVenuesMessage.innerHTML = '<strong>⚠️ No Categories Found!</strong><br>You need to set up categories before creating events. Go to Categories section to add categories.';
+        document.querySelector('.table-header').insertAdjacentElement('afterend', noVenuesMessage);
+        document.getElementById('add-event-btn').disabled = true;
+        document.getElementById('add-event-btn').style.opacity = '0.5';
+        document.getElementById('add-event-btn').style.cursor = 'not-allowed';
+    }
+    <?php endif; ?>
 });
 </script>
