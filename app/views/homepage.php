@@ -294,13 +294,24 @@ include 'partials/header.php';
         </section>
     </div>
 
+    <div id="cookie-banner" class="cookie-banner hidden">
+        <p>
+            We use cookies to ensure you get the best experience on our website. By clicking Accept, you agree to our use of cookies.
+        </p>
+        <div class="cookie-actions">
+            <button id="cookie-accept-btn" class="cookie-btn accept">Accept</button>
+            <button id="cookie-deny-btn" class="cookie-btn deny">Deny</button>
+        </div>
+    </div>
     
 
     <?php
 // Include the footer file
 include 'partials/footer.php';
 ?>
-<script src="../../public/js/homepage.js"></script>
 <script src="../../public/js/navbar.js"></script>
+<script src="../../public/js/homepage.js"></script>
+<script src="../../public/js/utils/app.js"></script>
+<script src="../../public/js/utils/cookie_utils.js"></script> 
 </body>
 </html>

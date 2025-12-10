@@ -26,12 +26,6 @@
                 </a>
             </li>
             <li>
-                <a href="index.php?section=reports" class="nav-btn <?php echo ($currentSection === 'reports') ? 'active' : ''; ?>" data-section="reports">
-                    <i data-feather="bar-chart-2"></i>
-                    <span>Reports</span>
-                </a>
-            </li>
-            <li>
                 <a href="index.php?section=events" class="nav-btn <?php echo ($currentSection === 'events') ? 'active' : ''; ?>" data-section="events">
                     <i data-feather="layers"></i>
                     <span>Manage Events</span>
@@ -46,7 +40,7 @@
             <li>
                 <a href="index.php?section=locations" class="nav-btn <?php echo ($currentSection === 'locations') ? 'active' : ''; ?>" data-section="locations">
                     <i data-feather="map-pin"></i>
-                    <span>Locations</span>
+                    <span>Venues</span>
                 </a>
             </li>
             <li>
