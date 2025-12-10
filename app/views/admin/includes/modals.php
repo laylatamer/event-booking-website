@@ -114,7 +114,7 @@
     </div>
 </div>
 
-<!-- Add Event Modal -->
+<!-- Add Event Modal (Updated with admin-specific IDs) -->
 <div id="add-event-modal" class="modal hidden">
     <div class="modal-content large">
         <div class="modal-header">
@@ -124,57 +124,127 @@
             </button>
         </div>
         <form id="add-event-form">
-            <div class="form-grid two-columns">
-                <div class="form-group">
-                    <label>Event Name</label>
-                    <input type="text" id="event-name" required>
+            <div class="form-grid">
+                <!-- Basic Information -->
+                <div class="form-section">
+                    <h4>Basic Information</h4>
+                    <div class="form-group">
+                        <label>Event Title *</label>
+                        <input type="text" id="admin-event-title" name="title" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Description *</label>
+                        <textarea id="admin-event-description" name="description" rows="4" required></textarea>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Category</label>
-                    <select id="event-category" required>
-                        <option value="">Select Category</option>
-                        <option value="music">Music</option>
-                        <option value="technology">Technology</option>
-                        <option value="art">Art</option>
-                        <option value="food">Food & Drink</option>
-                    </select>
+
+                <!-- Category & Venue -->
+                <div class="form-section">
+                    <h4>Category & Venue</h4>
+                    <div class="form-group">
+                        <label>Main Category *</label>
+                        <select id="admin-event-main-category" name="main_category_id" required>
+                            <option value="">Select Category</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Subcategory *</label>
+                        <select id="admin-event-subcategory" name="subcategory_id" required disabled>
+                            <option value="">Select Subcategory</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Venue *</label>
+                        <select id="admin-event-venue" name="venue_id" required>
+                            <option value="">Select Venue</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Start Date</label>
-                    <input type="date" id="event-start-date" required>
+
+                <!-- Date & Time -->
+                <div class="form-section">
+                    <h4>Date & Time</h4>
+                    <div class="form-group">
+                        <label>Start Date & Time *</label>
+                        <input type="datetime-local" id="admin-event-date" name="date" required>
+                    </div>
+                    <div class="form-group">
+                        <label>End Date & Time (Optional)</label>
+                        <input type="datetime-local" id="admin-event-end-date" name="end_date">
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>End Date</label>
-                    <input type="date" id="event-end-date" required>
+
+                <!-- Pricing -->
+                <div class="form-section">
+                    <h4>Pricing</h4>
+                    <div class="form-group two-columns">
+                        <div>
+                            <label>Regular Price *</label>
+                            <input type="number" id="admin-event-price" name="price" min="0" step="0.01" required>
+                        </div>
+                        <div>
+                            <label>Discounted Price (Optional)</label>
+                            <input type="number" id="admin-event-discounted-price" name="discounted_price" min="0" step="0.01">
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Location</label>
-                    <select id="event-location" required>
-                        <option value="">Select Location</option>
-                        <option value="central-park">Central Park</option>
-                        <option value="convention-center">Convention Center</option>
-                        <option value="museum">Museum of Modern Art</option>
-                    </select>
+
+                <!-- Tickets -->
+                <div class="form-section">
+                    <h4>Tickets</h4>
+                    <div class="form-group two-columns">
+                        <div>
+                            <label>Total Tickets *</label>
+                            <input type="number" id="admin-event-total-tickets" name="total_tickets" min="1" required>
+                        </div>
+                        <div>
+                            <label>Available Tickets *</label>
+                            <input type="number" id="admin-event-available-tickets" name="available_tickets" min="1" required>
+                        </div>
+                    </div>
+                    <div class="form-group two-columns">
+                        <div>
+                            <label>Min per Booking</label>
+                            <input type="number" id="admin-event-min-tickets" name="min_tickets_per_booking" min="1" value="1">
+                        </div>
+                        <div>
+                            <label>Max per Booking</label>
+                            <input type="number" id="admin-event-max-tickets" name="max_tickets_per_booking" min="1" value="10">
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Organizer</label>
-                    <select id="event-organizer" required>
-                        <option value="">Select Organizer</option>
-                        <option value="music-festivals">Music Festivals Inc.</option>
-                        <option value="tech-events">Tech Events LLC</option>
-                        <option value="art-exhibitions">Art Exhibitions Co.</option>
-                    </select>
+
+                <!-- Media -->
+                <div class="form-section">
+                    <h4>Media</h4>
+                    <div class="form-group">
+                        <label>Main Image URL</label>
+                        <input type="url" id="admin-event-image-url" name="image_url" placeholder="https://example.com/image.jpg">
+                    </div>
+                    <div class="form-group">
+                        <label>Gallery Images (JSON array, one per line)</label>
+                        <textarea id="admin-event-gallery-images" name="gallery_images" rows="3" placeholder='["https://example.com/image1.jpg", "https://example.com/image2.jpg"]'></textarea>
+                    </div>
                 </div>
-                <div class="form-group full-width">
-                    <label>Description</label>
-                    <textarea id="event-description" rows="3"></textarea>
-                </div>
-                <div class="form-group full-width">
-                    <label>Event Image</label>
-                    <div class="file-upload">
-                        <i data-feather="upload"></i>
-                        <p>Click to upload or drag and drop</p>
-                        <input type="file" id="event-image" accept="image/*">
+
+                <!-- Additional Information -->
+                <div class="form-section">
+                    <h4>Additional Information</h4>
+                    <div class="form-group">
+                        <label>Terms & Conditions</label>
+                        <textarea id="admin-event-terms" name="terms_conditions" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Additional Info (JSON)</label>
+                        <textarea id="admin-event-additional-info" name="additional_info" rows="3" placeholder='{"duration": "2 hours", "age_restriction": "18+"}'></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select id="admin-event-status" name="status">
+                            <option value="draft">Draft</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
                     </div>
                 </div>
             </div>
@@ -186,7 +256,7 @@
     </div>
 </div>
 
-<!-- Edit Event Modal -->
+<!-- Edit Event Modal (Updated with admin-specific IDs) -->
 <div id="edit-event-modal" class="modal hidden">
     <div class="modal-content large">
         <div class="modal-header">
@@ -196,55 +266,128 @@
             </button>
         </div>
         <form id="edit-event-form">
-            <input type="hidden" id="edit-event-id">
-            <div class="form-grid two-columns">
-                <div class="form-group">
-                    <label>Event Name</label>
-                    <input type="text" id="edit-event-name" required>
+            <input type="hidden" id="admin-edit-event-id" name="id">
+            <div class="form-grid">
+                <!-- Basic Information -->
+                <div class="form-section">
+                    <h4>Basic Information</h4>
+                    <div class="form-group">
+                        <label>Event Title *</label>
+                        <input type="text" id="admin-edit-event-title" name="title" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Description *</label>
+                        <textarea id="admin-edit-event-description" name="description" rows="4" required></textarea>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Category</label>
-                    <select id="edit-event-category" required>
-                        <option value="music">Music</option>
-                        <option value="technology">Technology</option>
-                        <option value="art">Art</option>
-                        <option value="food">Food & Drink</option>
-                    </select>
+
+                <!-- Category & Venue -->
+                <div class="form-section">
+                    <h4>Category & Venue</h4>
+                    <div class="form-group">
+                        <label>Main Category *</label>
+                        <select id="admin-edit-event-main-category" name="main_category_id" required>
+                            <option value="">Select Category</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Subcategory *</label>
+                        <select id="admin-edit-event-subcategory" name="subcategory_id" required>
+                            <option value="">Select Subcategory</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Venue *</label>
+                        <select id="admin-edit-event-venue" name="venue_id" required>
+                            <option value="">Select Venue</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Start Date</label>
-                    <input type="date" id="edit-event-start-date" required>
+
+                <!-- Date & Time -->
+                <div class="form-section">
+                    <h4>Date & Time</h4>
+                    <div class="form-group">
+                        <label>Start Date & Time *</label>
+                        <input type="datetime-local" id="admin-edit-event-date" name="date" required>
+                    </div>
+                    <div class="form-group">
+                        <label>End Date & Time (Optional)</label>
+                        <input type="datetime-local" id="admin-edit-event-end-date" name="end_date">
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>End Date</label>
-                    <input type="date" id="edit-event-end-date" required>
+
+                <!-- Pricing -->
+                <div class="form-section">
+                    <h4>Pricing</h4>
+                    <div class="form-group two-columns">
+                        <div>
+                            <label>Regular Price *</label>
+                            <input type="number" id="admin-edit-event-price" name="price" min="0" step="0.01" required>
+                        </div>
+                        <div>
+                            <label>Discounted Price (Optional)</label>
+                            <input type="number" id="admin-edit-event-discounted-price" name="discounted_price" min="0" step="0.01">
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Location</label>
-                    <select id="edit-event-location" required>
-                        <option value="central-park">Central Park</option>
-                        <option value="convention-center">Convention Center</option>
-                        <option value="museum">Museum of Modern Art</option>
-                    </select>
+
+                <!-- Tickets -->
+                <div class="form-section">
+                    <h4>Tickets</h4>
+                    <div class="form-group two-columns">
+                        <div>
+                            <label>Total Tickets *</label>
+                            <input type="number" id="admin-edit-event-total-tickets" name="total_tickets" min="1" required>
+                        </div>
+                        <div>
+                            <label>Available Tickets *</label>
+                            <input type="number" id="admin-edit-event-available-tickets" name="available_tickets" min="1" required>
+                        </div>
+                    </div>
+                    <div class="form-group two-columns">
+                        <div>
+                            <label>Min per Booking</label>
+                            <input type="number" id="admin-edit-event-min-tickets" name="min_tickets_per_booking" min="1">
+                        </div>
+                        <div>
+                            <label>Max per Booking</label>
+                            <input type="number" id="admin-edit-event-max-tickets" name="max_tickets_per_booking" min="1">
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Organizer</label>
-                    <select id="edit-event-organizer" required>
-                        <option value="music-festivals">Music Festivals Inc.</option>
-                        <option value="tech-events">Tech Events LLC</option>
-                        <option value="art-exhibitions">Art Exhibitions Co.</option>
-                    </select>
+
+                <!-- Media -->
+                <div class="form-section">
+                    <h4>Media</h4>
+                    <div class="form-group">
+                        <label>Main Image URL</label>
+                        <input type="url" id="admin-edit-event-image-url" name="image_url">
+                    </div>
+                    <div class="form-group">
+                        <label>Gallery Images (JSON array)</label>
+                        <textarea id="admin-edit-event-gallery-images" name="gallery_images" rows="3"></textarea>
+                    </div>
                 </div>
-                <div class="form-group full-width">
-                    <label>Description</label>
-                    <textarea id="edit-event-description" rows="3"></textarea>
-                </div>
-                <div class="form-group full-width">
-                    <label>Event Image</label>
-                    <div class="file-upload">
-                        <i data-feather="upload"></i>
-                        <p>Click to upload or drag and drop</p>
-                        <input type="file" id="edit-event-image" accept="image/*">
+
+                <!-- Additional Information -->
+                <div class="form-section">
+                    <h4>Additional Information</h4>
+                    <div class="form-group">
+                        <label>Terms & Conditions</label>
+                        <textarea id="admin-edit-event-terms" name="terms_conditions" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Additional Info (JSON)</label>
+                        <textarea id="admin-edit-event-additional-info" name="additional_info" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select id="admin-edit-event-status" name="status">
+                            <option value="draft">Draft</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
                     </div>
                 </div>
             </div>
@@ -465,10 +608,6 @@
                     <label>Event</label>
                     <select id="ticket-event" required>
                         <option value="">Select Event</option>
-                        <option value="summer-music">Summer Music Festival</option>
-                        <option value="tech-conference">Tech Conference 2023</option>
-                        <option value="art-exhibition">Art Exhibition</option>
-                        <option value="food-festival">Food Festival</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -514,10 +653,6 @@
                 <div class="form-group">
                     <label>Event</label>
                     <select id="edit-ticket-event" required>
-                        <option value="summer-music">Summer Music Festival</option>
-                        <option value="tech-conference">Tech Conference 2023</option>
-                        <option value="art-exhibition">Art Exhibition</option>
-                        <option value="food-festival">Food Festival</option>
                     </select>
                 </div>
                 <div class="form-group">
