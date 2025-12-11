@@ -1,249 +1,141 @@
-// Bookings Section Scripts
+/**
+ * Bookings Management JavaScript Module
+ * Handles AJAX operations for bookings
+ */
 
-let bookings = [
-    { id: 1, bookingId: '#EVT-4892', event: 'Summer Music Festival', user: 'john.doe@example.com', date: 'Jun 15, 2023', tickets: 2, amount: 120.00, status: 'completed' },
-    { id: 2, bookingId: '#EVT-3567', event: 'Tech Conference 2023', user: 'sarah.smith@example.com', date: 'Jun 12, 2023', tickets: 1, amount: 75.00, status: 'completed' },
-    { id: 3, bookingId: '#EVT-2781', event: 'Art Exhibition', user: 'mike.johnson@example.com', date: 'Jun 10, 2023', tickets: 4, amount: 60.00, status: 'pending' },
-    { id: 4, bookingId: '#EVT-1895', event: 'Food Festival', user: 'emily.wilson@example.com', date: 'Jun 8, 2023', tickets: 3, amount: 45.00, status: 'cancelled' }
-];
+// Configuration
+const API_BASE_URL = '/event-booking-website/public/api/bookings_API.php';
 
-let currentPage = { bookings: 1 };
-const itemsPerPage = 4;
+// Helper functions
+const utils = {
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    },
 
-document.addEventListener('DOMContentLoaded', function() {
-    initializeBookingsEventListeners();
-    loadBookings();
-});
-
-function initializeBookingsEventListeners() {
-    const bookingSearch = document.getElementById('booking-search');
-    if (bookingSearch) {
-        bookingSearch.addEventListener('input', filterBookings);
-    }
-    
-    const bookingsPrev = document.getElementById('bookings-prev');
-    const bookingsNext = document.getElementById('bookings-next');
-    if (bookingsPrev) bookingsPrev.addEventListener('click', () => changePage('bookings', -1));
-    if (bookingsNext) bookingsNext.addEventListener('click', () => changePage('bookings', 1));
-    
-    const printBookingBtn = document.getElementById('print-booking-btn');
-    if (printBookingBtn) {
-        printBookingBtn.addEventListener('click', printBooking);
-    }
-}
-
-function loadBookings() {
-    const bookingsTableBody = document.getElementById('bookings-table-body');
-    if (!bookingsTableBody) return;
-    
-    bookingsTableBody.innerHTML = '';
-
-    if (bookings.length === 0) {
-        bookingsTableBody.innerHTML = `
-            <tr>
-                <td colspan="8" class="empty-state">
-                    <i data-feather="calendar"></i>
-                    <p>No bookings found</p>
-                </td>
-            </tr>
-        `;
-        feather.replace();
-        return;
-    }
-    
-    const startIndex = (currentPage.bookings - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const bookingsToShow = bookings.slice(startIndex, endIndex);
-    
-    bookingsToShow.forEach(booking => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${booking.bookingId}</td>
-            <td>${booking.event}</td>
-            <td>${booking.user}</td>
-            <td>${booking.date}</td>
-            <td>${booking.tickets}</td>
-            <td>$${booking.amount.toFixed(2)}</td>
-            <td><span class="status-badge ${booking.status}">${booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}</span></td>
-            <td>
-                <div class="action-buttons">
-                    <button class="action-btn view-booking" data-id="${booking.id}">
-                        <i data-feather="eye"></i>
-                    </button>
-                    <button class="action-btn print-booking" data-id="${booking.id}">
-                        <i data-feather="printer"></i>
-                    </button>
-                </div>
-            </td>
-        `;
-        bookingsTableBody.appendChild(row);
-    });
-    
-    document.getElementById('bookings-start').textContent = startIndex + 1;
-    document.getElementById('bookings-end').textContent = Math.min(endIndex, bookings.length);
-    document.getElementById('bookings-total').textContent = bookings.length;
-    
-    updatePaginationButtons('bookings', bookings.length, itemsPerPage);
-    
-    feather.replace();
-    document.querySelectorAll('.view-booking').forEach(button => {
-        button.addEventListener('click', function() {
-            const bookingId = parseInt(this.getAttribute('data-id'));
-            viewBooking(bookingId);
+    formatDate(dateString) {
+        if (!dateString) return 'N/A';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric' 
         });
-    });
-    
-    document.querySelectorAll('.print-booking').forEach(button => {
-        button.addEventListener('click', function() {
-            const bookingId = parseInt(this.getAttribute('data-id'));
-            printBooking(bookingId);
-        });
-    });
-}
+    },
 
-function filterBookings() {
-    const searchTerm = document.getElementById('booking-search').value.toLowerCase();
-    
-    const filteredBookings = bookings.filter(booking => {
-        return booking.bookingId.toLowerCase().includes(searchTerm) || 
-               booking.event.toLowerCase().includes(searchTerm) || 
-               booking.user.toLowerCase().includes(searchTerm);
-    });
-    
-    const bookingsTableBody = document.getElementById('bookings-table-body');
-    bookingsTableBody.innerHTML = '';
-    
-    const startIndex = (currentPage.bookings - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const bookingsToShow = filteredBookings.slice(startIndex, endIndex);
-    
-    bookingsToShow.forEach(booking => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${booking.bookingId}</td>
-            <td>${booking.event}</td>
-            <td>${booking.user}</td>
-            <td>${booking.date}</td>
-            <td>${booking.tickets}</td>
-            <td>$${booking.amount.toFixed(2)}</td>
-            <td><span class="status-badge ${booking.status}">${booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}</span></td>
-            <td>
-                <div class="action-buttons">
-                    <button class="action-btn view-booking" data-id="${booking.id}">
-                        <i data-feather="eye"></i>
-                    </button>
-                    <button class="action-btn print-booking" data-id="${booking.id}">
-                        <i data-feather="printer"></i>
-                    </button>
-                </div>
-            </td>
-        `;
-        bookingsTableBody.appendChild(row);
-    });
-    
-    document.getElementById('bookings-start').textContent = filteredBookings.length > 0 ? startIndex + 1 : 0;
-    document.getElementById('bookings-end').textContent = Math.min(endIndex, filteredBookings.length);
-    document.getElementById('bookings-total').textContent = filteredBookings.length;
-    
-    updatePaginationButtons('bookings', filteredBookings.length, itemsPerPage);
-    
-    feather.replace();
-    document.querySelectorAll('.view-booking').forEach(button => {
-        button.addEventListener('click', function() {
-            const bookingId = parseInt(this.getAttribute('data-id'));
-            viewBooking(bookingId);
+    formatDateTime(dateString) {
+        if (!dateString) return 'N/A';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
         });
-    });
-    
-    document.querySelectorAll('.print-booking').forEach(button => {
-        button.addEventListener('click', function() {
-            const bookingId = parseInt(this.getAttribute('data-id'));
-            printBooking(bookingId);
-        });
-    });
-}
+    },
 
-function viewBooking(bookingId) {
-    const booking = bookings.find(b => b.id === bookingId);
-    if (!booking) return;
-    
-    const bookingDetails = document.getElementById('booking-details');
-    bookingDetails.innerHTML = `
-        <div class="booking-detail">
-            <p><strong>Booking ID:</strong> ${booking.bookingId}</p>
-            <p><strong>Event:</strong> ${booking.event}</p>
-            <p><strong>User:</strong> ${booking.user}</p>
-            <p><strong>Date:</strong> ${booking.date}</p>
-            <p><strong>Tickets:</strong> ${booking.tickets}</p>
-            <p><strong>Amount:</strong> $${booking.amount.toFixed(2)}</p>
-            <p><strong>Status:</strong> <span class="status-badge ${booking.status}">${booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}</span></p>
-        </div>
-    `;
-    
-    document.getElementById('print-booking-btn').setAttribute('data-booking-id', bookingId);
-    openModal('view-booking');
-}
-
-function printBooking(bookingId = null) {
-    if (!bookingId) {
-        bookingId = document.getElementById('print-booking-btn').getAttribute('data-booking-id');
+    formatCurrency(amount) {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD'
+        }).format(amount || 0);
     }
-    
-    const booking = bookings.find(b => b.id === parseInt(bookingId));
-    if (!booking) return;
-    
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(`
-        <html>
-            <head>
-                <title>Booking Ticket - ${booking.bookingId}</title>
-                <style>
-                    body { font-family: Arial, sans-serif; padding: 20px; }
-                    .ticket { border: 2px solid #000; padding: 20px; max-width: 400px; margin: 0 auto; }
-                    .header { text-align: center; margin-bottom: 20px; }
-                    .details { margin-bottom: 20px; }
-                    .detail { margin-bottom: 10px; }
-                    .footer { text-align: center; margin-top: 20px; font-size: 12px; color: #666; }
-                </style>
-            </head>
-            <body>
-                <div class="ticket">
-                    <div class="header">
-                        <h1>EحGZLY</h1>
-                        <h2>Event Ticket</h2>
-                    </div>
-                    <div class="details">
-                        <div class="detail"><strong>Booking ID:</strong> ${booking.bookingId}</div>
-                        <div class="detail"><strong>Event:</strong> ${booking.event}</div>
-                        <div class="detail"><strong>User:</strong> ${booking.user}</div>
-                        <div class="detail"><strong>Date:</strong> ${booking.date}</div>
-                        <div class="detail"><strong>Tickets:</strong> ${booking.tickets}</div>
-                        <div class="detail"><strong>Amount:</strong> $${booking.amount.toFixed(2)}</div>
-                        <div class="detail"><strong>Status:</strong> ${booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}</div>
-                    </div>
-                    <div class="footer">
-                        <p>Thank you for your booking!</p>
-                    </div>
-                </div>
-            </body>
-        </html>
-    `);
-    printWindow.document.close();
-    printWindow.print();
-}
+};
 
-function changePage(section, direction) {
-    const totalItems = bookings.length;
-    const totalPages = Math.ceil(totalItems / itemsPerPage);
-    
-    currentPage[section] += direction;
-    
-    if (currentPage[section] < 1) {
-        currentPage[section] = 1;
-    } else if (currentPage[section] > totalPages) {
-        currentPage[section] = totalPages;
+// API Functions
+const api = {
+    async fetchBookingDetails(id) {
+        try {
+            const response = await fetch(`${API_BASE_URL}?action=getOne&id=${id}`);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            
+            if (!result.success) {
+                throw new Error(result.message || 'Failed to load booking details');
+            }
+
+            return result.data;
+        } catch (error) {
+            console.error('API Error:', error);
+            throw error;
+        }
+    },
+
+    async updateBookingStatus(id, status) {
+        try {
+            const response = await fetch(`${API_BASE_URL}?action=updateStatus`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    id: id,
+                    status: status
+                })
+            });
+
+            const result = await response.json();
+            
+            if (!result.success) {
+                throw new Error(result.message || 'Failed to update status');
+            }
+
+            return result;
+        } catch (error) {
+            console.error('API Error:', error);
+            throw error;
+        }
+    },
+
+    async updatePaymentStatus(id, paymentStatus) {
+        try {
+            const response = await fetch(`${API_BASE_URL}?action=updatePaymentStatus`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    id: id,
+                    payment_status: paymentStatus
+                })
+            });
+
+            const result = await response.json();
+            
+            if (!result.success) {
+                throw new Error(result.message || 'Failed to update payment status');
+            }
+
+            return result;
+        } catch (error) {
+            console.error('API Error:', error);
+            throw error;
+        }
+    },
+
+    async deleteBooking(id) {
+        try {
+            const response = await fetch(`${API_BASE_URL}?action=delete&id=${id}`);
+            const result = await response.json();
+            
+            if (!result.success) {
+                throw new Error(result.message || 'Failed to delete booking');
+            }
+
+            return result;
+        } catch (error) {
+            console.error('API Error:', error);
+            throw error;
+        }
     }
-    
-    loadBookings();
-}
+};
 
+// Make available globally
+window.bookingsAPI = api;
+window.bookingsUtils = utils;

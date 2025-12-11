@@ -15,7 +15,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 // Create BookingsModel instance
-$bookingsModel = new BookingsModel($pdo);
+$database = new Database();
+$db = $database->getConnection();
+$bookingsModel = new BookingsModel($db);
 
 $action = $_GET['action'] ?? '';
 
