@@ -5,14 +5,8 @@ require_once __DIR__ . '/../../../config/db_connect.php';
 $database = new Database();
 $db = $database->getConnection();
 
-// Include the TicketsModel
-require_once __DIR__ . '/../../../app/models/TicketsModel.php';
-$ticketsModel = new TicketsModel($db);
-
-// Get ticket statistics for the dashboard
-$stats = $ticketsModel->getTicketStats();
-
 // Get events for dropdown
+$events = [];
 try {
     $eventsQuery = "SELECT id, title FROM events ORDER BY date DESC";
     $eventsStmt = $db->prepare($eventsQuery);
@@ -21,33 +15,77 @@ try {
 } catch (Exception $e) {
     $events = [];
 }
+
+// Get tickets from database
+$tickets = [];
+$totalTickets = 0;
+$activeTickets = 0;
+$soldOutTickets = 0;
+$availableTickets = 0;
+$averagePrice = 0;
+
+try {
+    // Get statistics
+    $statsQuery = "SELECT 
+        COUNT(*) as total_tickets,
+        SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_tickets,
+        SUM(CASE WHEN status = 'sold_out' THEN 1 ELSE 0 END) as sold_out_tickets,
+        SUM(quantity_available) as available_tickets,
+        AVG(price) as average_price
+    FROM tickets";
+    
+    $statsStmt = $db->prepare($statsQuery);
+    $statsStmt->execute();
+    $stats = $statsStmt->fetch(PDO::FETCH_ASSOC);
+    
+    $totalTickets = $stats['total_tickets'] ?? 0;
+    $activeTickets = $stats['active_tickets'] ?? 0;
+    $soldOutTickets = $stats['sold_out_tickets'] ?? 0;
+    $availableTickets = $stats['available_tickets'] ?? 0;
+    $averagePrice = number_format($stats['average_price'] ?? 0, 2);
+    
+    // Get tickets with event info
+    $ticketsQuery = "SELECT 
+        t.*,
+        e.title as event_title,
+        e.date as event_date
+    FROM tickets t
+    LEFT JOIN events e ON t.event_id = e.id
+    ORDER BY t.created_at DESC";
+    
+    $ticketsStmt = $db->prepare($ticketsQuery);
+    $ticketsStmt->execute();
+    $tickets = $ticketsStmt->fetchAll(PDO::FETCH_ASSOC);
+    
+} catch (Exception $e) {
+    // Handle error silently
+    error_log("Tickets page error: " . $e->getMessage());
+}
 ?>
 
 <div id="tickets-section" class="section-content">
-    <h2 class="section-title">Tickets Management</h2>
-    <p class="section-description">Create, manage, and monitor all tickets for your events.</p>
-
+    
     <div class="content-card">
         <div class="stats-grid small">
             <div class="stat-card small">
                 <p class="stat-label">Total Tickets</p>
-                <h3 class="stat-value" id="stat-total-tickets"><?php echo $stats['total_tickets'] ?? '0'; ?></h3>
+                <h3 class="stat-value" id="stat-total-tickets"><?php echo $totalTickets; ?></h3>
             </div>
             <div class="stat-card small">
                 <p class="stat-label">Active</p>
-                <h3 class="stat-value" id="stat-active-tickets"><?php echo $stats['active_tickets'] ?? '0'; ?></h3>
+                <h3 class="stat-value" id="stat-active-tickets"><?php echo $activeTickets; ?></h3>
             </div>
             <div class="stat-card small">
                 <p class="stat-label">Sold Out</p>
-                <h3 class="stat-value" id="stat-sold-out-tickets"><?php echo $stats['sold_out_tickets'] ?? '0'; ?></h3>
+                <h3 class="stat-value" id="stat-sold-out-tickets"><?php echo $soldOutTickets; ?></h3>
             </div>
             <div class="stat-card small">
                 <p class="stat-label">Available Tickets</p>
-                <h3 class="stat-value" id="stat-available-tickets"><?php echo $stats['available_quantity'] ?? '0'; ?></h3>
+                <h3 class="stat-value" id="stat-available-tickets"><?php echo $availableTickets; ?></h3>
             </div>
             <div class="stat-card small">
                 <p class="stat-label">Average Price</p>
-                <h3 class="stat-value" id="stat-average-price">$<?php echo number_format($stats['average_price'] ?? 0, 2); ?></h3>
+                <h3 class="stat-value" id="stat-average-price">$<?php echo $averagePrice; ?></h3>
             </div>
         </div>
     </div>
@@ -73,10 +111,6 @@ try {
                 </select>
             </div>
             <div class="controls-right">
-                <button class="primary-btn" id="add-ticket-btn">
-                    <i data-feather="plus"></i>
-                    <span>Add New Ticket</span>
-                </button>
                 <button class="icon-btn" id="refresh-tickets-btn">
                     <i data-feather="refresh-cw"></i>
                 </button>
@@ -92,162 +126,88 @@ try {
                         <th>Price</th>
                         <th>Quantity</th>
                         <th>Status</th>
-                        <th>Sale Status</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody id="tickets-table-body">
+                    <?php if (empty($tickets)): ?>
                     <tr>
-                        <td colspan="8" class="loading-state">
-                            <div class="loading-spinner"></div>
-                            <p>Loading tickets...</p>
+                        <td colspan="6" class="empty-state">
+                            <i data-feather="ticket"></i>
+                            <p>No tickets found</p>
                         </td>
                     </tr>
+                    <?php else: ?>
+                        <?php foreach ($tickets as $ticket): 
+                            // Calculate availability percentage
+                            $availabilityPercentage = ($ticket['quantity_total'] > 0) ? 
+                                ($ticket['quantity_available'] / $ticket['quantity_total']) * 100 : 0;
+                            
+                            $availabilityClass = 'success';
+                            if ($availabilityPercentage < 20) {
+                                $availabilityClass = 'danger';
+                            } else if ($availabilityPercentage < 50) {
+                                $availabilityClass = 'warning';
+                            }
+                            
+                            // Format price
+                            $price = number_format($ticket['price'], 2);
+                            
+                            // Format date
+                            $eventDate = $ticket['event_date'] ? date('M d, Y', strtotime($ticket['event_date'])) : 'N/A';
+                        ?>
+                        <tr>
+                            <td>
+                                <strong><?php echo htmlspecialchars($ticket['name']); ?></strong>
+                                <br><small class="text-muted"><?php echo htmlspecialchars($ticket['type']); ?></small>
+                            </td>
+                            <td>
+                                <div class="event-info">
+                                    <strong><?php echo htmlspecialchars($ticket['event_title'] ?? 'Unknown Event'); ?></strong>
+                                    <small><?php echo $eventDate; ?></small>
+                                </div>
+                            </td>
+                            <td>
+                                <strong>$<?php echo $price; ?></strong>
+                            </td>
+                            <td>
+                                <div class="quantity-info">
+                                    <div class="quantity-bar">
+                                        <div class="quantity-fill" style="width: <?php echo $availabilityPercentage; ?>%"></div>
+                                    </div>
+                                    <div class="quantity-numbers">
+                                        <span class="text-<?php echo $availabilityClass; ?>"><?php echo $ticket['quantity_available']; ?></span>
+                                        <span class="text-muted">/ <?php echo $ticket['quantity_total']; ?></span>
+                                        <small class="text-muted">(<?php echo $ticket['quantity_sold']; ?> sold)</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="status-badge <?php echo $ticket['status']; ?>">
+                                    <?php echo ucfirst($ticket['status']); ?>
+                                </span>
+                            </td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="action-btn update-status-btn" data-id="<?php echo $ticket['id']; ?>" data-name="<?php echo htmlspecialchars($ticket['name']); ?>" title="Update Status">
+                                        <i data-feather="toggle-right"></i>
+                                    </button>
+                                    <button class="action-btn delete delete-ticket" data-id="<?php echo $ticket['id']; ?>" data-name="<?php echo htmlspecialchars($ticket['name']); ?>" title="Delete Ticket">
+                                        <i data-feather="trash-2"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>
 
         <div class="table-footer">
             <div class="table-info">
-                Showing <span id="tickets-start">0</span> to <span id="tickets-end">0</span> of <span id="tickets-total">0</span> entries
+                Showing <span id="tickets-total"><?php echo count($tickets); ?></span> entries
             </div>
-            <div class="pagination">
-                <button class="pagination-btn" id="tickets-prev">Previous</button>
-                <div id="tickets-pages"></div>
-                <button class="pagination-btn" id="tickets-next">Next</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Add/Edit Ticket Modal -->
-<div id="ticket-modal" class="modal hidden">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3 id="ticket-modal-title">Add New Ticket</h3>
-            <button class="close-modal" data-modal="ticket">
-                <i data-feather="x"></i>
-            </button>
-        </div>
-        <form id="ticket-form">
-            <input type="hidden" id="ticket-id">
-            <div class="form-grid">
-                <div class="form-group">
-                    <label for="ticket-event-id">Event *</label>
-                    <select id="ticket-event-id" name="event_id" required>
-                        <option value="">Select Event</option>
-                        <?php foreach ($events as $event): ?>
-                        <option value="<?php echo $event['id']; ?>"><?php echo htmlspecialchars($event['title']); ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="ticket-name">Ticket Name *</label>
-                    <input type="text" id="ticket-name" name="name" required placeholder="e.g., General Admission">
-                </div>
-                <div class="form-group two-columns">
-                    <div>
-                        <label for="ticket-price">Price ($) *</label>
-                        <div class="price-input">
-                            <span>$</span>
-                            <input type="number" id="ticket-price" name="price" step="0.01" min="0" required>
-                        </div>
-                    </div>
-                    <div>
-                        <label for="ticket-discounted-price">Discounted Price ($)</label>
-                        <div class="price-input">
-                            <span>$</span>
-                            <input type="number" id="ticket-discounted-price" name="discounted_price" step="0.01" min="0">
-                        </div>
-                    </div>
-                </div>
-                <div class="form-group two-columns">
-                    <div>
-                        <label for="ticket-quantity-total">Total Quantity *</label>
-                        <input type="number" id="ticket-quantity-total" name="quantity_total" min="1" required>
-                    </div>
-                    <div>
-                        <label for="ticket-status">Status</label>
-                        <select id="ticket-status" name="status">
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="form-group two-columns">
-                    <div>
-                        <label for="ticket-min-order">Min per Order</label>
-                        <input type="number" id="ticket-min-order" name="min_per_order" min="1" value="1">
-                    </div>
-                    <div>
-                        <label for="ticket-max-order">Max per Order</label>
-                        <input type="number" id="ticket-max-order" name="max_per_order" min="1" value="10">
-                    </div>
-                </div>
-                <div class="form-group two-columns">
-                    <div>
-                        <label for="ticket-sales-start">Sales Start Date</label>
-                        <input type="datetime-local" id="ticket-sales-start" name="sales_start_date">
-                    </div>
-                    <div>
-                        <label for="ticket-sales-end">Sales End Date</label>
-                        <input type="datetime-local" id="ticket-sales-end" name="sales_end_date">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="ticket-description">Description</label>
-                    <textarea id="ticket-description" name="description" rows="3" placeholder="Describe what this ticket includes..."></textarea>
-                </div>
-                <div class="form-group full-width">
-                    <label>Features (What's included)</label>
-                    <div id="ticket-features-container">
-                        <div class="feature-input-row">
-                            <input type="text" class="feature-input" placeholder="e.g., Access to main event">
-                            <button type="button" class="secondary-btn add-feature-btn">
-                                <i data-feather="plus"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <input type="hidden" id="ticket-features" name="features">
-                </div>
-                <div class="form-group">
-                    <label for="ticket-currency">Currency</label>
-                    <select id="ticket-currency" name="currency">
-                        <option value="USD">USD ($)</option>
-                        <option value="EUR">EUR (€)</option>
-                        <option value="GBP">GBP (£)</option>
-                    </select>
-                </div>
-            </div>
-            <div class="modal-actions">
-                <button type="button" class="secondary-btn" data-modal="ticket">Cancel</button>
-                <button type="submit" class="primary-btn" id="ticket-submit-btn">
-                    <span id="ticket-submit-text">Add Ticket</span>
-                    <i data-feather="loader" class="hidden" id="ticket-loading-icon"></i>
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- View Ticket Details Modal -->
-<div id="view-ticket-modal" class="modal hidden">
-    <div class="modal-content large">
-        <div class="modal-header">
-            <h3>Ticket Details</h3>
-            <button class="close-modal" data-modal="view-ticket">
-                <i data-feather="x"></i>
-            </button>
-        </div>
-        <div id="ticket-details" class="ticket-details-container">
-            <!-- Ticket details will be populated by JavaScript -->
-        </div>
-        <div class="modal-actions">
-            <button type="button" class="secondary-btn" data-modal="view-ticket">Close</button>
-            <button class="primary-btn" id="edit-ticket-btn">
-                <i data-feather="edit-2"></i>
-                <span>Edit Ticket</span>
-            </button>
         </div>
     </div>
 </div>
@@ -256,7 +216,7 @@ try {
 <div id="quick-update-modal" class="modal hidden">
     <div class="modal-content small">
         <div class="modal-header">
-            <h3 id="quick-update-title">Update Ticket</h3>
+            <h3 id="quick-update-title">Update Ticket Status</h3>
             <button class="close-modal" data-modal="quick-update">
                 <i data-feather="x"></i>
             </button>
@@ -292,3 +252,80 @@ try {
         </div>
     </div>
 </div>
+
+<script>
+// Simple JavaScript for basic functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize feather icons
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+    
+    // Refresh button
+    document.getElementById('refresh-tickets-btn')?.addEventListener('click', function() {
+        window.location.reload();
+    });
+    
+    // Search functionality
+    const searchInput = document.getElementById('ticket-search');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const rows = document.querySelectorAll('#tickets-table-body tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        });
+    }
+    
+    // Status filter
+    const statusFilter = document.getElementById('ticket-status-filter');
+    if (statusFilter) {
+        statusFilter.addEventListener('change', function() {
+            const filterValue = this.value;
+            const rows = document.querySelectorAll('#tickets-table-body tr');
+            
+            rows.forEach(row => {
+                if (!filterValue) {
+                    row.style.display = '';
+                    return;
+                }
+                
+                const statusCell = row.querySelector('.status-badge');
+                if (statusCell && statusCell.classList.contains(filterValue)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    }
+    
+    // Event filter
+    const eventFilter = document.getElementById('ticket-event-filter');
+    if (eventFilter) {
+        eventFilter.addEventListener('change', function() {
+            const filterValue = this.value;
+            const rows = document.querySelectorAll('#tickets-table-body tr');
+            
+            rows.forEach(row => {
+                if (!filterValue || filterValue === '') {
+                    row.style.display = '';
+                    return;
+                }
+                
+                const eventName = row.querySelector('.event-info strong')?.textContent || '';
+                const eventOption = eventFilter.querySelector(`option[value="${filterValue}"]`)?.textContent || '';
+                
+                if (eventName.includes(eventOption.split(' - ')[0])) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    }
+});
+</script>

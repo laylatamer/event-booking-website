@@ -2074,3 +2074,614 @@ input[type="datetime-local"]:focus::-webkit-calendar-picker-indicator {
         border: 1px solid #ddd !important;
     }
 }
+
+/* ==========================================================================
+   18. COMPACT TABLE STYLES
+   ========================================================================== */
+
+/* Compact Table Container */
+.compact-table-container {
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid #333;
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+.compact-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 600px; /* Reduced from 800px */
+}
+
+.compact-table th {
+    background-color: rgba(0, 0, 0, 0.5);
+    color: #888;
+    font-weight: 600;
+    font-size: 12px; /* Smaller font */
+    text-align: left;
+    padding: 12px 15px; /* Reduced padding */
+    border-bottom: 2px solid #333;
+    text-transform: uppercase;
+    letter-spacing: 0.5px; /* Reduced letter spacing */
+    white-space: nowrap;
+}
+
+.compact-table td {
+    padding: 12px 15px; /* Reduced padding */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    font-size: 13px; /* Smaller font */
+    font-weight: 400;
+    vertical-align: middle;
+}
+
+.compact-table tr:last-child td {
+    border-bottom: none;
+}
+
+.compact-table tr:hover {
+    background-color: rgba(255, 87, 34, 0.05);
+}
+
+/* Compact Action Buttons */
+.compact-action-buttons {
+    display: flex;
+    gap: 4px; /* Reduced gap */
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+}
+
+.compact-action-btn {
+    background-color: transparent;
+    color: #888;
+    border: 1px solid #333; /* Thinner border */
+    border-radius: 6px; /* Smaller radius */
+    padding: 6px; /* Reduced padding */
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 30px; /* Smaller */
+    min-height: 30px; /* Smaller */
+    font-size: 11px; /* Smaller text */
+}
+
+.compact-action-btn:hover {
+    background-color: rgba(255, 87, 34, 0.1);
+    color: #ff5722;
+    border-color: #ff5722;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(255, 87, 34, 0.2);
+}
+
+.compact-action-btn i {
+    width: 14px; /* Smaller icons */
+    height: 14px; /* Smaller icons */
+}
+
+/* Compact Status Badges */
+.compact-status-badge {
+    padding: 4px 8px; /* Smaller padding */
+    border-radius: 12px; /* Smaller radius */
+    font-size: 11px; /* Smaller font */
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px; /* Reduced letter spacing */
+    display: inline-flex;
+    align-items: center;
+    gap: 3px; /* Reduced gap */
+}
+
+.compact-status-badge i {
+    width: 10px; /* Smaller icon */
+    height: 10px; /* Smaller icon */
+}
+
+/* Compact Info Cells */
+.compact-event-info,
+.compact-user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px; /* Reduced gap */
+}
+
+.compact-event-info strong,
+.compact-user-info strong {
+    color: #fff;
+    font-weight: 600;
+    font-size: 13px; /* Smaller font */
+}
+
+.compact-event-info small,
+.compact-user-info small {
+    color: #888;
+    font-size: 11px; /* Smaller font */
+    font-weight: 500;
+}
+
+/* Compact Text Utilities */
+.compact-text-muted {
+    color: #888 !important;
+    font-size: 11px !important; /* Smaller font */
+    font-weight: 500 !important;
+    margin-top: 2px !important; /* Reduced margin */
+    display: block !important;
+}
+
+/* Compact Table Footer */
+.compact-table-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 20px; /* Reduced margin */
+    padding-top: 15px; /* Reduced padding */
+    border-top: 1px solid #333;
+}
+
+.compact-table-info {
+    font-size: 12px; /* Smaller font */
+    color: #888;
+    font-weight: 500;
+}
+
+.compact-table-info span {
+    color: #fff;
+    font-weight: 700;
+    margin: 0 2px; /* Reduced margin */
+}
+
+/* Compact Pagination */
+.compact-pagination {
+    display: flex;
+    gap: 5px; /* Reduced gap */
+    align-items: center;
+}
+
+.compact-pagination-btn {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: #ccc;
+    border: 1px solid #333; /* Thinner border */
+    border-radius: 6px; /* Smaller radius */
+    padding: 8px 12px; /* Reduced padding */
+    font-size: 12px; /* Smaller font */
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    min-width: 35px; /* Smaller */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.compact-pagination-btn:hover:not(:disabled) {
+    background-color: rgba(255, 87, 34, 0.1);
+    color: #ff5722;
+    border-color: #ff5722;
+    transform: translateY(-1px);
+}
+
+.compact-pagination-btn.active {
+    background: linear-gradient(135deg, #ff5722, #ff7043);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 2px 8px rgba(255, 87, 34, 0.4);
+}
+
+.compact-pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Compact Search Container */
+.compact-search-container .search-input {
+    width: 220px; /* Narrower search */
+    padding: 10px 35px 10px 12px; /* Reduced padding */
+    font-size: 13px; /* Smaller font */
+}
+
+/* Compact Filter Select */
+.compact-filter-select {
+    background-color: #111;
+    color: #fff;
+    border: 1px solid #333; /* Thinner border */
+    border-radius: 6px; /* Smaller radius */
+    padding: 8px 12px; /* Reduced padding */
+    font-size: 13px; /* Smaller font */
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    min-width: 120px; /* Narrower */
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 14px;
+    padding-right: 30px;
+}
+
+/* Responsive adjustments for compact tables */
+@media (max-width: 768px) {
+    .compact-table-container {
+        border-radius: 8px;
+    }
+    
+    .compact-table th,
+    .compact-table td {
+        padding: 10px 12px;
+        font-size: 12px;
+    }
+    
+    .compact-action-buttons {
+        gap: 3px;
+    }
+    
+    .compact-action-btn {
+        min-width: 28px;
+        min-height: 28px;
+        padding: 5px;
+    }
+    
+    .compact-table-footer {
+        flex-direction: column;
+        gap: 15px;
+        align-items: stretch;
+    }
+    
+    .compact-pagination {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+}
+
+@media (max-width: 480px) {
+    .compact-table th,
+    .compact-table td {
+        padding: 8px 10px;
+        font-size: 11px;
+    }
+    
+    .compact-action-btn {
+        min-width: 26px;
+        min-height: 26px;
+        padding: 4px;
+    }
+    
+    .compact-action-btn i {
+        width: 12px;
+        height: 12px;
+    }
+}
+
+/* ==========================================================================
+   18. CLEAN TABLE STYLES
+   ========================================================================== */
+
+/* Clean Table Container */
+.clean-table-container {
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid #333;
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+.clean-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 800px;
+}
+
+.clean-table th {
+    background-color: rgba(0, 0, 0, 0.5);
+    color: #888;
+    font-weight: 600;
+    font-size: 12px;
+    text-align: left;
+    padding: 15px;
+    border-bottom: 2px solid #333;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+.clean-table td {
+    padding: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    font-size: 13px;
+    font-weight: 400;
+    vertical-align: middle;
+}
+
+.clean-table tr:last-child td {
+    border-bottom: none;
+}
+
+.clean-table tr:hover {
+    background-color: rgba(255, 87, 34, 0.05);
+}
+
+/* Clean Info Cells */
+.clean-event-info,
+.clean-user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.clean-event-info strong,
+.clean-user-info strong {
+    color: #fff;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.clean-event-info small,
+.clean-user-info small {
+    color: #888;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+/* Clean Status Badges */
+.clean-status-badge {
+    padding: 5px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    display: inline-block;
+    text-align: center;
+    min-width: 70px;
+}
+
+.clean-status-badge.pending {
+    background: linear-gradient(135deg, rgba(255, 152, 0, 0.2), rgba(255, 152, 0, 0.1));
+    color: #ff9800;
+    border: 1px solid rgba(255, 152, 0, 0.3);
+}
+
+.clean-status-badge.confirmed {
+    background: linear-gradient(135deg, rgba(33, 150, 243, 0.2), rgba(33, 150, 243, 0.1));
+    color: #2196f3;
+    border: 1px solid rgba(33, 150, 243, 0.3);
+}
+
+.clean-status-badge.completed {
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(76, 175, 80, 0.1));
+    color: #4caf50;
+    border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.clean-status-badge.cancelled {
+    background: linear-gradient(135deg, rgba(244, 67, 54, 0.2), rgba(244, 67, 54, 0.1));
+    color: #f44336;
+    border: 1px solid rgba(244, 67, 54, 0.3);
+}
+
+/* Payment Status Badges */
+.clean-payment-badge {
+    padding: 5px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    display: inline-block;
+    text-align: center;
+    min-width: 70px;
+}
+
+.clean-payment-badge.paid {
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(76, 175, 80, 0.1));
+    color: #4caf50;
+    border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.clean-payment-badge.pending {
+    background: linear-gradient(135deg, rgba(255, 152, 0, 0.2), rgba(255, 152, 0, 0.1));
+    color: #ff9800;
+    border: 1px solid rgba(255, 152, 0, 0.3);
+}
+
+.clean-payment-badge.failed {
+    background: linear-gradient(135deg, rgba(244, 67, 54, 0.2), rgba(244, 67, 54, 0.1));
+    color: #f44336;
+    border: 1px solid rgba(244, 67, 54, 0.3);
+}
+
+.clean-payment-badge.refunded {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.2), rgba(255, 193, 7, 0.1));
+    color: #ffc107;
+    border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+/* Payment Method Badge */
+.payment-method-badge {
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    display: inline-block;
+    margin-top: 3px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #ccc;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Single Action Button */
+.single-action-btn {
+    background: linear-gradient(135deg, #ff5722, #ff7043);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 100px;
+    justify-content: center;
+}
+
+.single-action-btn:hover {
+    background: linear-gradient(135deg, #ff7043, #ff5722);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 87, 34, 0.3);
+}
+
+.single-action-btn:active {
+    transform: translateY(0);
+}
+
+.single-action-btn i {
+    width: 14px;
+    height: 14px;
+}
+
+/* Booking ID Styling */
+.booking-id {
+    font-family: 'Courier New', monospace;
+    font-weight: 700;
+    color: #ff5722;
+    font-size: 14px;
+    letter-spacing: 1px;
+}
+
+/* Clean Table Footer */
+.clean-table-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #333;
+}
+
+.clean-table-info {
+    font-size: 13px;
+    color: #888;
+    font-weight: 500;
+}
+
+.clean-table-info span {
+    color: #fff;
+    font-weight: 700;
+    margin: 0 2px;
+}
+
+/* Clean Pagination */
+.clean-pagination {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.clean-pagination-btn {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: #ccc;
+    border: 2px solid #333;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    min-width: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.clean-pagination-btn:hover:not(:disabled) {
+    background-color: rgba(255, 87, 34, 0.1);
+    color: #ff5722;
+    border-color: #ff5722;
+    transform: translateY(-2px);
+}
+
+.clean-pagination-btn.active {
+    background: linear-gradient(135deg, #ff5722, #ff7043);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 4px 12px rgba(255, 87, 34, 0.4);
+}
+
+.clean-pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Clean Search */
+.clean-search-container .search-input {
+    width: 300px;
+    padding: 12px 40px 12px 15px;
+    font-size: 14px;
+}
+
+/* Clean Filter Select */
+.clean-filter-select {
+    background-color: #111;
+    color: #fff;
+    border: 2px solid #333;
+    border-radius: 8px;
+    padding: 10px 15px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    min-width: 150px;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 16px;
+    padding-right: 35px;
+}
+
+/* Compact Date Display */
+.compact-date {
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+}
+
+.compact-time {
+    font-size: 11px;
+    color: #888;
+    font-weight: 500;
+    margin-top: 2px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+    .clean-table {
+        min-width: 700px;
+    }
+    
+    .clean-table th,
+    .clean-table td {
+        padding: 12px;
+    }
+}
+
+@media (max-width: 768px) {
+    .clean-table-container {
+        border-radius: 8px;
+    }
+    
+    .clean-table-footer {
+        flex-direction: column;
+        gap: 15px;
+        align-items: stretch;
+    }
+    
+    .clean-pagination {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+}
+
+
