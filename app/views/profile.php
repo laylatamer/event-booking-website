@@ -34,12 +34,6 @@ function loadUser(PDO $pdo, int $userId): ?array
 ensureUserColumn($pdo, 'country', "VARCHAR(120) NULL");
 ensureUserColumn($pdo, 'state', "VARCHAR(120) NULL");
 
-// Check if user is admin - redirect to admin panel
-if (isAdmin()) {
-    header('Location: admin/index.php');
-    exit;
-}
-
 $userId = (int) $_SESSION['user_id'];
 $user = loadUser($pdo, $userId);
 

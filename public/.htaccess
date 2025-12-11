@@ -1,0 +1,8 @@
+Options -Indexes
+
+# Custom error documents
+ErrorDocument 404 /event-booking-website/app/views/error.php
+ErrorDocument 500 /event-booking-website/app/views/error.php
+
+# If you later add clean URLs, place RewriteRules below this line.
+

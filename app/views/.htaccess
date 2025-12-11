@@ -1,0 +1,12 @@
+Options -Indexes
+
+# Custom error documents for app/views directory
+ErrorDocument 404 /event-booking-website/app/views/error.php
+ErrorDocument 500 /event-booking-website/app/views/error.php
+
+# Prevent direct access to certain files if needed
+<FilesMatch "\.(htaccess|htpasswd|ini|log|sh|sql)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
