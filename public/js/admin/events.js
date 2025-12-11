@@ -1,21 +1,6 @@
 // events.js - Clean Admin Events Management
 const API_BASE = '../../../public/api/events_API.php';
 
-// Utility function to safely format dates for datetime-local input
-function formatDateForInput(dateString) {
-    if (!dateString) return '';
-    
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) {
-        console.warn('Invalid date string:', dateString);
-        return '';
-    }
-    
-    // Convert to local datetime format for input
-    const localDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
-    return localDate.toISOString().slice(0, 16);
-}
-
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize Feather icons
     if (typeof feather !== 'undefined') {
@@ -122,13 +107,8 @@ function setupFormDependencies() {
     const eventDateInput = document.getElementById('admin-event-date');
     if (eventDateInput) {
         const now = new Date();
-        // Get local datetime in format for input
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate()).padStart(2, '0');
-        const hours = String(now.getHours()).padStart(2, '0');
-        const minutes = String(now.getMinutes()).padStart(2, '0');
-        eventDateInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+        const localDateTime = now.toISOString().slice(0, 16);
+        eventDateInput.value = localDateTime;
     }
     
     // End date min date validation
@@ -207,12 +187,7 @@ function openAddEventModal() {
         const dateInput = document.getElementById('admin-event-date');
         if (dateInput) {
             const now = new Date();
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const day = String(now.getDate()).padStart(2, '0');
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            dateInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+            dateInput.value = now.toISOString().slice(0, 16);
         }
         
         // Set default values
@@ -239,10 +214,6 @@ async function editEvent(eventId) {
         
         const data = await response.json();
         
-        console.log('Event data received:', data);
-        console.log('Event date:', data.event?.date);
-        console.log('Event end_date:', data.event?.end_date);
-        
         if (data.success && data.event) {
             const event = data.event;
             
@@ -267,15 +238,21 @@ async function editEvent(eventId) {
             
             document.getElementById('admin-edit-event-venue').value = event.venue_id;
             
-            // Format dates for datetime-local input using safe function
-            const startDateInput = document.getElementById('admin-edit-event-date');
-            if (startDateInput) {
-                startDateInput.value = formatDateForInput(event.date);
+            // Format dates for datetime-local input
+            if (event.date) {
+                const startDate = new Date(event.date);
+                const startDateInput = document.getElementById('admin-edit-event-date');
+                if (startDateInput) {
+                    startDateInput.value = startDate.toISOString().slice(0, 16);
+                }
             }
             
-            const endDateInput = document.getElementById('admin-edit-event-end-date');
-            if (endDateInput) {
-                endDateInput.value = formatDateForInput(event.end_date);
+            if (event.end_date) {
+                const endDate = new Date(event.end_date);
+                const endDateInput = document.getElementById('admin-edit-event-end-date');
+                if (endDateInput) {
+                    endDateInput.value = endDate.toISOString().slice(0, 16);
+                }
             }
             
             document.getElementById('admin-edit-event-price').value = event.price;
@@ -333,19 +310,13 @@ async function handleAddEvent(e) {
     
     const formData = new FormData(e.target);
     
-    // Convert FormData to object for better handling
-    const eventData = {};
-    for (let [key, value] of formData.entries()) {
-        eventData[key] = value;
-    }
-    
     // Validate required fields
     const requiredFields = ['title', 'description', 'subcategory_id', 'venue_id', 'date', 'price', 'total_tickets'];
     let isValid = true;
     let missingField = '';
     
     requiredFields.forEach(field => {
-        const value = eventData[field];
+        const value = formData.get(field);
         if (!value || value.toString().trim() === '') {
             isValid = false;
             missingField = field.replace('_', ' ');
@@ -358,53 +329,25 @@ async function handleAddEvent(e) {
         return;
     }
     
-    // Convert datetime-local format to ISO for database
-    if (eventData.date) {
-        const dateObj = new Date(eventData.date);
-        if (!isNaN(dateObj.getTime())) {
-            eventData.date = dateObj.toISOString();
-        } else {
-            alert('Invalid start date format');
-            return;
-        }
-    }
-    
-    if (eventData.end_date) {
-        const endDateObj = new Date(eventData.end_date);
-        if (!isNaN(endDateObj.getTime())) {
-            eventData.end_date = endDateObj.toISOString();
-        } else {
-            eventData.end_date = null;
-        }
-    }
-    
     // Convert JSON fields
     try {
-        if (eventData.gallery_images && eventData.gallery_images.toString().trim() !== '') {
-            eventData.gallery_images = JSON.parse(eventData.gallery_images);
+        const galleryImages = formData.get('gallery_images');
+        if (galleryImages && galleryImages.toString().trim() !== '') {
+            formData.set('gallery_images', JSON.stringify(JSON.parse(galleryImages)));
         } else {
-            eventData.gallery_images = [];
+            formData.set('gallery_images', '[]');
         }
         
-        if (eventData.additional_info && eventData.additional_info.toString().trim() !== '') {
-            eventData.additional_info = JSON.parse(eventData.additional_info);
+        const additionalInfo = formData.get('additional_info');
+        if (additionalInfo && additionalInfo.toString().trim() !== '') {
+            formData.set('additional_info', JSON.stringify(JSON.parse(additionalInfo)));
         } else {
-            eventData.additional_info = {};
+            formData.set('additional_info', '{}');
         }
     } catch (error) {
         alert('Invalid JSON format in gallery images or additional info: ' + error.message);
         return;
     }
-    
-    // Convert numeric fields
-    eventData.price = parseFloat(eventData.price);
-    eventData.discounted_price = eventData.discounted_price ? parseFloat(eventData.discounted_price) : null;
-    eventData.total_tickets = parseInt(eventData.total_tickets);
-    eventData.available_tickets = parseInt(eventData.available_tickets) || parseInt(eventData.total_tickets);
-    eventData.min_tickets_per_booking = parseInt(eventData.min_tickets_per_booking) || 1;
-    eventData.max_tickets_per_booking = parseInt(eventData.max_tickets_per_booking) || 10;
-    eventData.subcategory_id = parseInt(eventData.subcategory_id);
-    eventData.venue_id = parseInt(eventData.venue_id);
     
     // Show loading state
     const submitBtn = e.target.querySelector('button[type="submit"]');
@@ -419,10 +362,7 @@ async function handleAddEvent(e) {
     try {
         const response = await fetch(`${API_BASE}?action=addEvent`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(eventData)
+            body: formData
         });
         
         const data = await response.json();
@@ -459,21 +399,13 @@ async function handleEditEvent(e) {
         return;
     }
     
-    // Convert FormData to object for better handling
-    const eventData = { id: eventId };
-    for (let [key, value] of formData.entries()) {
-        if (key !== 'id') {
-            eventData[key] = value;
-        }
-    }
-    
     // Validate required fields
     const requiredFields = ['title', 'description', 'subcategory_id', 'venue_id', 'date', 'price', 'total_tickets', 'available_tickets'];
     let isValid = true;
     let missingField = '';
     
     requiredFields.forEach(field => {
-        const value = eventData[field];
+        const value = formData.get(field);
         if (!value || value.toString().trim() === '') {
             isValid = false;
             missingField = field.replace('_', ' ');
@@ -486,46 +418,38 @@ async function handleEditEvent(e) {
         return;
     }
     
-    // Convert datetime-local format to ISO for database
-    if (eventData.date) {
-        const dateObj = new Date(eventData.date);
-        if (!isNaN(dateObj.getTime())) {
-            eventData.date = dateObj.toISOString();
-        } else {
-            alert('Invalid start date format');
-            return;
-        }
-    }
-    
-    if (eventData.end_date) {
-        const endDateObj = new Date(eventData.end_date);
-        if (!isNaN(endDateObj.getTime())) {
-            eventData.end_date = endDateObj.toISOString();
-        } else {
-            eventData.end_date = null;
-        }
-    }
-    
-    // Convert numeric fields
-    eventData.price = parseFloat(eventData.price);
-    eventData.discounted_price = eventData.discounted_price ? parseFloat(eventData.discounted_price) : null;
-    eventData.total_tickets = parseInt(eventData.total_tickets);
-    eventData.available_tickets = parseInt(eventData.available_tickets);
-    eventData.min_tickets_per_booking = parseInt(eventData.min_tickets_per_booking) || 1;
-    eventData.max_tickets_per_booking = parseInt(eventData.max_tickets_per_booking) || 10;
-    eventData.subcategory_id = parseInt(eventData.subcategory_id);
-    eventData.venue_id = parseInt(eventData.venue_id);
+    // Convert form data to JSON
+    const eventData = {
+        id: eventId,
+        title: formData.get('title'),
+        description: formData.get('description'),
+        subcategory_id: formData.get('subcategory_id'),
+        venue_id: formData.get('venue_id'),
+        date: formData.get('date'),
+        end_date: formData.get('end_date') || null,
+        price: parseFloat(formData.get('price')),
+        discounted_price: formData.get('discounted_price') ? parseFloat(formData.get('discounted_price')) : null,
+        image_url: formData.get('image_url') || '',
+        total_tickets: parseInt(formData.get('total_tickets')),
+        available_tickets: parseInt(formData.get('available_tickets')),
+        min_tickets_per_booking: parseInt(formData.get('min_tickets_per_booking')) || 1,
+        max_tickets_per_booking: parseInt(formData.get('max_tickets_per_booking')) || 10,
+        terms_conditions: formData.get('terms_conditions') || '',
+        status: formData.get('status') || 'draft'
+    };
     
     // Handle JSON fields
     try {
-        if (eventData.gallery_images && eventData.gallery_images.toString().trim() !== '') {
-            eventData.gallery_images = JSON.parse(eventData.gallery_images);
+        const galleryImages = formData.get('gallery_images');
+        if (galleryImages && galleryImages.toString().trim() !== '') {
+            eventData.gallery_images = JSON.parse(galleryImages);
         } else {
             eventData.gallery_images = [];
         }
         
-        if (eventData.additional_info && eventData.additional_info.toString().trim() !== '') {
-            eventData.additional_info = JSON.parse(eventData.additional_info);
+        const additionalInfo = formData.get('additional_info');
+        if (additionalInfo && additionalInfo.toString().trim() !== '') {
+            eventData.additional_info = JSON.parse(additionalInfo);
         } else {
             eventData.additional_info = {};
         }
@@ -622,51 +546,13 @@ async function viewEventDetails(eventId) {
         if (data.success && data.event) {
             const event = data.event;
             
-            // Format dates safely
-            let formattedStartDate = '';
-            let formattedStartTime = '';
-            let formattedEndDate = '';
-            let formattedEndTime = '';
-            
-            if (event.date) {
-                const startDate = new Date(event.date);
-                if (!isNaN(startDate.getTime())) {
-                    formattedStartDate = startDate.toLocaleDateString('en-US', { 
-                        weekday: 'long', 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric' 
-                    });
-                    formattedStartTime = startDate.toLocaleTimeString('en-US', { 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
-                    });
-                }
-            }
-            
-            if (event.end_date) {
-                const endDate = new Date(event.end_date);
-                if (!isNaN(endDate.getTime())) {
-                    formattedEndDate = endDate.toLocaleDateString('en-US', { 
-                        weekday: 'long', 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric' 
-                    });
-                    formattedEndTime = endDate.toLocaleTimeString('en-US', { 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
-                    });
-                }
-            }
-            
             let content = `
                 <div class="event-details">
                     <div class="event-header">
-                        ${event.image_url ? `<img src="${event.image_url}" alt="${event.title}" class="event-detail-image" style="width:100%;max-height:300px;object-fit:cover;border-radius:8px;margin-bottom:1rem;">` : ''}
+                        ${event.image ? `<img src="${event.image}" alt="${event.title}" class="event-detail-image" style="width:100%;max-height:300px;object-fit:cover;border-radius:8px;margin-bottom:1rem;">` : ''}
                         <h3>${event.title}</h3>
                         <div class="event-meta" style="display:flex;gap:1rem;margin-bottom:1rem;">
-                            <span class="category-badge">${event.main_category_name || 'Uncategorized'}</span>
+                            <span class="category-badge">${event.main_category || 'Uncategorized'}</span>
                             <span class="status-badge ${event.status}">${event.status}</span>
                         </div>
                     </div>
@@ -676,26 +562,25 @@ async function viewEventDetails(eventId) {
                             <h4 style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;">
                                 <i data-feather="calendar"></i> Date & Time
                             </h4>
-                            <p>${formattedStartDate || 'Date not available'}</p>
-                            ${formattedStartTime ? `<p>${formattedStartTime}</p>` : ''}
-                            ${formattedEndDate ? `<p>to ${formattedEndDate} at ${formattedEndTime}</p>` : ''}
+                            <p>${event.formattedDateTime || event.date}</p>
+                            ${event.formattedEndDate ? `<p>to ${event.formattedEndDate} at ${event.formattedEndTime}</p>` : ''}
                         </div>
                         
                         <div class="info-section" style="background:#1a1a1a;padding:1rem;border-radius:8px;">
                             <h4 style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;">
                                 <i data-feather="map-pin"></i> Venue
                             </h4>
-                            <p><strong>${event.venue_name || 'Unknown Venue'}</strong></p>
-                            <p>${event.venue_address || ''}, ${event.venue_city || ''}, ${event.venue_country || ''}</p>
-                            ${event.venue_capacity ? `<p>Capacity: ${event.venue_capacity.toLocaleString()}</p>` : ''}
+                            <p><strong>${event.venue?.name || 'Unknown Venue'}</strong></p>
+                            <p>${event.venue?.address || ''}, ${event.venue?.city || ''}, ${event.venue?.country || ''}</p>
+                            ${event.venue?.capacity ? `<p>Capacity: ${event.venue.capacity.toLocaleString()}</p>` : ''}
                         </div>
                         
                         <div class="info-section" style="background:#1a1a1a;padding:1rem;border-radius:8px;">
                             <h4 style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;">
                                 <i data-feather="tag"></i> Pricing
                             </h4>
-                            <p>Regular: <strong>$${parseFloat(event.price).toFixed(2)}</strong></p>
-                            ${event.discounted_price ? `<p>Discounted: <strong>$${parseFloat(event.discounted_price).toFixed(2)}</strong></p>` : ''}
+                            <p>Regular: <strong>${event.formattedPrice || '$' + event.price}</strong></p>
+                            ${event.formattedDiscountedPrice ? `<p>Discounted: <strong>${event.formattedDiscountedPrice}</strong></p>` : ''}
                         </div>
                         
                         <div class="info-section" style="background:#1a1a1a;padding:1rem;border-radius:8px;">
