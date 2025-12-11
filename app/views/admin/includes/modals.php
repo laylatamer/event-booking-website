@@ -107,7 +107,7 @@
     </div>
 </div>
 
-<!-- Add Event Modal (Updated with admin-specific IDs) -->
+<!-- Add Event Modal (Updated with admin-specific IDs and file upload) -->
 <div id="add-event-modal" class="modal hidden">
     <div class="modal-content large">
         <div class="modal-header">
@@ -207,16 +207,32 @@
                     </div>
                 </div>
 
-                <!-- Media -->
+                <!-- Media - UPDATED WITH FILE UPLOAD -->
                 <div class="form-section">
                     <h4>Media</h4>
                     <div class="form-group">
-                        <label>Main Image URL</label>
-                        <input type="url" id="admin-event-image-url" name="image_url" placeholder="https://example.com/image.jpg">
+                        <label>Main Image</label>
+                        <div class="file-upload" id="event-image-upload">
+                            <i data-feather="upload"></i>
+                            <p>Click to upload or drag and drop</p>
+                            <small>PNG, JPG, GIF up to 10MB</small>
+                            <input type="file" id="admin-event-image-file" accept="image/*">
+                        </div>
+                        <div id="admin-event-image-preview" class="hidden" style="margin-top: 10px;">
+                            <img src="" alt="Preview" style="max-width: 200px; max-height: 200px; border-radius: 8px;">
+                        </div>
+                        <input type="hidden" id="admin-event-image-url" name="image_url">
                     </div>
                     <div class="form-group">
-                        <label>Gallery Images (JSON array, one per line)</label>
-                        <textarea id="admin-event-gallery-images" name="gallery_images" rows="3" placeholder='["https://example.com/image1.jpg", "https://example.com/image2.jpg"]'></textarea>
+                        <label>Gallery Images (Upload multiple)</label>
+                        <div class="file-upload" id="event-gallery-upload">
+                            <i data-feather="upload"></i>
+                            <p>Click to upload or drag and drop multiple images</p>
+                            <small>PNG, JPG, GIF up to 10MB each</small>
+                            <input type="file" id="admin-event-gallery-files" name="gallery_files[]" multiple accept="image/*">
+                        </div>
+                        <div id="admin-event-gallery-preview" style="margin-top: 10px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;"></div>
+                        <input type="hidden" id="admin-event-gallery-images" name="gallery_images">
                     </div>
                 </div>
 
@@ -249,7 +265,7 @@
     </div>
 </div>
 
-<!-- Edit Event Modal (Updated with admin-specific IDs) -->
+<!-- Edit Event Modal (Updated with admin-specific IDs and file upload) -->
 <div id="edit-event-modal" class="modal hidden">
     <div class="modal-content large">
         <div class="modal-header">
@@ -350,16 +366,32 @@
                     </div>
                 </div>
 
-                <!-- Media -->
+                <!-- Media - UPDATED WITH FILE UPLOAD -->
                 <div class="form-section">
                     <h4>Media</h4>
                     <div class="form-group">
-                        <label>Main Image URL</label>
-                        <input type="url" id="admin-edit-event-image-url" name="image_url">
+                        <label>Main Image</label>
+                        <div class="file-upload" id="edit-event-image-upload">
+                            <i data-feather="upload"></i>
+                            <p>Click to upload or drag and drop</p>
+                            <small>PNG, JPG, GIF up to 10MB</small>
+                            <input type="file" id="admin-edit-event-image-file" accept="image/*">
+                        </div>
+                        <div id="admin-edit-event-image-preview" style="margin-top: 10px;">
+                            <img id="admin-edit-event-current-image" src="" alt="Current Image" style="max-width: 200px; max-height: 200px; border-radius: 8px; display: none;">
+                        </div>
+                        <input type="hidden" id="admin-edit-event-image-url" name="image_url">
                     </div>
                     <div class="form-group">
-                        <label>Gallery Images (JSON array)</label>
-                        <textarea id="admin-edit-event-gallery-images" name="gallery_images" rows="3"></textarea>
+                        <label>Gallery Images (Upload multiple)</label>
+                        <div class="file-upload" id="edit-event-gallery-upload">
+                            <i data-feather="upload"></i>
+                            <p>Click to upload or drag and drop multiple images</p>
+                            <small>PNG, JPG, GIF up to 10MB each</small>
+                            <input type="file" id="admin-edit-event-gallery-files" name="gallery_files[]" multiple accept="image/*">
+                        </div>
+                        <div id="admin-edit-event-gallery-preview" style="margin-top: 10px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;"></div>
+                        <input type="hidden" id="admin-edit-event-gallery-images" name="gallery_images">
                     </div>
                 </div>
 
@@ -751,7 +783,7 @@
                 <i data-feather="x"></i>
             </button>
         </div>
-        <form id="add-subcategory-form">
+        <form id="add-subcategory-form" enctype="multipart/form-data">
             <input type="hidden" id="subcategory-main-category-id">
             <div class="form-grid">
                 <div class="form-group">
@@ -761,6 +793,18 @@
                 <div class="form-group">
                     <label>Subcategory Name</label>
                     <input type="text" id="subcategory-name" required>
+                </div>
+                <div class="form-group">
+                    <label>Subcategory Image</label>
+                    <div class="file-upload" id="subcategory-image-upload">
+                        <i data-feather="upload"></i>
+                        <p>Click to upload or drag and drop</p>
+                        <small>PNG, JPG, GIF up to 5MB</small>
+                        <input type="file" id="subcategory-image" name="image" accept="image/*">
+                    </div>
+                    <div id="subcategory-image-preview" class="hidden" style="margin-top: 10px;">
+                        <img src="" alt="Preview" style="max-width: 100px; max-height: 100px; border-radius: 8px;">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Status</label>
@@ -787,8 +831,9 @@
                 <i data-feather="x"></i>
             </button>
         </div>
-        <form id="edit-subcategory-form">
+        <form id="edit-subcategory-form" enctype="multipart/form-data">
             <input type="hidden" id="edit-subcategory-id">
+            <input type="hidden" id="edit-subcategory-existing-image">
             <div class="form-grid">
                 <div class="form-group">
                     <label>Main Category</label>
@@ -800,6 +845,18 @@
                 <div class="form-group">
                     <label>Subcategory Name</label>
                     <input type="text" id="edit-subcategory-name" required>
+                </div>
+                <div class="form-group">
+                    <label>Subcategory Image</label>
+                    <div class="file-upload" id="edit-subcategory-image-upload">
+                        <i data-feather="upload"></i>
+                        <p>Click to upload or drag and drop</p>
+                        <small>PNG, JPG, GIF up to 5MB</small>
+                        <input type="file" id="edit-subcategory-image" name="image" accept="image/*">
+                    </div>
+                    <div id="edit-subcategory-image-preview" style="margin-top: 10px;">
+                        <img id="edit-subcategory-current-image" src="" alt="Current Image" style="max-width: 100px; max-height: 100px; border-radius: 8px; display: none;">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Status</label>

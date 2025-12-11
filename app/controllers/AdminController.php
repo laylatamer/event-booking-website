@@ -61,10 +61,11 @@ class AdminController {
         return null;
     }
 
-    // Subcategories CRUD - UPDATED for database
+    // Subcategories CRUD - UPDATED with image support
     public function createSubcategory($data) {
         $this->subcategory->main_category_id = $data['main_category_id'];
         $this->subcategory->name = $data['name'];
+        $this->subcategory->image_url = $data['image_url'] ?? null; // Added image_url
         $this->subcategory->status = $data['status'] ?? 'active';
         
         return $this->subcategory->create();
@@ -74,6 +75,7 @@ class AdminController {
         $this->subcategory->id = $id;
         $this->subcategory->main_category_id = $data['main_category_id'];
         $this->subcategory->name = $data['name'];
+        $this->subcategory->image_url = $data['image_url'] ?? null; // Added image_url
         $this->subcategory->status = $data['status'] ?? 'active';
         
         return $this->subcategory->update();

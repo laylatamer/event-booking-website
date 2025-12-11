@@ -1,5 +1,6 @@
-// /public/js/admin/categories.js - COMPLETE VERSION
+// /public/js/admin/categories.js - COMPLETE UPDATED VERSION WITH IMAGE UPLOAD
 const API_BASE_URL = '/event-booking-website/public/api/categories_API.php';
+const UPLOAD_API_URL = '/event-booking-website/public/api/upload.php';
 
 let subcategories = [];
 let isInitialized = false;
@@ -27,6 +28,9 @@ function initializeCategories() {
     
     // Setup event listeners
     setupEventListeners();
+    
+    // Setup file uploads
+    setupFileUploads();
     
     // Load data from API
     loadCategories();
@@ -124,6 +128,142 @@ function setupEventListeners() {
     }
 }
 
+function setupFileUploads() {
+    console.log('Setting up file uploads...');
+    
+    // Subcategory image upload
+    const subcategoryImageInput = document.getElementById('subcategory-image');
+    const subcategoryImagePreview = document.getElementById('subcategory-image-preview');
+    
+    if (subcategoryImageInput && subcategoryImagePreview) {
+        subcategoryImageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // Validate file
+                if (!validateImageFile(file)) {
+                    showAlert('Error', 'Please select a valid image file (PNG, JPG, GIF, WebP) under 5MB');
+                    this.value = '';
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    subcategoryImagePreview.querySelector('img').src = e.target.result;
+                    subcategoryImagePreview.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+    
+    // Edit subcategory image upload
+    const editSubcategoryImageInput = document.getElementById('edit-subcategory-image');
+    const editSubcategoryCurrentImage = document.getElementById('edit-subcategory-current-image');
+    
+    if (editSubcategoryImageInput && editSubcategoryCurrentImage) {
+        editSubcategoryImageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // Validate file
+                if (!validateImageFile(file)) {
+                    showAlert('Error', 'Please select a valid image file (PNG, JPG, GIF, WebP) under 5MB');
+                    this.value = '';
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    editSubcategoryCurrentImage.src = e.target.result;
+                    editSubcategoryCurrentImage.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+    
+    // File upload drag and drop
+    const fileUploads = document.querySelectorAll('.file-upload');
+    fileUploads.forEach(upload => {
+        upload.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('drag-over');
+        });
+        
+        upload.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.classList.remove('drag-over');
+        });
+        
+        upload.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('drag-over');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                const input = this.querySelector('input[type="file"]');
+                
+                // Create a new FileList
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                input.files = dataTransfer.files;
+                
+                // Trigger change event
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        });
+        
+        // Click to open file dialog
+        upload.addEventListener('click', function(e) {
+            if (!e.target.closest('input[type="file"]')) {
+                const input = this.querySelector('input[type="file"]');
+                input.click();
+            }
+        });
+    });
+}
+
+function validateImageFile(file) {
+    // Check file size (5MB max)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+        return false;
+    }
+    
+    // Check file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type.toLowerCase())) {
+        return false;
+    }
+    
+    return true;
+}
+
+async function uploadImage(file, type = 'subcategories') {
+    const formData = new FormData();
+    formData.append('type', type);
+    formData.append('image', file);
+    
+    try {
+        console.log('Uploading image...', file.name, 'Type:', type);
+        const response = await fetch(UPLOAD_API_URL, {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('Upload response:', data);
+        return data;
+    } catch (error) {
+        console.error('Upload error:', error);
+        return { success: false, message: 'Upload failed: ' + error.message };
+    }
+}
+
 function handleAddSubcategoryClick(btn) {
     const mainCategoryId = btn.getAttribute('data-main-category');
     const mainCategoryName = btn.closest('.category-section').querySelector('h3').textContent
@@ -142,6 +282,20 @@ function handleAddSubcategoryClick(btn) {
         const form = document.getElementById('add-subcategory-form');
         if (form) {
             form.reset();
+            
+            // Clear image preview
+            const imagePreview = document.getElementById('subcategory-image-preview');
+            if (imagePreview) {
+                imagePreview.classList.add('hidden');
+                imagePreview.querySelector('img').src = '';
+            }
+            
+            // Reset file input
+            const imageInput = document.getElementById('subcategory-image');
+            if (imageInput) {
+                imageInput.value = '';
+            }
+            
             // Set default status
             const statusSelect = document.getElementById('subcategory-status');
             if (statusSelect) {
@@ -164,6 +318,8 @@ function openModal(modalId) {
     if (modal) {
         console.log('Modal found, removing hidden class');
         modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        
         // Replace feather icons
         if (typeof feather !== 'undefined') {
             feather.replace();
@@ -181,6 +337,7 @@ function closeModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
         modal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
     }
 }
 
@@ -244,7 +401,7 @@ function renderCategoryTable(tableId, subcategories) {
     if (subcategories.length === 0) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="3" class="empty-state">
+                <td colspan="4" class="empty-state">
                     <i data-feather="folder"></i>
                     <p>No subcategories found</p>
                 </td>
@@ -262,6 +419,12 @@ function renderCategoryTable(tableId, subcategories) {
     subcategories.forEach(subcategory => {
         const row = document.createElement('tr');
         row.innerHTML = `
+            <td>
+                ${subcategory.image_url ? 
+                    `<img src="${escapeHtml(subcategory.image_url)}" alt="${escapeHtml(subcategory.name)}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;">` : 
+                    '<div style="width: 50px; height: 50px; background: linear-gradient(135deg, #333, #444); border-radius: 8px; display: flex; align-items: center; justify-content: center;"><i data-feather="image" style="color: #666;"></i></div>'
+                }
+            </td>
             <td>${escapeHtml(subcategory.name)}</td>
             <td><span class="status-badge ${subcategory.status}">${subcategory.status.charAt(0).toUpperCase() + subcategory.status.slice(1)}</span></td>
             <td>
@@ -296,27 +459,68 @@ async function handleAddSubcategorySubmit(e) {
     const nameInput = document.getElementById('subcategory-name');
     const statusSelect = document.getElementById('subcategory-status');
     const mainCategoryIdInput = document.getElementById('subcategory-main-category-id');
+    const imageInput = document.getElementById('subcategory-image');
     
     if (!nameInput || !statusSelect || !mainCategoryIdInput) {
         showAlert('Error', 'Form elements not found');
         return;
     }
     
-    const subcategoryData = {
-        main_category_id: parseInt(mainCategoryIdInput.value),
-        name: nameInput.value.trim(),
-        status: statusSelect.value
-    };
+    const name = nameInput.value.trim();
+    const mainCategoryId = mainCategoryIdInput.value;
+    const status = statusSelect.value;
+    const imageFile = imageInput.files[0];
     
-    console.log('Subcategory data to send:', subcategoryData);
+    console.log('Subcategory data:', { name, mainCategoryId, status, hasImage: !!imageFile });
     
-    if (!subcategoryData.name) {
+    if (!name) {
         showAlert('Error', 'Please enter a subcategory name');
         return;
     }
     
+    // Show loading state
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i data-feather="loader" class="animate-spin"></i> Creating...';
+    
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+    
     try {
+        let imageUrl = null;
+        
+        // Upload image if provided
+        if (imageFile) {
+            console.log('Uploading image...');
+            const uploadResult = await uploadImage(imageFile, 'subcategories');
+            
+            if (!uploadResult.success) {
+                showAlert('Error', 'Failed to upload image: ' + uploadResult.message);
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+                if (typeof feather !== 'undefined') feather.replace();
+                return;
+            }
+            
+            imageUrl = uploadResult.url;
+            console.log('Image uploaded successfully:', imageUrl);
+        }
+        
+        // Prepare data
+        const subcategoryData = {
+            main_category_id: parseInt(mainCategoryId),
+            name: name,
+            status: status
+        };
+        
+        if (imageUrl) {
+            subcategoryData.image_url = imageUrl;
+        }
+        
         console.log('Sending to:', `${API_BASE_URL}?action=create`);
+        console.log('Data:', subcategoryData);
         
         const response = await fetch(`${API_BASE_URL}?action=create`, {
             method: 'POST',
@@ -345,6 +549,13 @@ async function handleAddSubcategorySubmit(e) {
                 closeModal('add-subcategory-modal');
                 showAlert('Success', 'Subcategory added successfully!');
                 e.target.reset();
+                
+                // Clear image preview
+                const imagePreview = document.getElementById('subcategory-image-preview');
+                if (imagePreview) {
+                    imagePreview.classList.add('hidden');
+                    imagePreview.querySelector('img').src = '';
+                }
             } else {
                 showAlert('Error', result.message || 'Failed to add subcategory');
             }
@@ -356,6 +567,12 @@ async function handleAddSubcategorySubmit(e) {
     } catch (error) {
         console.error('Error adding subcategory:', error);
         showAlert('Error', 'Error adding subcategory: ' + error.message);
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+        if (typeof feather !== 'undefined') {
+            feather.replace();
+        }
     }
 }
 
@@ -382,6 +599,22 @@ async function editSubcategory(subcategoryId) {
             document.getElementById('edit-subcategory-main-category').value = subcategory.main_category_id;
             document.getElementById('edit-subcategory-name').value = subcategory.name;
             document.getElementById('edit-subcategory-status').value = subcategory.status;
+            document.getElementById('edit-subcategory-existing-image').value = subcategory.image_url || '';
+            
+            // Show current image if exists
+            const currentImage = document.getElementById('edit-subcategory-current-image');
+            if (subcategory.image_url) {
+                currentImage.src = subcategory.image_url;
+                currentImage.style.display = 'block';
+            } else {
+                currentImage.style.display = 'none';
+            }
+            
+            // Clear file input
+            const imageInput = document.getElementById('edit-subcategory-image');
+            if (imageInput) {
+                imageInput.value = '';
+            }
             
             openModal('edit-subcategory-modal');
         } else {
@@ -395,25 +628,68 @@ async function editSubcategory(subcategoryId) {
 
 async function handleEditSubcategorySubmit(e) {
     e.preventDefault();
+    console.log('Handling edit subcategory submit...');
     
-    const subcategoryId = parseInt(document.getElementById('edit-subcategory-id').value);
-    const subcategoryData = {
-        main_category_id: parseInt(document.getElementById('edit-subcategory-main-category').value),
-        name: document.getElementById('edit-subcategory-name').value.trim(),
-        status: document.getElementById('edit-subcategory-status').value
-    };
+    const id = document.getElementById('edit-subcategory-id').value;
+    const name = document.getElementById('edit-subcategory-name').value.trim();
+    const mainCategoryId = document.getElementById('edit-subcategory-main-category').value;
+    const status = document.getElementById('edit-subcategory-status').value;
+    const existingImage = document.getElementById('edit-subcategory-existing-image').value;
+    const imageInput = document.getElementById('edit-subcategory-image');
+    const imageFile = imageInput.files[0];
     
-    console.log('Editing subcategory ID:', subcategoryId, 'Data:', subcategoryData);
+    console.log('Editing subcategory ID:', id, 'Data:', { name, mainCategoryId, status, existingImage, hasImage: !!imageFile });
     
-    if (!subcategoryData.name) {
-        showAlert('Error', 'Please enter a subcategory name');
+    if (!name || !id) {
+        showAlert('Error', 'Please fill all required fields');
         return;
     }
     
+    // Show loading state
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i data-feather="loader" class="animate-spin"></i> Updating...';
+    
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+    
     try {
-        console.log('Sending update to:', `${API_BASE_URL}?action=update&id=${subcategoryId}`);
+        let imageUrl = existingImage || null;
         
-        const response = await fetch(`${API_BASE_URL}?action=update&id=${subcategoryId}`, {
+        // Upload new image if provided
+        if (imageFile) {
+            console.log('Uploading new image...');
+            const uploadResult = await uploadImage(imageFile, 'subcategories');
+            
+            if (!uploadResult.success) {
+                showAlert('Error', 'Failed to upload image: ' + uploadResult.message);
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+                if (typeof feather !== 'undefined') feather.replace();
+                return;
+            }
+            
+            imageUrl = uploadResult.url;
+            console.log('New image uploaded successfully:', imageUrl);
+        }
+        
+        // Prepare data
+        const subcategoryData = {
+            main_category_id: parseInt(mainCategoryId),
+            name: name,
+            status: status
+        };
+        
+        if (imageUrl !== undefined) {
+            subcategoryData.image_url = imageUrl;
+        }
+        
+        console.log('Sending update to:', `${API_BASE_URL}?action=update&id=${id}`);
+        console.log('Data:', subcategoryData);
+        
+        const response = await fetch(`${API_BASE_URL}?action=update&id=${id}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -443,6 +719,12 @@ async function handleEditSubcategorySubmit(e) {
     } catch (error) {
         console.error('Error updating subcategory:', error);
         showAlert('Error', 'Error updating subcategory: ' + error.message);
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+        if (typeof feather !== 'undefined') {
+            feather.replace();
+        }
     }
 }
 
@@ -481,7 +763,44 @@ async function deleteSubcategory(subcategoryId) {
 
 // Utility functions
 function showAlert(title, message) {
-    alert(`${title}: ${message}`);
+    // Create alert modal if it doesn't exist
+    let alertModal = document.getElementById('alert-modal');
+    if (!alertModal) {
+        alertModal = document.createElement('div');
+        alertModal.id = 'alert-modal';
+        alertModal.className = 'modal hidden';
+        alertModal.innerHTML = `
+            <div class="modal-content small">
+                <div class="modal-header">
+                    <h3>${title}</h3>
+                    <button class="close-modal" data-modal="alert">
+                        <i data-feather="x"></i>
+                    </button>
+                </div>
+                <div class="confirmation-content" style="padding: 2rem;">
+                    <p>${message}</p>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="primary-btn" data-modal="alert">OK</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(alertModal);
+        
+        // Add event listener for OK button
+        setTimeout(() => {
+            const okBtn = alertModal.querySelector('.primary-btn[data-modal="alert"]');
+            if (okBtn) {
+                okBtn.addEventListener('click', () => closeModal('alert-modal'));
+            }
+        }, 100);
+    } else {
+        // Update existing modal
+        alertModal.querySelector('h3').textContent = title;
+        alertModal.querySelector('.confirmation-content p').textContent = message;
+    }
+    
+    openModal('alert-modal');
 }
 
 function showConfirmation(message, callback) {

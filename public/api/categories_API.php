@@ -1,5 +1,5 @@
 <?php
-// /public/api/categories_API.php - COMPLETE UPDATED VERSION
+// /public/api/categories_API.php - COMPLETE UPDATED VERSION WITH IMAGE UPLOAD
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
@@ -46,6 +46,56 @@ if (!file_exists($configPath)) {
 // Include database configuration
 require_once $configPath;
 
+// Image upload helper function
+function handleImageUpload($file, $type = 'subcategories') {
+    $uploadDir = __DIR__ . '/../../public/uploads/' . $type . '/';
+    
+    // Create directory if it doesn't exist
+    if (!file_exists($uploadDir)) {
+        mkdir($uploadDir, 0755, true);
+    }
+    
+    // Check for upload errors
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        throw new Exception('Upload error: ' . $file['error']);
+    }
+    
+    // Check file size (5MB max)
+    $maxSize = 5 * 1024 * 1024; // 5MB
+    if ($file['size'] > $maxSize) {
+        throw new Exception('File too large. Maximum size: 5MB');
+    }
+    
+    // Check file type
+    $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mime = finfo_file($finfo, $file['tmp_name']);
+    finfo_close($finfo);
+    
+    if (!in_array($mime, $allowedTypes)) {
+        throw new Exception('Invalid file type. Allowed: ' . implode(', ', $allowedTypes));
+    }
+    
+    // Generate unique filename
+    $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+    $filename = uniqid() . '_' . time() . '.' . $extension;
+    $filepath = $uploadDir . $filename;
+    
+    // Move uploaded file
+    if (!move_uploaded_file($file['tmp_name'], $filepath)) {
+        throw new Exception('Failed to save file');
+    }
+    
+    // Generate URL
+    $baseUrl = 'http://' . $_SERVER['HTTP_HOST'] . '/event-booking-website/public/uploads/' . $type . '/';
+    $fileUrl = $baseUrl . $filename;
+    
+    return [
+        'success' => true,
+        'url' => $fileUrl,
+        'filename' => $filename
+    ];
+}
 
 try {
     // Create database connection
@@ -169,8 +219,22 @@ function handleGetRequest($adminController, $action) {
 function handlePostRequest($adminController, $action) {
     if ($action === 'create') {
         try {
-            $json = file_get_contents('php://input');
-            $data = json_decode($json, true);
+            // Check if it's multipart/form-data (for file uploads)
+            if (!empty($_FILES['image'])) {
+                // Get JSON data from request body
+                $json = file_get_contents('php://input');
+                $data = json_decode($json, true);
+                
+                // Handle file upload
+                $uploadResult = handleImageUpload($_FILES['image'], 'subcategories');
+                if ($uploadResult['success']) {
+                    $data['image_url'] = $uploadResult['url'];
+                }
+            } else {
+                // Regular JSON request
+                $json = file_get_contents('php://input');
+                $data = json_decode($json, true);
+            }
             
             if (json_last_error() !== JSON_ERROR_NONE) {
                 throw new Exception('Invalid JSON data');
@@ -212,8 +276,23 @@ function handlePutRequest($adminController, $action) {
     if ($action === 'update') {
         try {
             $id = $_GET['id'] ?? 0;
-            $json = file_get_contents('php://input');
-            $data = json_decode($json, true);
+            
+            // Check if it's multipart/form-data (for file uploads)
+            if (!empty($_FILES['image'])) {
+                // Get JSON data from request body
+                $json = file_get_contents('php://input');
+                $data = json_decode($json, true);
+                
+                // Handle file upload
+                $uploadResult = handleImageUpload($_FILES['image'], 'subcategories');
+                if ($uploadResult['success']) {
+                    $data['image_url'] = $uploadResult['url'];
+                }
+            } else {
+                // Regular JSON request
+                $json = file_get_contents('php://input');
+                $data = json_decode($json, true);
+            }
             
             if (json_last_error() !== JSON_ERROR_NONE) {
                 throw new Exception('Invalid JSON data');
