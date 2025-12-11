@@ -1,4 +1,7 @@
 <?php
+// Start session
+require_once __DIR__ . '/../../database/session_init.php';
+
 // terms.php
 // This PHP file serves the Terms and Conditions document using the shared header/footer structure.
 
@@ -27,7 +30,7 @@ $google_maps_link = "https://maps.app.goo.gl/JFKuWYJDqJB42nLN7";
 </head>
 <body class="page-body">
     <!-- Header MUST be included here, AFTER the <body> tag opens -->
-    <?php include 'includes/header.php'; ?>
+    <?php include 'partials/header.php'; ?>
     
     <!-- Main Content Area -->
     <main class="main-content">

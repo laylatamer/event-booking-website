@@ -1,4 +1,7 @@
 <?php
+// Start session
+require_once __DIR__ . '/../../database/session_init.php';
+
 // Use include_once for safety to load the $events array from the centralized file.
 // The path '../../includes/event_data.php' assumes booking.php is in 'projectSoft/src/views/'
 // and event_data.php is in 'projectSoft/includes/'.

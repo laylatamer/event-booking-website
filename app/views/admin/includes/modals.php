@@ -693,10 +693,18 @@
             </button>
         </div>
         <form id="user-profile-form">
+            <input type="hidden" id="profile-user-id" value="<?php echo isset($_SESSION['user_id']) && is_numeric($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : ''; ?>">
             <div class="profile-avatar-section">
                 <div class="avatar-upload">
                     <div class="avatar-preview">
-                        <img id="profile-avatar-preview" src="default-avatar.png" alt="Profile Avatar">
+                        <?php 
+                        $avatarSrc = 'default-avatar.png';
+                        if (!empty($adminImage)) {
+                            $cleanPath = ltrim($adminImage, '/\\');
+                            $avatarSrc = '../../../public/image.php?path=' . urlencode($cleanPath);
+                        }
+                        ?>
+                        <img id="profile-avatar-preview" src="<?php echo htmlspecialchars($avatarSrc); ?>" alt="Profile Avatar">
                     </div>
                     <div class="avatar-upload-controls">
                         <input type="file" id="avatar-upload" accept="image/*" class="hidden">
@@ -706,20 +714,40 @@
             </div>
             <div class="form-grid">
                 <div class="form-group">
-                    <label>Full Name</label>
-                    <input type="text" id="profile-name" value="Admin" required>
+                    <label>First Name</label>
+                    <input type="text" id="profile-first-name" value="<?php echo htmlspecialchars($adminFirstName ?? ''); ?>" required>
+                </div>
+                <div class="form-group">
+                    <label>Last Name</label>
+                    <input type="text" id="profile-last-name" value="<?php echo htmlspecialchars($adminLastName ?? ''); ?>">
                 </div>
                 <div class="form-group">
                     <label>Email</label>
-                    <input type="email" id="profile-email" value="admin@egzly.com" required>
-                </div>
-                <div class="form-group">
-                    <label>Role</label>
-                    <input type="text" id="profile-role" value="Administrator" readonly>
+                    <input type="email" id="profile-email" value="<?php echo htmlspecialchars($adminEmail ?? ''); ?>" required>
                 </div>
                 <div class="form-group">
                     <label>Phone</label>
-                    <input type="tel" id="profile-phone" value="+1 (555) 123-4567">
+                    <input type="tel" id="profile-phone" value="<?php echo htmlspecialchars($adminPhone ?? ''); ?>">
+                </div>
+                <div class="form-group">
+                    <label>Address</label>
+                    <input type="text" id="profile-address" value="<?php echo htmlspecialchars($adminAddress ?? ''); ?>">
+                </div>
+                <div class="form-group">
+                    <label>City</label>
+                    <input type="text" id="profile-city" value="<?php echo htmlspecialchars($adminCity ?? ''); ?>">
+                </div>
+                <div class="form-group">
+                    <label>State</label>
+                    <input type="text" id="profile-state" value="<?php echo htmlspecialchars($adminState ?? ''); ?>">
+                </div>
+                <div class="form-group">
+                    <label>Country</label>
+                    <input type="text" id="profile-country" value="<?php echo htmlspecialchars($adminCountry ?? ''); ?>">
+                </div>
+                <div class="form-group">
+                    <label>Role</label>
+                    <input type="text" id="profile-role" value="<?php echo htmlspecialchars($adminIsAdmin ? 'Administrator' : 'User'); ?>" readonly>
                 </div>
             </div>
             <div class="modal-actions">

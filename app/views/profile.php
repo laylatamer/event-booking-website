@@ -1,10 +1,7 @@
 <?php
-session_start();
-
-if (!isset($_SESSION['user_id'])) {
-    header('Location: auth.php');
-    exit;
-}
+// Start session and require login
+require_once __DIR__ . '/../../database/session_init.php';
+requireLogin();
 
 require_once __DIR__ . '/../../config/db_connect.php';
 

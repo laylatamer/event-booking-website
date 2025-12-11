@@ -61,11 +61,19 @@
     <div class="user-profile-sidebar">
         <div class="profile-info">
             <div class="avatar">
-    <div class="avatar-initials">A</div>
-</div>
+                <?php if (!empty($adminImage)): ?>
+                    <?php 
+                    $cleanPath = ltrim($adminImage, '/\\');
+                    $imageSrc = '../../../public/image.php?path=' . urlencode($cleanPath);
+                    ?>
+                    <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="Admin Avatar" style="width: 100%; height: 100%; object-fit: cover;">
+                <?php else: ?>
+                    <div class="avatar-initials"><?php echo htmlspecialchars($adminInitials); ?></div>
+                <?php endif; ?>
+            </div>
             <div>
-                <p class="username">Admin</p>
-                <p class="user-email">admin@egzly.com</p>
+                <p class="username"><?php echo htmlspecialchars($adminName); ?></p>
+                <p class="user-email"><?php echo htmlspecialchars($adminEmail); ?></p>
             </div>
         </div>
     </div>

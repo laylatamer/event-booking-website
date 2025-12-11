@@ -138,43 +138,113 @@ function closeModal(modalId) {
 
 // Load user profile data
 function loadUserProfile() {
-    if (document.getElementById('profile-name')) {
-        document.getElementById('profile-name').value = currentUser.name;
-        document.getElementById('profile-email').value = currentUser.email;
-        document.getElementById('profile-role').value = currentUser.role;
-        document.getElementById('profile-phone').value = currentUser.phone;
-        document.getElementById('profile-avatar-preview').src = currentUser.avatar;
-        
-        // Update sidebar avatar
-        const userAvatar = document.getElementById('user-avatar');
-        if (userAvatar) {
-            userAvatar.src = currentUser.avatar;
-        }
+    // Get all profile form fields
+    const profileFirstName = document.getElementById('profile-first-name');
+    const profileLastName = document.getElementById('profile-last-name');
+    const profileEmail = document.getElementById('profile-email');
+    const profilePhone = document.getElementById('profile-phone');
+    const profileAddress = document.getElementById('profile-address');
+    const profileCity = document.getElementById('profile-city');
+    const profileState = document.getElementById('profile-state');
+    const profileCountry = document.getElementById('profile-country');
+    const profileRole = document.getElementById('profile-role');
+    
+    // Don't overwrite PHP-set values - they already contain database data
+    // This function is mainly for fallback if values are missing
+    
+    // Update avatar preview if needed
+    const avatarPreview = document.getElementById('profile-avatar-preview');
+    if (avatarPreview && (!avatarPreview.src || avatarPreview.src.includes('default-avatar.png'))) {
+        avatarPreview.src = currentUser.avatar;
+    }
+    
+    // Update sidebar avatar
+    const userAvatar = document.getElementById('user-avatar');
+    if (userAvatar) {
+        userAvatar.src = currentUser.avatar;
     }
 }
 
 // Handle update profile form submission
-function handleUpdateProfile(e) {
+async function handleUpdateProfile(e) {
     e.preventDefault();
     
-    const name = document.getElementById('profile-name').value;
-    const email = document.getElementById('profile-email').value;
-    const phone = document.getElementById('profile-phone').value;
+    const firstName = document.getElementById('profile-first-name')?.value || '';
+    const lastName = document.getElementById('profile-last-name')?.value || '';
+    const email = document.getElementById('profile-email')?.value || '';
+    const phone = document.getElementById('profile-phone')?.value || '';
+    const address = document.getElementById('profile-address')?.value || '';
+    const city = document.getElementById('profile-city')?.value || '';
+    const state = document.getElementById('profile-state')?.value || '';
+    const country = document.getElementById('profile-country')?.value || '';
     
-    currentUser.name = name;
-    currentUser.email = email;
-    currentUser.phone = phone;
+    // Get current user ID from the page (should be set in PHP)
+    const userId = window.currentUserId || document.getElementById('profile-user-id')?.value;
     
-    // Update sidebar
-    const username = document.querySelector('.username');
-    const userEmail = document.querySelector('.user-email');
-    if (username) username.textContent = name;
-    if (userEmail) userEmail.textContent = email;
+    if (!userId) {
+        alert('Error: User ID not found. Please refresh the page.');
+        return;
+    }
     
-    closeModal('user-profile');
+    // Disable submit button to prevent double submission
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Saving...';
+    }
     
-    // Show success message (in a real app)
-    alert('Profile updated successfully!');
+    try {
+        const response = await fetch('/event-booking-website/public/api/users.php', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                id: parseInt(userId),
+                first_name: firstName,
+                last_name: lastName,
+                email: email,
+                phone_number: phone,
+                address: address,
+                city: city,
+                state: state,
+                country: country
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.ok) {
+            const fullName = `${firstName} ${lastName}`.trim() || firstName || lastName;
+            
+            // Update sidebar
+            const username = document.querySelector('.username');
+            const userEmail = document.querySelector('.user-email');
+            if (username) username.textContent = fullName;
+            if (userEmail) userEmail.textContent = email;
+            
+            closeModal('user-profile');
+            
+            // Show success message
+            alert('Profile updated successfully!');
+            
+            // Reload page to show updated data
+            window.location.reload();
+        } else {
+            alert('Error: ' + (result.message || 'Failed to update profile. Please try again.'));
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Save Changes';
+            }
+        }
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        alert('Error: Failed to update profile. Please try again.');
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Save Changes';
+        }
+    }
 }
 
 // Handle avatar upload

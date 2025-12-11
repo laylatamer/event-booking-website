@@ -1,17 +1,18 @@
 <?php
-// Initialize session if not already started
+// Session should already be started by session_init.php
+// But we check just in case this file is included directly
 if (session_status() == PHP_SESSION_NONE) {
-    session_start();
+    require_once __DIR__ . '/../../database/session_init.php';
 }
 
 // Initialize variables to prevent undefined variable warnings
 $isLoggedIn = false;
 $userName = '';
 
-// Check if user is logged in
-if (isset($_SESSION['user_id']) && isset($_SESSION['username'])) {
+// Check if user is logged in (check both username and user_name for compatibility)
+if (isset($_SESSION['user_id']) && $_SESSION['user_id'] !== null) {
     $isLoggedIn = true;
-    $userName = $_SESSION['username'];
+    $userName = $_SESSION['username'] ?? $_SESSION['user_name'] ?? 'User';
 }
 ?>
 <!DOCTYPE html>

@@ -1,3 +1,10 @@
+<?php
+// Start session
+require_once __DIR__ . '/../../database/session_init.php';
+
+// Require login for checkout
+requireLogin();
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>

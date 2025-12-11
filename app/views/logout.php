@@ -1,8 +1,6 @@
 <?php
-// Ensure session handling is available
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+// Start session
+require_once __DIR__ . '/../../database/session_init.php';
 
 // Clear all session data
 $_SESSION = [];

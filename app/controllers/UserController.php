@@ -67,6 +67,66 @@ class UserController
         }
     }
 
+    public function update(int $id, array $payload): array
+    {
+        $first = trim($payload['first_name'] ?? '');
+        $last = trim($payload['last_name'] ?? '');
+        $email = trim($payload['email'] ?? '');
+        $phone = trim($payload['phone_number'] ?? '');
+        $address = trim($payload['address'] ?? '');
+        $city = trim($payload['city'] ?? '');
+        $country = trim($payload['country'] ?? '');
+        $state = trim($payload['state'] ?? '');
+        $profileImage = trim($payload['profile_image_path'] ?? '');
+
+        if ($first === '') {
+            return ['ok' => false, 'message' => 'First name is required.'];
+        }
+
+        if ($email === '') {
+            return ['ok' => false, 'message' => 'Email is required.'];
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return ['ok' => false, 'message' => 'Invalid email format.'];
+        }
+
+        try {
+            // Get database connection from model to check email
+            $reflection = new ReflectionClass($this->model);
+            $property = $reflection->getProperty('db');
+            $property->setAccessible(true);
+            $db = $property->getValue($this->model);
+            
+            // Check if email is already taken by another user
+            $checkStmt = $db->prepare('SELECT id FROM users WHERE email = :email AND id != :id');
+            $checkStmt->execute([':email' => $email, ':id' => $id]);
+            if ($checkStmt->fetch()) {
+                return ['ok' => false, 'message' => 'Email is already registered to another user.'];
+            }
+
+            $updated = $this->model->update($id, [
+                'first_name' => $first,
+                'last_name' => $last,
+                'email' => $email,
+                'phone_number' => $phone ?: null,
+                'address' => $address ?: null,
+                'city' => $city ?: null,
+                'country' => $country ?: null,
+                'state' => $state ?: null,
+                'profile_image_path' => $profileImage ?: null,
+            ]);
+
+            if ($updated) {
+                return ['ok' => true];
+            } else {
+                return ['ok' => false, 'message' => 'Failed to update user.'];
+            }
+        } catch (Exception $e) {
+            return ['ok' => false, 'message' => $e->getMessage()];
+        }
+    }
+
     public function create(array $payload): int
     {
         return $this->model->create($payload);
