@@ -150,7 +150,7 @@ class AdminController {
     }
 
     // Venues CRUD 
-    public function createVenue($data) {
+    public function createVenue($data, $imageFile = null) {
         $this->venue->name = $data['name'];
         $this->venue->address = $data['address'];
         $this->venue->city = $data['city'];
@@ -159,30 +159,60 @@ class AdminController {
         $this->venue->description = $data['description'];
         $this->venue->facilities = $data['facilities'] ?? [];
         $this->venue->google_maps_url = $data['google_maps_url'];
-        $this->venue->image_url = $data['image_url'];
         $this->venue->status = $data['status'] ?? 'active';
+        
+        // Handle image upload
+        if ($imageFile && $imageFile['error'] === UPLOAD_ERR_OK) {
+            $this->venue->image_url = $this->venue->uploadImage($imageFile);
+        } else {
+            $this->venue->image_url = $data['image_url'] ?? '';
+        }
         
         return $this->venue->create();
     }
 
-    public function updateVenue($id, $data) {
+    public function updateVenue($id, $data, $imageFile = null) {
         $this->venue->id = $id;
-        $this->venue->name = $data['name'];
-        $this->venue->address = $data['address'];
-        $this->venue->city = $data['city'];
-        $this->venue->country = $data['country'] ?? 'Egypt';
-        $this->venue->capacity = $data['capacity'];
-        $this->venue->description = $data['description'];
-        $this->venue->facilities = $data['facilities'] ?? [];
-        $this->venue->google_maps_url = $data['google_maps_url'];
-        $this->venue->image_url = $data['image_url'];
-        $this->venue->status = $data['status'] ?? 'active';
         
-        return $this->venue->update();
+        // First get current venue
+        if ($this->venue->readOne()) {
+            $currentImage = $this->venue->image_url;
+            
+            $this->venue->name = $data['name'];
+            $this->venue->address = $data['address'];
+            $this->venue->city = $data['city'];
+            $this->venue->country = $data['country'] ?? 'Egypt';
+            $this->venue->capacity = $data['capacity'];
+            $this->venue->description = $data['description'];
+            $this->venue->facilities = $data['facilities'] ?? [];
+            $this->venue->google_maps_url = $data['google_maps_url'];
+            $this->venue->status = $data['status'] ?? 'active';
+            
+            // Handle image upload
+            if ($imageFile && $imageFile['error'] === UPLOAD_ERR_OK) {
+                // Delete old image if exists
+                $this->venue->deleteImage($currentImage);
+                
+                // Upload new image
+                $this->venue->image_url = $this->venue->uploadImage($imageFile);
+            } else {
+                // Keep existing image
+                $this->venue->image_url = $currentImage;
+            }
+            
+            return $this->venue->update();
+        }
+        return false;
     }
 
     public function deleteVenue($id) {
         $this->venue->id = $id;
+        
+        // First get venue to delete image
+        if ($this->venue->readOne()) {
+            $this->venue->deleteImage($this->venue->image_url);
+        }
+        
         return $this->venue->delete();
     }
 
