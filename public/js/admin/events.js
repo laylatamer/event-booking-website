@@ -1,6 +1,6 @@
 // events.js - Clean Admin Events Management with File Upload
 const API_BASE = '../../../public/api/events_API.php';
-const UPLOAD_API_URL = '/event-booking-website/public/api/upload.php';
+const UPLOAD_API_URL = '/event-booking-website/public/api/uploads.php';
 
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize Feather icons

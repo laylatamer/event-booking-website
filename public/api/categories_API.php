@@ -219,25 +219,12 @@ function handleGetRequest($adminController, $action) {
 function handlePostRequest($adminController, $action) {
     if ($action === 'create') {
         try {
-            // Check if it's multipart/form-data (for file uploads)
-            if (!empty($_FILES['image'])) {
-                // Get JSON data from request body
-                $json = file_get_contents('php://input');
-                $data = json_decode($json, true);
-                
-                // Handle file upload
-                $uploadResult = handleImageUpload($_FILES['image'], 'subcategories');
-                if ($uploadResult['success']) {
-                    $data['image_url'] = $uploadResult['url'];
-                }
-            } else {
-                // Regular JSON request
-                $json = file_get_contents('php://input');
-                $data = json_decode($json, true);
-            }
+            // Get JSON data from request body
+            $json = file_get_contents('php://input');
+            $data = json_decode($json, true);
             
             if (json_last_error() !== JSON_ERROR_NONE) {
-                throw new Exception('Invalid JSON data');
+                throw new Exception('Invalid JSON data: ' . json_last_error_msg());
             }
             
             if (empty($data['main_category_id']) || empty($data['name'])) {
@@ -277,31 +264,31 @@ function handlePutRequest($adminController, $action) {
         try {
             $id = $_GET['id'] ?? 0;
             
-            // Check if it's multipart/form-data (for file uploads)
-            if (!empty($_FILES['image'])) {
-                // Get JSON data from request body
-                $json = file_get_contents('php://input');
-                $data = json_decode($json, true);
-                
-                // Handle file upload
-                $uploadResult = handleImageUpload($_FILES['image'], 'subcategories');
-                if ($uploadResult['success']) {
-                    $data['image_url'] = $uploadResult['url'];
-                }
-            } else {
-                // Regular JSON request
-                $json = file_get_contents('php://input');
-                $data = json_decode($json, true);
-            }
-            
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                throw new Exception('Invalid JSON data');
-            }
-            
-            if (!$id || empty($data['main_category_id']) || empty($data['name'])) {
+            if (!$id) {
                 echo json_encode([
                     'success' => false, 
-                    'message' => 'ID, main category ID and name are required'
+                    'message' => 'ID is required'
+                ]);
+                return;
+            }
+            
+            // Get the JSON data from request body
+            $json = file_get_contents('php://input');
+            $data = json_decode($json, true);
+            
+            // Check for JSON decode error
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new Exception('Invalid JSON data: ' . json_last_error_msg());
+            }
+            
+            // Log received data for debugging
+            error_log("Update data received for ID {$id}: " . print_r($data, true));
+            
+            if (empty($data['main_category_id']) || empty($data['name'])) {
+                echo json_encode([
+                    'success' => false, 
+                    'message' => 'Main category ID and name are required',
+                    'received_data' => $data
                 ]);
                 return;
             }
@@ -320,9 +307,11 @@ function handlePutRequest($adminController, $action) {
                 ]);
             }
         } catch (Exception $e) {
+            http_response_code(500);
             echo json_encode([
                 'success' => false,
-                'message' => 'Error updating subcategory: ' . $e->getMessage()
+                'message' => 'Error updating subcategory: ' . $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
         }
     }

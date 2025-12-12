@@ -6,6 +6,7 @@ class Subcategory {
     public $id;
     public $main_category_id;
     public $name;
+    public $image_url;
     public $status;
 
     public function __construct(PDO $db) {
@@ -16,14 +17,17 @@ class Subcategory {
         $query = "INSERT INTO " . $this->table_name . "
                 SET main_category_id = :main_category_id,
                     name = :name,
+                    image_url = :image_url,
                     status = :status";
         
         $stmt = $this->conn->prepare($query);
         
         $this->name = htmlspecialchars(strip_tags($this->name));
+        $this->image_url = $this->image_url ?? null;
         
         $stmt->bindParam(":main_category_id", $this->main_category_id);
         $stmt->bindParam(":name", $this->name);
+        $stmt->bindParam(":image_url", $this->image_url);
         $stmt->bindParam(":status", $this->status);
         
         return $stmt->execute();
@@ -65,6 +69,7 @@ class Subcategory {
         if($row) {
             $this->main_category_id = $row['main_category_id'];
             $this->name = $row['name'];
+            $this->image_url = $row['image_url'] ?? null;
             $this->status = $row['status'];
             return $row;
         }
@@ -75,15 +80,18 @@ class Subcategory {
         $query = "UPDATE " . $this->table_name . "
                 SET main_category_id = :main_category_id,
                     name = :name,
+                    image_url = :image_url,
                     status = :status
                 WHERE id = :id";
         
         $stmt = $this->conn->prepare($query);
         
         $this->name = htmlspecialchars(strip_tags($this->name));
+        $this->image_url = $this->image_url ?? null;
         
         $stmt->bindParam(":main_category_id", $this->main_category_id);
         $stmt->bindParam(":name", $this->name);
+        $stmt->bindParam(":image_url", $this->image_url);
         $stmt->bindParam(":status", $this->status);
         $stmt->bindParam(":id", $this->id);
         
