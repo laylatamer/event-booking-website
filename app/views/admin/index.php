@@ -122,6 +122,10 @@ if (!in_array($currentSection, $validSections)) {
                     if (activeSection) {
                         activeSection.classList.add('active');
                     }
+                    // Initialize Feather icons
+                    if (typeof feather !== 'undefined') {
+                        feather.replace();
+                    }
                 });
             </script>
         </div>

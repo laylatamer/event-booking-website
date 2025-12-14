@@ -171,22 +171,117 @@
     filter: brightness(0.95); 
 }
 
+/* Profile dropdown container */
+.profile-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.auth-actions .profile-dropdown {
+    display: inline-block;
+}
+
 /* Profile icon button */
 .profile-btn {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
+    width: 40px !important;
+    height: 40px !important;
     border-radius: 12px;
     border: 1px solid rgba(214,90,46,0.45);
     background: var(--surface);
     color: var(--accent);
     cursor: pointer;
+    padding: 0 !important;
+    margin: 0;
+    overflow: hidden;
+    transition: border-color 150ms ease, box-shadow 150ms ease;
+    box-sizing: border-box;
+    line-height: 0;
+}
+
+.profile-btn:hover {
+    border-color: rgba(214,90,46,0.7);
+    box-shadow: 0 0 0 3px rgba(214,90,46,0.15);
 }
 
 .profile-btn svg path { 
     fill: currentColor !important; 
+}
+
+/* Profile image */
+.profile-btn .profile-img,
+.profile-img {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    max-width: 40px !important;
+    max-height: 40px !important;
+    object-fit: cover !important;
+    object-position: center;
+    border-radius: 12px;
+    display: block !important;
+    flex-shrink: 0;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box;
+}
+
+/* Dropdown menu */
+.dropdown-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    min-width: 180px;
+    background: var(--nav-bg);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 4px 8px rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px);
+    transition: opacity 200ms ease, visibility 200ms ease, transform 200ms ease;
+    z-index: 1000;
+    padding: 4px;
+    margin-top: 4px;
+}
+
+.profile-dropdown:hover .dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+/* Dropdown items */
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    color: var(--text);
+    text-decoration: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background-color 150ms ease, color 150ms ease;
+}
+
+.dropdown-item svg {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+    flex-shrink: 0;
+}
+
+.dropdown-item:hover {
+    background: rgba(214, 90, 46, 0.15);
+    color: var(--accent-strong);
+}
+
+.dropdown-item span {
+    flex: 1;
 }
 
 /* Pin behavior removed: navbar stays only at the top */

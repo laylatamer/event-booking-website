@@ -1,8 +1,17 @@
 <?php
 // Start session
-require_once __DIR__ . '/../config/session_init.php';
+require_once __DIR__ . '/../database/session_init.php';
 
 require_once __DIR__ . '/../app/controllers/ContactController.php';
+
+// Check if user is logged in
+if (!isLoggedIn()) {
+    // Set message in session for display on login page
+    $_SESSION['auth_message'] = ['text' => 'You should be logged in to send a message', 'type' => 'error'];
+    // Redirect to login page
+    header('Location: ../app/views/auth.php');
+    exit;
+}
 
 $controller = new ContactController(new ContactMessage($pdo));
 

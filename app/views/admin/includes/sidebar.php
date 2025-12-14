@@ -76,6 +76,10 @@
                 <p class="user-email"><?php echo htmlspecialchars($adminEmail); ?></p>
             </div>
         </div>
+        <a href="../homepage.php" class="exit-btn" title="Exit to Homepage">
+            <i data-feather="log-out"></i>
+            <span>Exit to Homepage</span>
+        </a>
     </div>
 </div>
 
