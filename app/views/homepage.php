@@ -11,296 +11,238 @@
 </head>
 <body>
     <?php
-// Include the header file
-include 'partials/header.php';
-?>
-        <!-- Events slider -->
-        <section id="events-slider" class="events-slider-section" aria-roledescription="carousel" aria-label="Available events" aria-live="polite">
-            <div class="slider-container">
-                <div class="slider-track" id="sliderTrack">
-                  
+    // Include the header file
+    include 'partials/header.php';
+    
+    // Connect to database and get events
+    require_once __DIR__ . '/../../config/db_connect.php';
+    require_once __DIR__ . '/../../app/controllers/EventController.php';
+    
+    
+    try {
+        $database = new Database();
+        $db = $database->getConnection();
+        
+        $eventController = new EventController($db);
+        
+        // Get upcoming events (limit to 5 for the slider)
+        $upcomingEvents = $eventController->getUpcomingEvents(5);
+        
+        // Get entertainment categories (NEW - Add these lines)
+        $entertainmentSubcategories = $eventController->getSubcategoriesByMainCategoryName('Entertainment');
+        
+        // Get sports categories (NEW - Add these lines)
+        $sportsSubcategories = $eventController->getSubcategoriesByMainCategoryName('Sports');
+        
+    } catch (Exception $e) {
+        // Handle error gracefully
+        $upcomingEvents = [];
+        $entertainmentSubcategories = []; // NEW
+        $sportsSubcategories = []; // NEW
+        error_log("Error fetching events: " . $e->getMessage());
+    }
+    ?>
+    
+    <!-- Events slider -->
+    <section id="events-slider" class="events-slider-section" aria-roledescription="carousel" aria-label="Available events" aria-live="polite">
+        <div class="slider-container">
+            <div class="slider-track" id="sliderTrack">
+                <?php if (empty($upcomingEvents)): ?>
+                    <!-- Fallback if no events -->
                     <article class="event-card" data-event>
                         <div class="event-content">
                             <div class="event-header">
-                                <h3 class="event-title">Ali Quandil: Accept Laugh Interact</h3>
-                                <div class="event-sub">Oct 24 | 08:00 PM</div>
-                                <div class="event-venue">Theatro Arkan</div>
+                                <h3 class="event-title">No Upcoming Events</h3>
+                                <div class="event-sub">Check back soon for new events!</div>
+                                <div class="event-venue">Coming Soon</div>
                             </div>
-                            <div class="organized">Organized by</div>
-                            <div class="org-logos">
-                                <span class="org-logo">Theatro</span>
-                                <span class="org-logo">Org</span>
-                            </div>
+                            <div class="organized">Stay tuned</div>
                             <div class="event-actions">
-                                <a href="#" class="btn primary"><span class="icon" aria-hidden="true">💳</span>Book Now</a>
-                                <a href="#" class="btn secondary">More Info</a>
+                                <a href="allevents.php" class="btn primary"><span class="icon" aria-hidden="true">📅</span>View All Events</a>
                             </div>
                         </div>
-                        <div class="event-media" style="background-image: url('../../public/img/ali-qndeel.jpg'); background-position: center; background-size: cover;">
-                            <span class="date-badge">Fri, Nov 21</span>
+                        <div class="event-media" style="background-image: url('../../public/img/default-event.jpg'); background-position: center; background-size: cover;">
+                            <span class="date-badge">Soon</span>
                         </div>
                     </article>
-                    <article class="event-card" data-event>
-                        <div class="event-content">
-                            <div class="event-header">
-                                <h3 class="event-title">Mediterranean Food Fest</h3>
-                                <div class="event-sub">Sat, Dec 7 | 06:00 PM</div>
-                                <div class="event-venue">Alexandria, Egypt</div>
+                <?php else: ?>
+                    <?php foreach ($upcomingEvents as $event): ?>
+                        <?php
+                        // Format dates
+                        $eventDate = new DateTime($event['date']);
+                        $formattedDate = $eventDate->format('D, M d');
+                        $displayDate = $eventDate->format('M d | h:i A');
+                        
+                        // Default image if none provided
+                        $imageUrl = !empty($event['image']) ? $event['image'] : '../../public/img/default-event.jpg';
+                        ?>
+                        <article class="event-card" data-event data-event-id="<?php echo $event['id']; ?>">
+                            <div class="event-content">
+                                <div class="event-header">
+                                    <h3 class="event-title"><?php echo htmlspecialchars($event['title']); ?></h3>
+                                    <div class="event-sub"><?php echo $displayDate; ?></div>
+                                    <div class="event-venue"><?php echo htmlspecialchars($event['venue_city']); ?></div>
+                                </div>
+                                <div class="organized">Category: <?php echo htmlspecialchars($event['category']); ?></div>
+                                <div class="org-logos">
+                                    <span class="org-logo"><?php echo htmlspecialchars($event['category']); ?></span>
+                                </div>
+                                <div class="event-actions">
+                                    <a href="booking.php?id=<?php echo $event['id']; ?>" class="btn primary">
+                                        <span class="icon" aria-hidden="true">💳</span>Book Now
+                                    </a>
+                                    <a href="event-details.php?id=<?php echo $event['id']; ?>" class="btn secondary">More Info</a>
+                                </div>
                             </div>
-                            <div class="organized">Organized by</div>
-                            <div class="org-logos">
-                                <span class="org-logo">Gastro</span>
-                                <span class="org-logo">City</span>
+                            <div class="event-media" style="background-image: url('<?php echo $imageUrl; ?>'); background-position: center; background-size: cover;">
+                                <span class="date-badge"><?php echo $formattedDate; ?></span>
                             </div>
-                            <div class="event-actions">
-                                <a href="#" class="btn primary"><span class="icon" aria-hidden="true">💳</span>Book Now</a>
-                                <a href="#" class="btn secondary">More Info</a>
-                            </div>
-                        </div>
-                        <div class="event-media" style="background-image: url('../../public/img/food fest.jpg'); background-position: center; background-size: cover;">
-                            <span class="date-badge">Sat, Dec 7</span>
-                        </div>
-                    </article>
-                    <article class="event-card" data-event>
-                        <div class="event-content">
-                            <div class="event-header">
-                                <h3 class="event-title">Pyramids Light Show</h3>
-                                <div class="event-sub">Thu, Jan 2 | 09:30 PM</div>
-                                <div class="event-venue">Giza, Egypt</div>
-                            </div>
-                            <div class="organized">Organized by</div>
-                            <div class="org-logos">
-                                <span class="org-logo">Heritage</span>
-                                <span class="org-logo">Tourism</span>
-                            </div>
-                            <div class="event-actions">
-                                <a href="#" class="btn primary"><span class="icon" aria-hidden="true">💳</span>Book Now</a>
-                                <a href="#" class="btn secondary">More Info</a>
-                            </div>
-                        </div>
-                        <div class="event-media" style="background-image: url('../../public/img/pyramids.jpg'); background-position: center; background-size: cover;">
-                            <span class="date-badge">Thu, Jan 2</span>
-                        </div>
-                    </article>
-                </div>
-                <div class="slider-controls" aria-hidden="false">
-                    <button class="slider-btn prev" id="prevBtn" aria-label="Previous event" title="Previous">
-                        ‹
-                    </button>
-                    <button class="slider-btn next" id="nextBtn" aria-label="Next event" title="Next">
-                        ›
-                    </button>
-                </div>
+                        </article>
+                    <?php endforeach; ?>
+                <?php endif; ?>
             </div>
-            <div class="slider-dots" id="sliderDots" role="tablist" aria-label="Event slides"></div>
-        </section>
+            <div class="slider-controls" aria-hidden="false">
+                <button class="slider-btn prev" id="prevBtn" aria-label="Previous event" title="Previous">
+                    ‹
+                </button>
+                <button class="slider-btn next" id="nextBtn" aria-label="Next event" title="Next">
+                    ›
+                </button>
+            </div>
+        </div>
+        <div class="slider-dots" id="sliderDots" role="tablist" aria-label="Event slides"></div>
+    </section>
 
-        <!-- Categories carousel-->
-        <section class="categories-section" id="categories">
-            <div class="categories-header">
-                <h2 class="categories-title">Explore Entertainment</h2>
+    <!-- Entertainment Categories Carousel - REPLACED SECTION -->
+    <section class="categories-section" id="categories">
+        <div class="categories-header">
+            <h2 class="categories-title">Explore Entertainment</h2>
+            <?php if (!empty($entertainmentSubcategories)): ?>
                 <div class="cat-controls">
                     <button class="cat-btn" id="catPrev" aria-label="Previous categories">⟵</button>
                     <button class="cat-btn" id="catNext" aria-label="Next categories">⟶</button>
                 </div>
-            </div>
-            <div class="cat-viewport">
-                <div class="cat-track" id="catTrack">
+            <?php endif; ?>
+        </div>
+        <div class="cat-viewport">
+            <div class="cat-track" id="catTrack">
+                <?php if (empty($entertainmentSubcategories)): ?>
+                    <!-- Fallback if no entertainment categories in database -->
                     <div class="cat-card">
                         <div class="cat-media" style="background-image: url('https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1200&auto=format&fit=crop');"></div>
                         <div class="cat-info">
                             <div class="cat-meta">
-                                <div class="cat-name">Nightlife</div>
-                                <div class="cat-count">6 Events</div>
+                                <div class="cat-name">Coming Soon</div>
+                                <div class="cat-count">0 Events</div>
                             </div>
-                            <button class="cat-arrow" onclick="viewCategory('nightlife')" aria-label="View Nightlife events">
+                            <button class="cat-arrow" onclick="viewCategory('entertainment')" aria-label="View entertainment events">
                                 <span>→</span>
                             </button>
                         </div>
                     </div>
-                    <div class="cat-card">
-                        <div class="cat-media" style="background-image: url('https://images.unsplash.com/photo-1483412033650-1015ddeb83d1?q=80&w=1200&auto=format&fit=crop');"></div>
-                        <div class="cat-info">
-                            <div class="cat-meta">
-                                <div class="cat-name">Concerts</div>
-                                <div class="cat-count">13 Events</div>
+                <?php else: ?>
+                    <?php foreach ($entertainmentSubcategories as $subcategory): ?>
+                        <?php
+                        // Default image if none provided
+                        $catImage = !empty($subcategory['image_url']) 
+                            ? $subcategory['image_url'] 
+                            : 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1200&auto=format&fit=crop';
+                        ?>
+                        <div class="cat-card">
+                            <div class="cat-media" style="background-image: url('<?php echo $catImage; ?>');"></div>
+                            <div class="cat-info">
+                                <div class="cat-meta">
+                                    <div class="cat-name"><?php echo htmlspecialchars($subcategory['name']); ?></div>
+                                    <div class="cat-count"><?php echo $subcategory['event_count']; ?> Events</div>
+                                </div>
+                                <button class="cat-arrow" onclick="viewCategory('<?php echo $subcategory['id']; ?>', '<?php echo htmlspecialchars($subcategory['name']); ?>')" 
+                                        aria-label="View <?php echo htmlspecialchars($subcategory['name']); ?> events">
+                                    <span>→</span>
+                                </button>
                             </div>
-                            <button class="cat-arrow" onclick="viewCategory('concerts')" aria-label="View Concerts events">
-                                <span>→</span>
-                            </button>
                         </div>
-                    </div>
-                    <div class="cat-card">
-                        <div class="cat-media" style="background-image: url('https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=1200&auto=format&fit=crop');"></div>
-                        <div class="cat-info">
-                            <div class="cat-meta">
-                                <div class="cat-name">Comedy</div>
-                                <div class="cat-count">2 Events</div>
-                            </div>
-                            <button class="cat-arrow" onclick="viewCategory('comedy')" aria-label="View Comedy events">
-                                <span>→</span>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="cat-card">
-                        <div class="cat-media" style="background-image: url('https://images.unsplash.com/photo-1549880338-65ddcdfd017b?q=80&w=1200&auto=format&fit=crop');"></div>
-                        <div class="cat-info">
-                            <div class="cat-meta">
-                                <div class="cat-name">Art & Theatre</div>
-                                <div class="cat-count">26 Events</div>
-                            </div>
-                            <button class="cat-arrow" onclick="viewCategory('art-theatre')" aria-label="View Art & Theatre events">
-                                <span>→</span>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="cat-card">
-                        <div class="cat-media" style="background-image: url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop');"></div>
-                        <div class="cat-info">
-                            <div class="cat-meta">
-                                <div class="cat-name">Summit</div>
-                                <div class="cat-count">4 Events</div>
-                            </div>
-                            <button class="cat-arrow" onclick="viewCategory('summit')" aria-label="View Summit events">
-                                <span>→</span>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="cat-card">
-                        <div class="cat-media" style="background-image: url('https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?q=80&w=1200&auto=format&fit=crop');"></div>
-                        <div class="cat-info">
-                            <div class="cat-meta">
-                                <div class="cat-name">Activities</div>
-                                <div class="cat-count">9 Events</div>
-                            </div>
-                            <button class="cat-arrow" onclick="viewCategory('activities')" aria-label="View Activities events">
-                                <span>→</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
             </div>
-        </section>
+        </div>
+    </section>
 
-        <!-- Sports carousel -->
-        <section class="categories-section" id="sports">
-            <div class="categories-header">
-                <h2 class="categories-title">Explore Sports</h2>
+    <!-- Sports Categories Carousel - REPLACED SECTION -->
+    <section class="categories-section" id="sports">
+        <div class="categories-header">
+            <h2 class="categories-title">Explore Sports</h2>
+            <?php if (!empty($sportsSubcategories)): ?>
                 <div class="cat-controls">
                     <button class="cat-btn" id="sportsPrev" aria-label="Previous sports">⟵</button>
                     <button class="cat-btn" id="sportsNext" aria-label="Next sports">⟶</button>
                 </div>
-            </div>
-            <div class="cat-viewport">
-                <div class="cat-track" id="sportsTrack">
+            <?php endif; ?>
+        </div>
+        <div class="cat-viewport">
+            <div class="cat-track" id="sportsTrack">
+                <?php if (empty($sportsSubcategories)): ?>
+                    <!-- Fallback if no sports categories in database -->
                     <div class="cat-card">
                         <div class="cat-media" style="background-image: url('https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?q=80&w=1200&auto=format&fit=crop');"></div>
                         <div class="cat-info">
                             <div class="cat-meta">
-                                <div class="cat-name">Football</div>
-                                <div class="cat-count">6 Events</div>
+                                <div class="cat-name">Coming Soon</div>
+                                <div class="cat-count">0 Events</div>
                             </div>
-                            <button class="cat-arrow" onclick="viewCategory('football')" aria-label="View Football events">
+                            <button class="cat-arrow" onclick="viewCategory('sports')" aria-label="View sports events">
                                 <span>→</span>
                             </button>
                         </div>
                     </div>
-                    <div class="cat-card">
-                        <div class="cat-media" style="background-image: url('https://images.unsplash.com/photo-1546519638-68e109498ffc?q=80&w=1200&auto=format&fit=crop');"></div>
-                        <div class="cat-info">
-                            <div class="cat-meta">
-                                <div class="cat-name">Basketball</div>
-                                <div class="cat-count">12 Events</div>
+                <?php else: ?>
+                    <?php foreach ($sportsSubcategories as $subcategory): ?>
+                        <?php
+                        // Default image if none provided
+                        $catImage = !empty($subcategory['image_url']) 
+                            ? $subcategory['image_url'] 
+                            : 'https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?q=80&w=1200&auto=format&fit=crop';
+                        ?>
+                        <div class="cat-card">
+                            <div class="cat-media" style="background-image: url('<?php echo $catImage; ?>');"></div>
+                            <div class="cat-info">
+                                <div class="cat-meta">
+                                    <div class="cat-name"><?php echo htmlspecialchars($subcategory['name']); ?></div>
+                                    <div class="cat-count"><?php echo $subcategory['event_count']; ?> Events</div>
+                                </div>
+                                <button class="cat-arrow" onclick="viewCategory('<?php echo $subcategory['id']; ?>', '<?php echo htmlspecialchars($subcategory['name']); ?>')" 
+                                        aria-label="View <?php echo htmlspecialchars($subcategory['name']); ?> events">
+                                    <span>→</span>
+                                </button>
                             </div>
-                            <button class="cat-arrow" onclick="viewCategory('basketball')" aria-label="View Basketball events">
-                                <span>→</span>
-                            </button>
                         </div>
-                    </div>
-                    <div class="cat-card">
-                        <div class="cat-media" style="background-image: url('https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?q=80&w=1200&auto=format&fit=crop');"></div>
-                        <div class="cat-info">
-                            <div class="cat-meta">
-                                <div class="cat-name">Tennis</div>
-                                <div class="cat-count">8 Events</div>
-                            </div>
-                            <button class="cat-arrow" onclick="viewCategory('tennis')" aria-label="View Tennis events">
-                                <span>→</span>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="cat-card">
-                        <div class="cat-media" style="background-image: url('https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?q=80&w=1200&auto=format&fit=crop');"></div>
-                        <div class="cat-info">
-                            <div class="cat-meta">
-                                <div class="cat-name">Boxing</div>
-                                <div class="cat-count">6 Events</div>
-                            </div>
-                            <button class="cat-arrow" onclick="viewCategory('boxing')" aria-label="View Boxing events">
-                                <span>→</span>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="cat-card">
-                        <div class="cat-media" style="background-image: url('https://images.unsplash.com/photo-1551698618-1dfe5d97d256?q=80&w=1200&auto=format&fit=crop');"></div>
-                        <div class="cat-info">
-                            <div class="cat-meta">
-                                <div class="cat-name">Handball</div>
-                                <div class="cat-count">4 Events</div>
-                            </div>
-                            <button class="cat-arrow" onclick="viewCategory('handball')" aria-label="View Handball events">
-                                <span>→</span>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="cat-card">
-                        <div class="cat-media" style="background-image: url('https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=1200&auto=format&fit=crop');"></div>
-                        <div class="cat-info">
-                            <div class="cat-meta">
-                                <div class="cat-name">Volleyball</div>
-                                <div class="cat-count">7 Events</div>
-                            </div>
-                            <button class="cat-arrow" onclick="viewCategory('volleyball')" aria-label="View Volleyball events">
-                                <span>→</span>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="cat-card">
-                        <div class="cat-media" style="background-image: url('https://images.unsplash.com/photo-1554068865-24cecd4e34b8?q=80&w=1200&auto=format&fit=crop');"></div>
-                        <div class="cat-info">
-                            <div class="cat-meta">
-                                <div class="cat-name">Swimming</div>
-                                <div class="cat-count">5 Events</div>
-                            </div>
-                            <button class="cat-arrow" onclick="viewCategory('swimming')" aria-label="View Swimming events">
-                                <span>→</span>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="cat-card">
-                        <div class="cat-media" style="background-image: url('https://images.unsplash.com/photo-1578662996442-48f60103fc96?q=80&w=1200&auto=format&fit=crop');"></div>
-                        <div class="cat-info">
-                            <div class="cat-meta">
-                                <div class="cat-name">Athletics</div>
-                                <div class="cat-count">9 Events</div>
-                            </div>
-                            <button class="cat-arrow" onclick="viewCategory('athletics')" aria-label="View Athletics events">
-                                <span>→</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
             </div>
-        </section>
-    </div>
-
-    
-
+        </div>
+    </section>
     <?php
-// Include the footer file
-include 'partials/footer.php';
-?>
-<script src="../../public/js/homepage.js"></script>
-<script src="../../public/js/navbar.js"></script>
+    // Include the footer file
+    include 'partials/footer.php';
+    ?>
+    
+    <script src="../../public/js/homepage.js"></script>
+    <script src="../../public/js/navbar.js"></script>
+    
+    <script>
+    // Update the viewCategory function to handle dynamic categories
+    function viewCategory(categoryId, categoryName) {
+        console.log(`Viewing category: ${categoryName} (ID: ${categoryId})`);
+        
+        // Redirect to category events page
+        // You can create a category-events.php page or use allevents.php with filter
+        window.location.href = `allevents.php?category=${categoryId}`;
+    }
+    
+    // Optional: Update existing JavaScript to work with dynamic categories
+    document.addEventListener('DOMContentLoaded', function() {
+        // Your existing homepage.js will still work
+        // The carousel controls will work with the new dynamic categories
+    });
+    </script>
 </body>
 </html>

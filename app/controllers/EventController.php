@@ -7,8 +7,10 @@ class EventController {
     private $event;
     private $subcategory;
     private $venue;
+    private $db;
 
     public function __construct(PDO $db) {
+        $this->db = $db; // FIX: Added this line
         $this->event = new Event($db);
         $this->subcategory = new Subcategory($db);
         $this->venue = new Venue($db);
@@ -66,6 +68,43 @@ class EventController {
             $venues[] = $row;
         }
         return $venues;
+    }
+
+    // Add this method - Get subcategories with event counts
+    public function getSubcategoriesByMainCategoryName($categoryName) {
+        // Get subcategories for a specific main category
+        $query = "SELECT s.id, s.name, s.image_url
+                  FROM subcategories s
+                  JOIN main_categories m ON s.main_category_id = m.id
+                  WHERE m.name = ? AND s.status = 'active' AND m.status = 'active'
+                  ORDER BY s.name ASC";
+        
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(1, $categoryName);
+        $stmt->execute();
+        
+        $subcategories = [];
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            // Count events for this subcategory (shows 0 if no events)
+            $countQuery = "SELECT COUNT(*) as event_count 
+                          FROM events 
+                          WHERE subcategory_id = ? AND status = 'active' AND date >= NOW()";
+            $countStmt = $this->db->prepare($countQuery);
+            $countStmt->bindParam(1, $row['id']);
+            $countStmt->execute();
+            $countResult = $countStmt->fetch(PDO::FETCH_ASSOC);
+            $eventCount = $countResult['event_count'] ?? 0;
+            
+            $subcategories[] = [
+                'id' => $row['id'],
+                'name' => $row['name'],
+                'image_url' => $row['image_url'],
+                'main_category' => $categoryName,
+                'event_count' => (int)$eventCount
+            ];
+        }
+        
+        return $subcategories;
     }
 
     private function formatEventForDisplay($eventData) {
