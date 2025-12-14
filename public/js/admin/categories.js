@@ -272,11 +272,32 @@ function handleAddSubcategoryClick(btn) {
     console.log('Main Category ID:', mainCategoryId, 'Name:', mainCategoryName);
     
     const mainCategoryIdInput = document.getElementById('subcategory-main-category-id');
-    const mainCategoryNameInput = document.getElementById('subcategory-main-category-name');
+    const categoryNameSpan = document.getElementById('subcategory-main-category-name');
+    const categoryIconSpan = document.getElementById('subcategory-category-icon');
     
-    if (mainCategoryIdInput && mainCategoryNameInput) {
+    if (mainCategoryIdInput && categoryNameSpan && categoryIconSpan) {
         mainCategoryIdInput.value = mainCategoryId;
-        mainCategoryNameInput.value = mainCategoryName;
+        
+        // Set category name and icon based on category type
+        if (mainCategoryId === '1') { // Sports
+            categoryNameSpan.textContent = 'Sports';
+            categoryIconSpan.innerHTML = '<i data-feather="activity"></i>';
+            
+            // Add sports class to parent container
+            const categoryDisplay = categoryNameSpan.closest('.main-category-display');
+            if (categoryDisplay) {
+                categoryDisplay.className = 'main-category-display sports';
+            }
+        } else if (mainCategoryId === '2') { // Entertainment
+            categoryNameSpan.textContent = 'Entertainment';
+            categoryIconSpan.innerHTML = '<i data-feather="music"></i>';
+            
+            // Add entertainment class to parent container
+            const categoryDisplay = categoryNameSpan.closest('.main-category-display');
+            if (categoryDisplay) {
+                categoryDisplay.className = 'main-category-display entertainment';
+            }
+        }
         
         // Reset form
         const form = document.getElementById('add-subcategory-form');
@@ -303,11 +324,17 @@ function handleAddSubcategoryClick(btn) {
             }
         }
         
+        // Initialize feather icons
+        if (typeof feather !== 'undefined') {
+            setTimeout(() => feather.replace(), 100);
+        }
+        
         openModal('add-subcategory-modal');
     } else {
-        console.error('Modal inputs not found!');
+        console.error('Modal elements not found!');
         console.log('mainCategoryIdInput:', mainCategoryIdInput);
-        console.log('mainCategoryNameInput:', mainCategoryNameInput);
+        console.log('categoryNameSpan:', categoryNameSpan);
+        console.log('categoryIconSpan:', categoryIconSpan);
     }
 }
 
@@ -332,12 +359,43 @@ function openModal(modalId) {
     }
 }
 
+
+function clearModalDisplays() {
+    // Clear add subcategory modal display
+    const addCategoryDisplay = document.querySelector('#add-subcategory-modal .main-category-display');
+    if (addCategoryDisplay) {
+        addCategoryDisplay.className = 'main-category-display';
+    }
+    
+    const addCategoryName = document.getElementById('subcategory-main-category-name');
+    const addCategoryIcon = document.getElementById('subcategory-category-icon');
+    if (addCategoryName) addCategoryName.textContent = '';
+    if (addCategoryIcon) addCategoryIcon.innerHTML = '';
+    
+    // Clear edit subcategory modal display
+    const editCategoryDisplay = document.querySelector('#edit-subcategory-modal .main-category-display');
+    if (editCategoryDisplay) {
+        editCategoryDisplay.className = 'main-category-display';
+    }
+    
+    const editCategoryName = document.getElementById('edit-subcategory-main-category-name');
+    const editCategoryIcon = document.getElementById('edit-subcategory-category-icon');
+    if (editCategoryName) editCategoryName.textContent = '';
+    if (editCategoryIcon) editCategoryIcon.innerHTML = '';
+}
+
+
 function closeModal(modalId) {
     console.log('Closing modal:', modalId);
     const modal = document.getElementById(modalId);
     if (modal) {
         modal.classList.add('hidden');
         document.body.style.overflow = 'auto';
+        
+        // Clear modal displays when closing
+        setTimeout(() => {
+            clearModalDisplays();
+        }, 300);
     }
 }
 
@@ -595,11 +653,38 @@ async function editSubcategory(subcategoryId) {
         if (result.success && result.data) {
             const subcategory = result.data;
             
+            // Set form values
             document.getElementById('edit-subcategory-id').value = subcategory.id;
-            document.getElementById('edit-subcategory-main-category').value = subcategory.main_category_id;
             document.getElementById('edit-subcategory-name').value = subcategory.name;
             document.getElementById('edit-subcategory-status').value = subcategory.status;
             document.getElementById('edit-subcategory-existing-image').value = subcategory.image_url || '';
+            
+            // Set main category display (uneditable)
+            const mainCategoryId = subcategory.main_category_id;
+            const categoryNameSpan = document.getElementById('edit-subcategory-main-category-name');
+            const categoryIconSpan = document.getElementById('edit-subcategory-category-icon');
+            
+            if (mainCategoryId == 1) { // Sports
+                document.getElementById('edit-subcategory-main-category-id').value = '1';
+                if (categoryNameSpan) categoryNameSpan.textContent = 'Sports';
+                if (categoryIconSpan) categoryIconSpan.innerHTML = '<i data-feather="activity"></i>';
+                
+                // Add sports class
+                const categoryDisplay = categoryNameSpan.closest('.main-category-display');
+                if (categoryDisplay) {
+                    categoryDisplay.className = 'main-category-display sports';
+                }
+            } else if (mainCategoryId == 2) { // Entertainment
+                document.getElementById('edit-subcategory-main-category-id').value = '2';
+                if (categoryNameSpan) categoryNameSpan.textContent = 'Entertainment';
+                if (categoryIconSpan) categoryIconSpan.innerHTML = '<i data-feather="music"></i>';
+                
+                // Add entertainment class
+                const categoryDisplay = categoryNameSpan.closest('.main-category-display');
+                if (categoryDisplay) {
+                    categoryDisplay.className = 'main-category-display entertainment';
+                }
+            }
             
             // Show current image if exists
             const currentImage = document.getElementById('edit-subcategory-current-image');
@@ -614,6 +699,11 @@ async function editSubcategory(subcategoryId) {
             const imageInput = document.getElementById('edit-subcategory-image');
             if (imageInput) {
                 imageInput.value = '';
+            }
+            
+            // Initialize feather icons
+            if (typeof feather !== 'undefined') {
+                setTimeout(() => feather.replace(), 100);
             }
             
             openModal('edit-subcategory-modal');

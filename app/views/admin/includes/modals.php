@@ -775,6 +775,7 @@
 </div>
 
 <!-- Add Subcategory Modal -->
+<!-- Add Subcategory Modal -->
 <div id="add-subcategory-modal" class="modal hidden">
     <div class="modal-content">
         <div class="modal-header">
@@ -788,10 +789,16 @@
             <div class="form-grid">
                 <div class="form-group">
                     <label>Main Category</label>
-                    <input type="text" id="subcategory-main-category-name" readonly class="readonly-input">
+                    <div class="main-category-display">
+                        <div class="category-display-badge">
+                            <span id="subcategory-category-icon" class="category-icon"></span>
+                            <span id="subcategory-main-category-name" class="category-name"></span>
+                        </div>
+                    </div>
+                    <input type="hidden" id="subcategory-main-category-name-input" readonly>
                 </div>
                 <div class="form-group">
-                    <label>Subcategory Name</label>
+                    <label>Subcategory Name *</label>
                     <input type="text" id="subcategory-name" required>
                 </div>
                 <div class="form-group">
@@ -807,7 +814,7 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>Status</label>
+                    <label>Status *</label>
                     <select id="subcategory-status" required>
                         <option value="active">Active</option>
                         <option value="inactive">Inactive</option>
@@ -823,6 +830,7 @@
 </div>
 
 <!-- Edit Subcategory Modal -->
+<!-- Edit Subcategory Modal -->
 <div id="edit-subcategory-modal" class="modal hidden">
     <div class="modal-content">
         <div class="modal-header">
@@ -837,13 +845,16 @@
             <div class="form-grid">
                 <div class="form-group">
                     <label>Main Category</label>
-                    <select id="edit-subcategory-main-category" required>
-                        <option value="1">Sports</option>
-                        <option value="2">Entertainment</option>
-                    </select>
+                    <div class="main-category-display">
+                        <div class="category-display-badge">
+                            <span id="edit-subcategory-category-icon" class="category-icon"></span>
+                            <span id="edit-subcategory-main-category-name" class="category-name"></span>
+                        </div>
+                    </div>
+                    <input type="hidden" id="edit-subcategory-main-category-id" name="main_category_id">
                 </div>
                 <div class="form-group">
-                    <label>Subcategory Name</label>
+                    <label>Subcategory Name *</label>
                     <input type="text" id="edit-subcategory-name" required>
                 </div>
                 <div class="form-group">
@@ -859,7 +870,7 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>Status</label>
+                    <label>Status *</label>
                     <select id="edit-subcategory-status" required>
                         <option value="active">Active</option>
                         <option value="inactive">Inactive</option>
