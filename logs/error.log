@@ -1,0 +1,52 @@
+[2025-12-14 19:14:47] Uncaught Exception: Database connection failed: SQLSTATE[HY000] [1049] Unknown database 'hamada' in C:\xampp\htdocs\event-booking-website\config\db_connect.php on line 31
+Stack trace:
+#0 C:\xampp\htdocs\event-booking-website\app\views\auth.php(12): require_once()
+#1 {main}
+[2025-12-14 19:19:39] Error #2: require_once(C:\xampp\htdocs\event-booking-website\app\views\admin/../../../config/admin.php): Failed to open stream: No such file or directory in C:\xampp\htdocs\event-booking-website\app\views\admin\index.php on line 12
+[14-Dec-2025 19:19:39 Europe/Berlin] PHP Warning:  require_once(C:\xampp\htdocs\event-booking-website\app\views\admin/../../../config/admin.php): Failed to open stream: No such file or directory in C:\xampp\htdocs\event-booking-website\app\views\admin\index.php on line 12
+[2025-12-14 19:19:39] Uncaught Exception: Failed opening required 'C:\xampp\htdocs\event-booking-website\app\views\admin/../../../config/admin.php' (include_path='C:\xampp\php\PEAR') in C:\xampp\htdocs\event-booking-website\app\views\admin\index.php on line 12
+Stack trace:
+#0 {main}
+[2025-12-14 19:20:39] Uncaught Exception: Error fetching booking stats: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'event_ticketing_db.bookings' doesn't exist in C:\xampp\htdocs\event-booking-website\app\models\BookingsModel.php on line 135
+Stack trace:
+#0 C:\xampp\htdocs\event-booking-website\app\views\admin\bookings.php(13): BookingsModel->getBookingStats()
+#1 C:\xampp\htdocs\event-booking-website\app\views\admin\index.php(111): include('C:\\xampp\\htdocs...')
+#2 {main}
+[2025-12-14 19:21:01] Uncaught Exception: Error fetching booking stats: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'event_ticketing_db.bookings' doesn't exist in C:\xampp\htdocs\event-booking-website\app\models\BookingsModel.php on line 135
+Stack trace:
+#0 C:\xampp\htdocs\event-booking-website\app\views\admin\bookings.php(13): BookingsModel->getBookingStats()
+#1 C:\xampp\htdocs\event-booking-website\app\views\admin\index.php(111): include('C:\\xampp\\htdocs...')
+#2 {main}
+[2025-12-14 19:22:29] Uncaught Exception: Error fetching booking stats: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'event_ticketing_db.bookings' doesn't exist in C:\xampp\htdocs\event-booking-website\app\models\BookingsModel.php on line 135
+Stack trace:
+#0 C:\xampp\htdocs\event-booking-website\app\views\admin\bookings.php(13): BookingsModel->getBookingStats()
+#1 C:\xampp\htdocs\event-booking-website\app\views\admin\index.php(111): include('C:\\xampp\\htdocs...')
+#2 {main}
+[2025-12-14 19:22:43] Uncaught Exception: Class "TicketsModel" not found in C:\xampp\htdocs\event-booking-website\app\views\admin\tickets.php on line 6
+Stack trace:
+#0 C:\xampp\htdocs\event-booking-website\app\views\admin\index.php(111): include()
+#1 {main}
+[2025-12-14 19:22:51] Uncaught Exception: Class "TicketsModel" not found in C:\xampp\htdocs\event-booking-website\app\views\admin\tickets.php on line 6
+Stack trace:
+#0 C:\xampp\htdocs\event-booking-website\app\views\admin\index.php(111): include()
+#1 {main}
+[2025-12-14 19:24:23] Uncaught Exception: Database connection failed: SQLSTATE[HY000] [1049] Unknown database 'event_ticketing_db' in C:\xampp\htdocs\event-booking-website\config\db_connect.php on line 31
+Stack trace:
+#0 C:\xampp\htdocs\event-booking-website\app\views\admin\index.php(12): require_once()
+#1 {main}
+[14-Dec-2025 19:28:15 Europe/Berlin] Error loading admin user data: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'country' in 'field list'
+[14-Dec-2025 19:28:16 Europe/Berlin] Error loading admin user data: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'country' in 'field list'
+[14-Dec-2025 19:28:18 Europe/Berlin] Error loading admin user data: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'country' in 'field list'
+[14-Dec-2025 19:28:18 Europe/Berlin] Error loading admin user data: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'country' in 'field list'
+[14-Dec-2025 19:28:20 Europe/Berlin] Error loading admin user data: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'country' in 'field list'
+[14-Dec-2025 19:28:21 Europe/Berlin] Error loading admin user data: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'country' in 'field list'
+[2025-12-14 19:28:21] Uncaught Exception: Class "TicketsModel" not found in C:\xampp\htdocs\event-booking-website\app\views\admin\tickets.php on line 6
+Stack trace:
+#0 C:\xampp\htdocs\event-booking-website\app\views\admin\index.php(111): include()
+#1 {main}
+[14-Dec-2025 19:28:26 Europe/Berlin] Error loading admin user data: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'country' in 'field list'
+[14-Dec-2025 19:28:29 Europe/Berlin] Error loading admin user data: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'country' in 'field list'
+[2025-12-14 19:34:14] Uncaught Exception: Class "TicketsModel" not found in C:\xampp\htdocs\event-booking-website\app\views\admin\tickets.php on line 6
+Stack trace:
+#0 C:\xampp\htdocs\event-booking-website\app\views\admin\index.php(111): include()
+#1 {main}
