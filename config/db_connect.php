@@ -1,4 +1,9 @@
 <?php
+// Load error handler first (if not already loaded)
+if (!function_exists('redirectToErrorPage')) {
+    require_once __DIR__ . '/error_handler.php';
+}
+
 // Configuration for the database connection
 // NOTE: Database names in MySQL should not contain spaces.
 $host = 'localhost';
@@ -21,8 +26,9 @@ try {
     // Create a new PDO instance, which attempts the connection
     $pdo = new PDO($dsn, $user, $pass, $options);
 } catch (\PDOException $e) {
-    // If the connection fails, terminate the script and show an error.
-    die("<h1>Database Connection Failed</h1><p>Please check your credentials in *db_connect.php*.<br>Detailed Error: " . htmlspecialchars($e->getMessage()) . "</p>");
+    // If the connection fails, use error handler to redirect to error page
+    // This will be caught by the exception handler
+    throw new Exception("Database connection failed: " . $e->getMessage());
 }
 
 // The $pdo object is now successfully connected and ready to use.

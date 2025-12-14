@@ -5,17 +5,15 @@
 // =========================================================================
 
 // In event-booking-website/app/views/auth.php
-// Enable error reporting temporarily for debugging
-error_reporting(E_ALL);
-ini_set('display_errors', 0); // Don't display, but log
-ini_set('log_errors', 1);
+// Load error handler FIRST to catch any errors during development
+require_once __DIR__ . '/../../config/error_handler.php';
 
 // Load database connection first (before session to avoid any conflicts)
 require_once __DIR__ . '/../../config/db_connect.php';
 
 // Verify database connection was successful
 if (!isset($pdo) || !($pdo instanceof PDO)) {
-    die("<h1>Database Connection Error</h1><p>The database connection failed to initialize. Please check your database configuration.</p>");
+    throw new Exception("Database connection failed to initialize. Please check your database configuration.");
 }
 
 // Ensure $pdo is available globally

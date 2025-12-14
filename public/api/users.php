@@ -1,4 +1,6 @@
 <?php
+// Load error handler first to catch any errors during development
+require_once __DIR__ . '/../../config/error_handler.php';
 
 try {
     require_once __DIR__ . '/../../config/db_connect.php';
