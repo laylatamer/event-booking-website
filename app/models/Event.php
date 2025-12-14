@@ -224,7 +224,8 @@ class Event {
         $query = "SELECT e.*, 
                          s.name as subcategory_name,
                          mc.name as main_category_name,
-                         v.name as venue_name
+                         v.name as venue_name,
+                         v.city as venue_city  
                   FROM " . $this->table_name . " e
                   JOIN subcategories s ON e.subcategory_id = s.id
                   JOIN main_categories mc ON s.main_category_id = mc.id

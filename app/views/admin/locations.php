@@ -45,7 +45,18 @@ $venues = $stmt->fetchAll(PDO::FETCH_ASSOC);
              data-status="<?php echo $venueItem['status']; ?>">
             <div class="location-image">
                 <?php if (!empty($venueItem['image_url'])): ?>
-                    <img src="<?php echo htmlspecialchars($venueItem['image_url']); ?>" 
+                    <?php 
+                    $imageUrl = $venueItem['image_url'];
+                    // If it's a local path, build a project-aware URL so files under
+                    // public/uploads/... are reachable when the site is served from
+                    // a subfolder (e.g. /event-booking-website/)
+                    if ($imageUrl && !str_starts_with($imageUrl, 'http')) {
+                        // Project public base - adjust if your site is served from a different subfolder
+                        $projectBase = '/event-booking-website/public';
+                        $imageUrl = $projectBase . '/' . ltrim($imageUrl, '/');
+                    }
+                    ?>
+                    <img src="<?php echo htmlspecialchars($imageUrl); ?>" 
                          alt="<?php echo htmlspecialchars($venueItem['name']); ?>" 
                          class="venue-image">
                 <?php else: ?>
@@ -129,7 +140,7 @@ $venues = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <i data-feather="x"></i>
             </button>
         </div>
-        <form id="add-location-form">
+        <form id="add-location-form" enctype="multipart/form-data">
             <div class="form-grid">
                 <div class="form-group">
                     <label>Venue Name *</label>
@@ -162,8 +173,9 @@ $venues = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     <input type="url" id="location-google-maps" name="google_maps_url" placeholder="https://maps.google.com/?q=...">
                 </div>
                 <div class="form-group">
-                    <label>Venue Image URL</label>
-                    <input type="url" id="location-image-url" name="image_url" placeholder="https://example.com/venue-image.jpg">
+                    <label>Venue Image</label>
+                    <input type="file" id="location-image" name="image" accept="image/*">
+                    <small class="form-help">Max size: 5MB. Allowed: JPG, PNG, GIF, WebP</small>
                 </div>
                 <div class="form-group">
                     <label>Status</label>
@@ -213,7 +225,7 @@ $venues = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <i data-feather="x"></i>
             </button>
         </div>
-        <form id="edit-location-form">
+        <form id="edit-location-form" enctype="multipart/form-data">
             <input type="hidden" id="edit-location-id" name="id">
             <div class="form-grid">
                 <div class="form-group">
@@ -247,8 +259,10 @@ $venues = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     <input type="url" id="edit-location-google-maps" name="google_maps_url">
                 </div>
                 <div class="form-group">
-                    <label>Venue Image URL</label>
-                    <input type="url" id="edit-location-image-url" name="image_url">
+                    <label>Venue Image</label>
+                    <input type="file" id="edit-location-image" name="image" accept="image/*">
+                    <small class="form-help">Max size: 5MB. Allowed: JPG, PNG, GIF, WebP</small>
+                    <div id="current-image-preview" style="margin-top: 10px;"></div>
                 </div>
                 <div class="form-group">
                     <label>Status</label>
@@ -555,8 +569,26 @@ function editVenue(venueId) {
                 document.getElementById('edit-location-capacity').value = venue.capacity;
                 document.getElementById('edit-location-description').value = venue.description || '';
                 document.getElementById('edit-location-google-maps').value = venue.google_maps_url || '';
-                document.getElementById('edit-location-image-url').value = venue.image_url || '';
                 document.getElementById('edit-location-status').value = venue.status;
+                
+                // Show current image if exists
+                const previewDiv = document.getElementById('current-image-preview');
+                if (previewDiv) {
+                    if (venue.image_url) {
+                        let imageUrl = venue.image_url;
+                        // If it's a local path, prepend slash
+                        if (imageUrl && !imageUrl.startsWith('http')) {
+                            imageUrl = '/' + imageUrl;
+                        }
+                        previewDiv.innerHTML = `
+                            <p>Current Image:</p>
+                            <img src="${imageUrl}" alt="${venue.name}" 
+                                 style="max-width: 200px; max-height: 150px; margin-top: 5px; border-radius: 4px;">
+                        `;
+                    } else {
+                        previewDiv.innerHTML = '';
+                    }
+                }
                 
                 // Populate facilities checkboxes
                 const facilities = venue.facilities || [];
@@ -610,7 +642,8 @@ function viewVenueEvents(venueId) {
 function handleAddLocation(e) {
     e.preventDefault();
     
-    const formData = new FormData(e.target);
+    const form = e.target;
+    const formData = new FormData(form);
     formData.append('action', 'add');
     
     // Show loading
@@ -629,7 +662,7 @@ function handleAddLocation(e) {
         if (data.success) {
             alert(data.message);
             closeModal('add-location');
-            e.target.reset();
+            form.reset();
             window.location.reload();
         } else {
             alert('Error: ' + data.message);
@@ -649,7 +682,8 @@ function handleAddLocation(e) {
 function handleEditLocation(e) {
     e.preventDefault();
     
-    const formData = new FormData(e.target);
+    const form = e.target;
+    const formData = new FormData(form);
     formData.append('action', 'edit');
     
     // Show loading

@@ -14,6 +14,7 @@
                 <table class="data-table">
                     <thead>
                         <tr>
+                            <th>Image</th> <!-- Added Image column -->
                             <th>Subcategory Name</th>
                             <th>Status</th>
                             <th>Actions</th>
@@ -22,7 +23,7 @@
                     <tbody id="sports-categories-body">
                         <!-- Sports subcategories will be populated by JavaScript -->
                         <tr>
-                            <td colspan="3" class="empty-state">
+                            <td colspan="4" class="empty-state">
                                 <i data-feather="folder"></i>
                                 <p>No subcategories found</p>
                             </td>
@@ -45,6 +46,7 @@
                 <table class="data-table">
                     <thead>
                         <tr>
+                            <th>Image</th> <!-- Added Image column -->
                             <th>Subcategory Name</th>
                             <th>Status</th>
                             <th>Actions</th>
@@ -53,7 +55,7 @@
                     <tbody id="entertainment-categories-body">
                         <!-- Entertainment subcategories will be populated by JavaScript -->
                         <tr>
-                            <td colspan="3" class="empty-state">
+                            <td colspan="4" class="empty-state">
                                 <i data-feather="folder"></i>
                                 <p>No subcategories found</p>
                             </td>
@@ -64,4 +66,16 @@
         </div>
     </div>
 </div>
+
 <!-- After your main script -->
+<script>
+// This script will be overridden by categories.js, but kept for backward compatibility
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Categories section loaded');
+    
+    // Initialize feather icons
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+});
+</script>

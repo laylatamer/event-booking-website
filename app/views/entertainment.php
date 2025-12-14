@@ -1,47 +1,53 @@
 <?php
 // Start session
 require_once __DIR__ . '/../../database/session_init.php';
+// app/views/entertainment.php
+require_once __DIR__ . '/../../config/db_connect.php';
+require_once __DIR__ . '/../../app/controllers/EventController.php';
+
+// Create database connection and controller
+$database = new Database();
+$db = $database->getConnection();
+$eventController = new EventController($db);
+
+// Fetch entertainment events
+$entertainmentEvents = $eventController->getEventsByMainCategoryName('Entertainment');
+
+$apiEvents = json_encode($entertainmentEvents);
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All Events & Activities - Dark Mode</title>
-
-    <!-- Load Lucide icons for clean UI elements -->
+    <title>Entertainment Events</title>
     <script type="module" src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <link rel="stylesheet" href="../../public/css/allevents.css">
    
 </head>
 <body class="page-body">
 <?php
-// Include the header file
 include 'partials/header.php';
 ?>
    
-    <!-- Main Content Area -->
     <main class="main-content">
         
-        <!-- Page Title -->
-        <h1 class="page-title"> Entertainment</h1>
+        <h1 class="page-title">Entertainment Events</h1>
 
-        <!-- Filter Bar Section -->
         <section class="filter-section filter-bg">
             <div class="filter-buttons-list" id="filter-buttons-container">
                 
-                <!-- Filter Buttons -->
                 <button data-filter-type="date" class="filter-btn-base active-filter" id="filter-date-btn">
                     <i data-lucide="calendar"></i> All Dates
                 </button>
                 <button data-filter-type="category" class="filter-btn-base" id="filter-category-btn">
-                    <i data-lucide="blocks"></i> All Categories
+                    <i data-lucide="blocks"></i> All Entertainment
                 </button>
                 <button data-filter-type="venue" class="filter-btn-base" id="filter-venue-btn">
                     <i data-lucide="map-pin"></i> All Venues
                 </button>
 
-                <!-- Reset Filter Button -->
                 <button id="reset-filters-btn" class="filter-btn-base">
                     <i data-lucide="x-circle"></i> Reset Filters
                 </button>
@@ -49,9 +55,30 @@ include 'partials/header.php';
             </div>
         </section>
 
-        <!-- Events Grid -->
         <section class="events-grid" id="events-grid">
-            <div id="loading-indicator" class="loading-indicator">Loading events...</div>
+            <?php if (empty($entertainmentEvents)): ?>
+                <div class="loading-indicator">No upcoming entertainment events found.</div>
+            <?php else: ?>
+                <?php foreach ($entertainmentEvents as $event): ?>
+                    <div class="event-card-base" data-event-id="<?php echo $event['id']; ?>">
+                        <div class="event-image-container">
+                            <img src="<?php echo htmlspecialchars($event['image']); ?>" 
+                                 onerror="this.onerror=null; this.src='https://placehold.co/400x400/2a2a2a/f97316?text=<?php echo urlencode($event['subcategory']); ?>'" 
+                                 alt="<?php echo htmlspecialchars($event['title']); ?>" 
+                                 class="event-card-img">
+                            <span class="event-category-tag"><?php echo htmlspecialchars($event['subcategory']); ?></span>
+                        </div>
+                        <div class="event-details">
+                            <h3 class="event-title"><?php echo htmlspecialchars($event['title']); ?></h3>
+                            <p class="event-date"><?php echo $event['formattedDate']; ?></p>
+                            <p class="event-venue"><?php echo htmlspecialchars($event['location']); ?></p>
+                            <button class="book-now-button" onclick="window.location.href='booking.php?id=<?php echo $event['id']; ?>'">
+                                Book Now
+                            </button>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
         </section>
 
     </main>
@@ -178,12 +205,47 @@ include 'partials/header.php';
         </div>
     </div>
 
-
-    <!-- --------------------------------------- JAVASCRIPT --------------------------------------- -->
+ <script>
+        const allEvents = <?php echo $apiEvents; ?>;
+        const API_BASE = '../../public/api/events_API.php';
+        
+        // Function to dynamically load categories for entertainment filter modal
+        async function loadEntertainmentCategories() {
+            try {
+                const response = await fetch(`${API_BASE}?action=getSubcategoriesByCategory&category=Entertainment`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const container = document.getElementById('category-list-container');
+                    if (container) {
+                        let html = '<div class="filter-list-item" data-value="">All Entertainment</div>';
+                        data.subcategories.forEach(subcat => {
+                            if (subcat.event_count > 0) {
+                                html += `<div class="filter-list-item" data-value="${subcat.name}">
+                                            ${subcat.name} (${subcat.event_count})
+                                         </div>`;
+                            }
+                        });
+                        container.innerHTML = html;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading entertainment categories:', error);
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+            // Load dynamic categories when category modal opens
+            document.getElementById('filter-category-btn')?.addEventListener('click', loadEntertainmentCategories);
+        });
+    </script>
+    
     <script type="module" src="../../public/js/entertainment.js"></script>
     <?php
-// Include the footer file
-include 'partials/footer.php';
-?>
+    include 'partials/footer.php';
+    ?>
 </body>
 </html>

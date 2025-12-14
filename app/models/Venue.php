@@ -21,6 +21,62 @@ class Venue {
         $this->conn = $db;
     }
 
+    // File upload method
+    public function uploadImage($file) {
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            return null;
+        }
+        
+        // Validate file
+        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        $fileType = mime_content_type($file['tmp_name']);
+        
+        if (!in_array($fileType, $allowedTypes)) {
+            throw new Exception('Only JPG, PNG, GIF, and WebP images are allowed.');
+        }
+        
+        // Check file size (max 5MB)
+        if ($file['size'] > 5 * 1024 * 1024) {
+            throw new Exception('File size must be less than 5MB.');
+        }
+        
+        // Create uploads directory if it doesn't exist
+        $uploadDir = __DIR__ . '/../../public/uploads/venues/';
+        if (!file_exists($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+        }
+        
+        // Generate unique filename
+        $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+        $filename = 'venue_' . uniqid() . '_' . time() . '.' . $extension;
+        $filePath = $uploadDir . $filename;
+        
+        // Move uploaded file
+        if (move_uploaded_file($file['tmp_name'], $filePath)) {
+            // Return relative path for database
+            return 'uploads/venues/' . $filename;
+        }
+        
+        return null;
+    }
+
+    public function deleteImage($imagePath) {
+        if ($imagePath && strpos($imagePath, 'uploads/venues/') === 0) {
+            $fullPath = __DIR__ . '/../../public/' . $imagePath;
+            if (file_exists($fullPath)) {
+                unlink($fullPath);
+            }
+        }
+    }
+
+    public function getImageUrl() {
+        if ($this->image_url && strpos($this->image_url, 'http') !== 0) {
+            // It's a local file path
+            return '/' . $this->image_url;
+        }
+        return $this->image_url; // Return as-is if it's already a URL
+    }
+
     public function create() {
         $query = "INSERT INTO " . $this->table_name . "
                 SET name = :name,

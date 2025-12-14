@@ -61,8 +61,22 @@ try {
         $venue->capacity = (int)($_POST['capacity'] ?? 0);
         $venue->description = $_POST['description'] ?? '';
         $venue->google_maps_url = $_POST['google_maps_url'] ?? '';
-        $venue->image_url = $_POST['image_url'] ?? '';
         $venue->status = $_POST['status'] ?? 'active';
+        
+        // Handle image upload
+        if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+            try {
+                $venue->image_url = $venue->uploadImage($_FILES['image']);
+            } catch (Exception $e) {
+                $response = ['success' => false, 'message' => $e->getMessage()];
+                $statusCode = 400;
+                http_response_code($statusCode);
+                echo json_encode($response);
+                exit;
+            }
+        } else {
+            $venue->image_url = '';
+        }
         
         // Handle facilities
         $facilities = [];
@@ -90,6 +104,19 @@ try {
     elseif ($method === 'POST' && $action === 'edit') {
         // Edit venue
         $venue->id = $_POST['id'] ?? 0;
+        
+        // First get current venue to check existing image
+        if (!$venue->readOne()) {
+            $response = ['success' => false, 'message' => 'Venue not found'];
+            $statusCode = 404;
+            http_response_code($statusCode);
+            echo json_encode($response);
+            exit;
+        }
+        
+        $currentImage = $venue->image_url;
+        
+        // Update venue properties
         $venue->name = $_POST['name'] ?? '';
         $venue->address = $_POST['address'] ?? '';
         $venue->city = $_POST['city'] ?? '';
@@ -97,8 +124,27 @@ try {
         $venue->capacity = (int)($_POST['capacity'] ?? 0);
         $venue->description = $_POST['description'] ?? '';
         $venue->google_maps_url = $_POST['google_maps_url'] ?? '';
-        $venue->image_url = $_POST['image_url'] ?? '';
         $venue->status = $_POST['status'] ?? 'active';
+        
+        // Handle image upload
+        if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+            try {
+                // Delete old image if exists
+                $venue->deleteImage($currentImage);
+                
+                // Upload new image
+                $venue->image_url = $venue->uploadImage($_FILES['image']);
+            } catch (Exception $e) {
+                $response = ['success' => false, 'message' => $e->getMessage()];
+                $statusCode = 400;
+                http_response_code($statusCode);
+                echo json_encode($response);
+                exit;
+            }
+        } else {
+            // Keep existing image
+            $venue->image_url = $currentImage;
+        }
         
         // Handle facilities
         $facilities = [];
@@ -129,11 +175,20 @@ try {
         if (!$venue->id) {
             $response = ['success' => false, 'message' => 'Venue ID is required'];
             $statusCode = 400;
-        } elseif ($venue->delete()) {
-            $response = ['success' => true, 'message' => 'Venue deleted successfully'];
+        } elseif ($venue->readOne()) {
+            // Delete the image file first
+            $venue->deleteImage($venue->image_url);
+            
+            // Then delete from database
+            if ($venue->delete()) {
+                $response = ['success' => true, 'message' => 'Venue deleted successfully'];
+            } else {
+                $response = ['success' => false, 'message' => 'Failed to delete venue'];
+                $statusCode = 500;
+            }
         } else {
-            $response = ['success' => false, 'message' => 'Failed to delete venue'];
-            $statusCode = 500;
+            $response = ['success' => false, 'message' => 'Venue not found'];
+            $statusCode = 404;
         }
     }
     else {

@@ -1,5 +1,6 @@
-// events.js - Clean Admin Events Management
+// events.js - Clean Admin Events Management with File Upload
 const API_BASE = '../../../public/api/events_API.php';
+const UPLOAD_API_URL = '/event-booking-website/public/api/uploads.php';
 
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize Feather icons
@@ -128,6 +129,158 @@ function setupFormDependencies() {
             editEndDateInput.min = this.value;
         });
     }
+    
+    // Event image upload handling
+    const eventImageInput = document.getElementById('admin-event-image-file');
+    const eventImagePreview = document.getElementById('admin-event-image-preview');
+    
+    if (eventImageInput && eventImagePreview) {
+        eventImageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                if (!validateImageFile(file)) {
+                    showEventAlert('Error', 'Please select a valid image file (PNG, JPG, GIF, WebP) under 10MB');
+                    this.value = '';
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    eventImagePreview.querySelector('img').src = e.target.result;
+                    eventImagePreview.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+    
+    // Event gallery images upload
+    const galleryImagesInput = document.getElementById('admin-event-gallery-files');
+    const galleryPreview = document.getElementById('admin-event-gallery-preview');
+    
+    if (galleryImagesInput && galleryPreview) {
+        galleryImagesInput.addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            galleryPreview.innerHTML = '';
+            
+            files.forEach(file => {
+                if (!validateImageFile(file)) {
+                    showEventAlert('Error', 'One or more files are invalid. Please select valid image files under 10MB each.');
+                    this.value = '';
+                    galleryPreview.innerHTML = '';
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.style.width = '100%';
+                    img.style.height = '100px';
+                    img.style.objectFit = 'cover';
+                    img.style.borderRadius = '8px';
+                    galleryPreview.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            });
+        });
+    }
+    
+    // Edit event image upload handling
+    const editEventImageInput = document.getElementById('admin-edit-event-image-file');
+    const editEventCurrentImage = document.getElementById('admin-edit-event-current-image');
+    
+    if (editEventImageInput && editEventCurrentImage) {
+        editEventImageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                if (!validateImageFile(file)) {
+                    showEventAlert('Error', 'Please select a valid image file (PNG, JPG, GIF, WebP) under 10MB');
+                    this.value = '';
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    editEventCurrentImage.src = e.target.result;
+                    editEventCurrentImage.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+    
+    // Edit event gallery images upload
+    const editGalleryImagesInput = document.getElementById('admin-edit-event-gallery-files');
+    const editGalleryPreview = document.getElementById('admin-edit-event-gallery-preview');
+    
+    if (editGalleryImagesInput && editGalleryPreview) {
+        editGalleryImagesInput.addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            
+            files.forEach(file => {
+                if (!validateImageFile(file)) {
+                    showEventAlert('Error', 'One or more files are invalid. Please select valid image files under 10MB each.');
+                    this.value = '';
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.style.width = '100%';
+                    img.style.height = '100px';
+                    img.style.objectFit = 'cover';
+                    img.style.borderRadius = '8px';
+                    editGalleryPreview.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            });
+        });
+    }
+    
+    // File upload drag and drop
+    const fileUploads = document.querySelectorAll('.file-upload');
+    fileUploads.forEach(upload => {
+        upload.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('drag-over');
+        });
+        
+        upload.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.classList.remove('drag-over');
+        });
+        
+        upload.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('drag-over');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                const input = this.querySelector('input[type="file"]');
+                
+                // Create a new FileList
+                const dataTransfer = new DataTransfer();
+                for (let i = 0; i < files.length; i++) {
+                    dataTransfer.items.add(files[i]);
+                }
+                input.files = dataTransfer.files;
+                
+                // Trigger change event
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        });
+        
+        // Click to open file dialog
+        upload.addEventListener('click', function(e) {
+            if (!e.target.closest('input[type="file"]')) {
+                const input = this.querySelector('input[type="file"]');
+                input.click();
+            }
+        });
+    });
 }
 
 async function loadSubcategories(mainCategoryId, targetSelectId) {
@@ -194,6 +347,25 @@ function openAddEventModal() {
         document.getElementById('admin-event-min-tickets').value = 1;
         document.getElementById('admin-event-max-tickets').value = 10;
         document.getElementById('admin-event-status').value = 'draft';
+        
+        // Clear image previews
+        const imagePreview = document.getElementById('admin-event-image-preview');
+        if (imagePreview) {
+            imagePreview.classList.add('hidden');
+            imagePreview.querySelector('img').src = '';
+        }
+        
+        const galleryPreview = document.getElementById('admin-event-gallery-preview');
+        if (galleryPreview) {
+            galleryPreview.innerHTML = '';
+        }
+        
+        // Clear file inputs
+        const imageInput = document.getElementById('admin-event-image-file');
+        if (imageInput) imageInput.value = '';
+        
+        const galleryInput = document.getElementById('admin-event-gallery-files');
+        if (galleryInput) galleryInput.value = '';
     }
     
     openModal('add-event-modal');
@@ -201,7 +373,7 @@ function openAddEventModal() {
 
 async function editEvent(eventId) {
     if (!eventId) {
-        alert('Event ID is required');
+        showEventAlert('Error', 'Event ID is required');
         return;
     }
     
@@ -261,17 +433,44 @@ async function editEvent(eventId) {
             document.getElementById('admin-edit-event-available-tickets').value = event.available_tickets;
             document.getElementById('admin-edit-event-min-tickets').value = event.min_tickets_per_booking || 1;
             document.getElementById('admin-edit-event-max-tickets').value = event.max_tickets_per_booking || 10;
-            document.getElementById('admin-edit-event-image-url').value = event.image_url || '';
+            
+            // Handle main image
+            const currentImage = document.getElementById('admin-edit-event-current-image');
+            const imageUrlInput = document.getElementById('admin-edit-event-image-url');
+            if (event.image_url) {
+                currentImage.src = event.image_url;
+                currentImage.style.display = 'block';
+                imageUrlInput.value = event.image_url;
+            } else {
+                currentImage.style.display = 'none';
+                imageUrlInput.value = '';
+            }
             
             // Handle gallery images
-            const galleryImagesTextarea = document.getElementById('admin-edit-event-gallery-images');
-            if (galleryImagesTextarea) {
-                if (event.gallery_images && Array.isArray(event.gallery_images)) {
-                    galleryImagesTextarea.value = JSON.stringify(event.gallery_images, null, 2);
+            const galleryPreview = document.getElementById('admin-edit-event-gallery-preview');
+            const galleryImagesInput = document.getElementById('admin-edit-event-gallery-images');
+            if (galleryPreview && galleryImagesInput) {
+                galleryPreview.innerHTML = '';
+                
+                if (event.gallery_images && Array.isArray(event.gallery_images) && event.gallery_images.length > 0) {
+                    event.gallery_images.forEach(imageUrl => {
+                        const img = document.createElement('img');
+                        img.src = imageUrl;
+                        img.style.width = '100%';
+                        img.style.height = '100px';
+                        img.style.objectFit = 'cover';
+                        img.style.borderRadius = '8px';
+                        galleryPreview.appendChild(img);
+                    });
+                    galleryImagesInput.value = JSON.stringify(event.gallery_images);
                 } else {
-                    galleryImagesTextarea.value = '';
+                    galleryImagesInput.value = '[]';
                 }
             }
+            
+            // Clear file inputs
+            document.getElementById('admin-edit-event-image-file').value = '';
+            document.getElementById('admin-edit-event-gallery-files').value = '';
             
             document.getElementById('admin-edit-event-terms').value = event.terms_conditions || '';
             
@@ -297,57 +496,16 @@ async function editEvent(eventId) {
             openModal('edit-event-modal');
             
         } else {
-            alert('Error loading event: ' + (data.message || 'Event not found'));
+            showEventAlert('Error', data.message || 'Event not found');
         }
     } catch (error) {
         console.error('Error loading event:', error);
-        alert('Error loading event data. Please try again.');
+        showEventAlert('Error', 'Error loading event data. Please try again.');
     }
 }
 
 async function handleAddEvent(e) {
     e.preventDefault();
-    
-    const formData = new FormData(e.target);
-    
-    // Validate required fields
-    const requiredFields = ['title', 'description', 'subcategory_id', 'venue_id', 'date', 'price', 'total_tickets'];
-    let isValid = true;
-    let missingField = '';
-    
-    requiredFields.forEach(field => {
-        const value = formData.get(field);
-        if (!value || value.toString().trim() === '') {
-            isValid = false;
-            missingField = field.replace('_', ' ');
-            return;
-        }
-    });
-    
-    if (!isValid) {
-        alert(`Please fill in the ${missingField} field`);
-        return;
-    }
-    
-    // Convert JSON fields
-    try {
-        const galleryImages = formData.get('gallery_images');
-        if (galleryImages && galleryImages.toString().trim() !== '') {
-            formData.set('gallery_images', JSON.stringify(JSON.parse(galleryImages)));
-        } else {
-            formData.set('gallery_images', '[]');
-        }
-        
-        const additionalInfo = formData.get('additional_info');
-        if (additionalInfo && additionalInfo.toString().trim() !== '') {
-            formData.set('additional_info', JSON.stringify(JSON.parse(additionalInfo)));
-        } else {
-            formData.set('additional_info', '{}');
-        }
-    } catch (error) {
-        alert('Invalid JSON format in gallery images or additional info: ' + error.message);
-        return;
-    }
     
     // Show loading state
     const submitBtn = e.target.querySelector('button[type="submit"]');
@@ -360,6 +518,69 @@ async function handleAddEvent(e) {
     }
     
     try {
+        let imageUrl = '';
+        let galleryUrls = [];
+        
+        // Upload main image if provided
+        const imageFile = document.getElementById('admin-event-image-file').files[0];
+        if (imageFile) {
+            const uploadResult = await uploadImage(imageFile, 'events');
+            if (uploadResult.success) {
+                imageUrl = uploadResult.url;
+                document.getElementById('admin-event-image-url').value = imageUrl;
+            } else {
+                throw new Error('Failed to upload main image: ' + uploadResult.message);
+            }
+        }
+        
+        // Upload gallery images if provided
+        const galleryFiles = Array.from(document.getElementById('admin-event-gallery-files').files);
+        if (galleryFiles.length > 0) {
+            galleryUrls = await uploadMultipleImages(galleryFiles, 'event_gallery');
+            document.getElementById('admin-event-gallery-images').value = JSON.stringify(galleryUrls);
+        }
+        
+        // Get form data
+        const formData = new FormData(e.target);
+        
+        // Validate required fields
+        const requiredFields = ['title', 'description', 'subcategory_id', 'venue_id', 'date', 'price', 'total_tickets'];
+        let isValid = true;
+        let missingField = '';
+        
+        requiredFields.forEach(field => {
+            const value = formData.get(field);
+            if (!value || value.toString().trim() === '') {
+                isValid = false;
+                missingField = field.replace('_', ' ');
+                return;
+            }
+        });
+        
+        if (!isValid) {
+            throw new Error(`Please fill in the ${missingField} field`);
+        }
+        
+        // Convert JSON fields
+        try {
+            const galleryImages = document.getElementById('admin-event-gallery-images').value;
+            if (galleryImages && galleryImages.trim() !== '') {
+                formData.set('gallery_images', galleryImages);
+            } else {
+                formData.set('gallery_images', '[]');
+            }
+            
+            const additionalInfo = formData.get('additional_info');
+            if (additionalInfo && additionalInfo.toString().trim() !== '') {
+                formData.set('additional_info', JSON.stringify(JSON.parse(additionalInfo)));
+            } else {
+                formData.set('additional_info', '{}');
+            }
+        } catch (error) {
+            throw new Error('Invalid JSON format in gallery images or additional info: ' + error.message);
+        }
+        
+        // Send to API
         const response = await fetch(`${API_BASE}?action=addEvent`, {
             method: 'POST',
             body: formData
@@ -368,17 +589,17 @@ async function handleAddEvent(e) {
         const data = await response.json();
         
         if (data.success) {
-            alert(data.message || 'Event created successfully');
+            showEventAlert('Success', data.message || 'Event created successfully');
             closeModal('add-event-modal');
             setTimeout(() => {
                 window.location.reload();
             }, 500);
         } else {
-            alert('Error: ' + (data.message || 'Failed to create event'));
+            throw new Error(data.message || 'Failed to create event');
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('An error occurred. Please try again.');
+        showEventAlert('Error', error.message);
     } finally {
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalText;
@@ -391,73 +612,6 @@ async function handleAddEvent(e) {
 async function handleEditEvent(e) {
     e.preventDefault();
     
-    const formData = new FormData(e.target);
-    const eventId = formData.get('id');
-    
-    if (!eventId) {
-        alert('Event ID is required');
-        return;
-    }
-    
-    // Validate required fields
-    const requiredFields = ['title', 'description', 'subcategory_id', 'venue_id', 'date', 'price', 'total_tickets', 'available_tickets'];
-    let isValid = true;
-    let missingField = '';
-    
-    requiredFields.forEach(field => {
-        const value = formData.get(field);
-        if (!value || value.toString().trim() === '') {
-            isValid = false;
-            missingField = field.replace('_', ' ');
-            return;
-        }
-    });
-    
-    if (!isValid) {
-        alert(`Please fill in the ${missingField} field`);
-        return;
-    }
-    
-    // Convert form data to JSON
-    const eventData = {
-        id: eventId,
-        title: formData.get('title'),
-        description: formData.get('description'),
-        subcategory_id: formData.get('subcategory_id'),
-        venue_id: formData.get('venue_id'),
-        date: formData.get('date'),
-        end_date: formData.get('end_date') || null,
-        price: parseFloat(formData.get('price')),
-        discounted_price: formData.get('discounted_price') ? parseFloat(formData.get('discounted_price')) : null,
-        image_url: formData.get('image_url') || '',
-        total_tickets: parseInt(formData.get('total_tickets')),
-        available_tickets: parseInt(formData.get('available_tickets')),
-        min_tickets_per_booking: parseInt(formData.get('min_tickets_per_booking')) || 1,
-        max_tickets_per_booking: parseInt(formData.get('max_tickets_per_booking')) || 10,
-        terms_conditions: formData.get('terms_conditions') || '',
-        status: formData.get('status') || 'draft'
-    };
-    
-    // Handle JSON fields
-    try {
-        const galleryImages = formData.get('gallery_images');
-        if (galleryImages && galleryImages.toString().trim() !== '') {
-            eventData.gallery_images = JSON.parse(galleryImages);
-        } else {
-            eventData.gallery_images = [];
-        }
-        
-        const additionalInfo = formData.get('additional_info');
-        if (additionalInfo && additionalInfo.toString().trim() !== '') {
-            eventData.additional_info = JSON.parse(additionalInfo);
-        } else {
-            eventData.additional_info = {};
-        }
-    } catch (error) {
-        alert('Invalid JSON format: ' + error.message);
-        return;
-    }
-    
     // Show loading state
     const submitBtn = e.target.querySelector('button[type="submit"]');
     const originalText = submitBtn.innerHTML;
@@ -469,6 +623,107 @@ async function handleEditEvent(e) {
     }
     
     try {
+        const eventId = document.getElementById('admin-edit-event-id').value;
+        if (!eventId) {
+            throw new Error('Event ID is required');
+        }
+        
+        let imageUrl = document.getElementById('admin-edit-event-image-url').value;
+        let galleryUrls = [];
+        
+        // Upload new main image if provided
+        const imageFile = document.getElementById('admin-edit-event-image-file').files[0];
+        if (imageFile) {
+            const uploadResult = await uploadImage(imageFile, 'events');
+            if (uploadResult.success) {
+                imageUrl = uploadResult.url;
+            } else {
+                throw new Error('Failed to upload main image: ' + uploadResult.message);
+            }
+        }
+        
+        // Upload new gallery images if provided
+        const galleryFiles = Array.from(document.getElementById('admin-edit-event-gallery-files').files);
+        if (galleryFiles.length > 0) {
+            const newGalleryUrls = await uploadMultipleImages(galleryFiles, 'event_gallery');
+            
+            // Get existing gallery images
+            const existingGallery = document.getElementById('admin-edit-event-gallery-images').value;
+            let existingUrls = [];
+            if (existingGallery && existingGallery.trim() !== '') {
+                try {
+                    existingUrls = JSON.parse(existingGallery);
+                } catch (e) {
+                    existingUrls = [];
+                }
+            }
+            
+            // Combine existing and new images
+            galleryUrls = [...existingUrls, ...newGalleryUrls];
+        } else {
+            // Use existing gallery images
+            const existingGallery = document.getElementById('admin-edit-event-gallery-images').value;
+            if (existingGallery && existingGallery.trim() !== '') {
+                try {
+                    galleryUrls = JSON.parse(existingGallery);
+                } catch (e) {
+                    galleryUrls = [];
+                }
+            }
+        }
+        
+        // Prepare event data
+        const eventData = {
+            id: eventId,
+            title: document.getElementById('admin-edit-event-title').value,
+            description: document.getElementById('admin-edit-event-description').value,
+            subcategory_id: document.getElementById('admin-edit-event-subcategory').value,
+            venue_id: document.getElementById('admin-edit-event-venue').value,
+            date: document.getElementById('admin-edit-event-date').value,
+            end_date: document.getElementById('admin-edit-event-end-date').value || null,
+            price: parseFloat(document.getElementById('admin-edit-event-price').value),
+            discounted_price: document.getElementById('admin-edit-event-discounted-price').value ? 
+                parseFloat(document.getElementById('admin-edit-event-discounted-price').value) : null,
+            image_url: imageUrl || '',
+            gallery_images: galleryUrls,
+            total_tickets: parseInt(document.getElementById('admin-edit-event-total-tickets').value),
+            available_tickets: parseInt(document.getElementById('admin-edit-event-available-tickets').value),
+            min_tickets_per_booking: parseInt(document.getElementById('admin-edit-event-min-tickets').value) || 1,
+            max_tickets_per_booking: parseInt(document.getElementById('admin-edit-event-max-tickets').value) || 10,
+            terms_conditions: document.getElementById('admin-edit-event-terms').value || '',
+            status: document.getElementById('admin-edit-event-status').value || 'draft'
+        };
+        
+        // Handle additional info
+        const additionalInfoTextarea = document.getElementById('admin-edit-event-additional-info');
+        if (additionalInfoTextarea && additionalInfoTextarea.value.trim() !== '') {
+            try {
+                eventData.additional_info = JSON.parse(additionalInfoTextarea.value);
+            } catch (error) {
+                throw new Error('Invalid JSON format in additional info: ' + error.message);
+            }
+        } else {
+            eventData.additional_info = {};
+        }
+        
+        // Validate required fields
+        const requiredFields = ['title', 'description', 'subcategory_id', 'venue_id', 'date', 'price', 'total_tickets', 'available_tickets'];
+        let isValid = true;
+        let missingField = '';
+        
+        requiredFields.forEach(field => {
+            if (!eventData[field] || eventData[field].toString().trim() === '') {
+                isValid = false;
+                missingField = field.replace('_', ' ');
+                return;
+            }
+        });
+        
+        if (!isValid) {
+            throw new Error(`Please fill in the ${missingField} field`);
+        }
+        
+        // Send to API
         const response = await fetch(`${API_BASE}?action=updateEvent`, {
             method: 'PUT',
             headers: {
@@ -480,17 +735,17 @@ async function handleEditEvent(e) {
         const data = await response.json();
         
         if (data.success) {
-            alert(data.message || 'Event updated successfully');
+            showEventAlert('Success', data.message || 'Event updated successfully');
             closeModal('edit-event-modal');
             setTimeout(() => {
                 window.location.reload();
             }, 500);
         } else {
-            alert('Error: ' + (data.message || 'Failed to update event'));
+            throw new Error(data.message || 'Failed to update event');
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('An error occurred. Please try again.');
+        showEventAlert('Error', error.message);
     } finally {
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalText;
@@ -521,14 +776,14 @@ async function deleteEvent(eventId) {
         const data = await response.json();
         
         if (data.success) {
-            alert(data.message || 'Event deleted successfully');
+            showEventAlert('Success', data.message || 'Event deleted successfully');
             window.location.reload();
         } else {
-            alert('Error: ' + (data.message || 'Failed to delete event'));
+            showEventAlert('Error', data.message || 'Failed to delete event');
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('An error occurred. Please try again.');
+        showEventAlert('Error', 'An error occurred. Please try again.');
     }
 }
 
@@ -644,11 +899,11 @@ async function viewEventDetails(eventId) {
                 }
             }
         } else {
-            alert('Error loading event: ' + (data.message || 'Event not found'));
+            showEventAlert('Error', data.message || 'Event not found');
         }
     } catch (error) {
         console.error('Error loading event details:', error);
-        alert('Error loading event details. Please try again.');
+        showEventAlert('Error', 'Error loading event details. Please try again.');
     }
 }
 
@@ -717,4 +972,67 @@ function closeModal(modalId) {
         modal.classList.add('hidden');
         document.body.style.overflow = 'auto';
     }
+}
+
+// File upload helper functions
+async function uploadImage(file, type = 'events') {
+    const formData = new FormData();
+    formData.append('type', type);
+    formData.append('image', file);
+    
+    try {
+        console.log('Uploading image...', file.name, 'Type:', type);
+        const response = await fetch(UPLOAD_API_URL, {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('Upload response:', data);
+        return data;
+    } catch (error) {
+        console.error('Upload error:', error);
+        return { success: false, message: 'Upload failed: ' + error.message };
+    }
+}
+
+async function uploadMultipleImages(files, type = 'event_gallery') {
+    const uploadPromises = [];
+    
+    for (const file of files) {
+        uploadPromises.push(uploadImage(file, type));
+    }
+    
+    try {
+        const results = await Promise.all(uploadPromises);
+        const successfulUploads = results.filter(result => result.success);
+        return successfulUploads.map(result => result.url);
+    } catch (error) {
+        console.error('Multiple upload error:', error);
+        return [];
+    }
+}
+
+function validateImageFile(file) {
+    // Check file size (10MB max for events)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+        return false;
+    }
+    
+    // Check file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type.toLowerCase())) {
+        return false;
+    }
+    
+    return true;
+}
+
+function showEventAlert(title, message) {
+    alert(`${title}: ${message}`);
 }
