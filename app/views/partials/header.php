@@ -8,11 +8,24 @@ if (session_status() == PHP_SESSION_NONE) {
 // Initialize variables to prevent undefined variable warnings
 $isLoggedIn = false;
 $userName = '';
+$userImage = null;
+$isAdmin = false;
 
 // Check if user is logged in (check both username and user_name for compatibility)
 if (isset($_SESSION['user_id']) && $_SESSION['user_id'] !== null) {
     $isLoggedIn = true;
     $userName = $_SESSION['username'] ?? $_SESSION['user_name'] ?? 'User';
+    $userImage = $_SESSION['user_image'] ?? null;
+    $isAdmin = isAdmin();
+}
+
+// Get profile image source
+if ($isLoggedIn && !empty($userImage) && $userImage !== null) {
+    $cleanPath = ltrim($userImage, '/\\');
+    $profileImageSrc = '../../public/image.php?path=' . urlencode($cleanPath);
+} else {
+    // Use default profile picture
+    $profileImageSrc = '../../public/image.php?path=';
 }
 ?>
 <!DOCTYPE html>
@@ -21,6 +34,20 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_id'] !== null) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tickets | Home</title>
+    <?php
+    // Get the base path for favicon - try different possible paths
+    $baseUrl = '';
+    if (isset($_SERVER['REQUEST_URI'])) {
+        $uri = $_SERVER['REQUEST_URI'];
+        if (strpos($uri, '/event-booking-website/') !== false) {
+            $baseUrl = '/event-booking-website';
+        }
+    }
+    $faviconPath = $baseUrl . '/favicon.ico';
+    ?>
+    <link rel="icon" type="image/png" href="<?= htmlspecialchars($faviconPath) ?>">
+    <link rel="shortcut icon" href="<?= htmlspecialchars($faviconPath) ?>">
+    <link rel="apple-touch-icon" href="<?= htmlspecialchars($faviconPath) ?>">
     <link rel="stylesheet" href="../../public/css/header.css">
     <link rel="stylesheet" href="../../public/css/navbar.css">
     <script src="../../public/js/header.js"></script>
@@ -62,15 +89,38 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_id'] !== null) {
                      <!-- DYNAMICALLY RENDERED LOGIN/LOGOUT BUTTON -->
                     <?php if ($isLoggedIn): ?>
                         <div class="auth-actions">
-                            <a href="profile.php" class="profile-btn" aria-label="View profile">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                                    <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5Z"/>
-                                    <path d="M4 20.2C4 16.88 7.582 14 12 14s8 2.88 8 6.2c0 .994-.806 1.8-1.8 1.8H5.8C4.806 22 4 21.194 4 20.2Z"/>
-                                </svg>
-                            </a>
-                            <a href="logout.php" class="logout-btn">
-                                Logout (<?= htmlspecialchars($userName) ?>)
-                            </a>
+                            <div class="profile-dropdown">
+                                <button type="button" class="profile-btn" aria-label="User menu" aria-expanded="false" aria-haspopup="true">
+                                    <img src="<?= htmlspecialchars($profileImageSrc) ?>" alt="Profile" class="profile-img">
+                                </button>
+                                <div class="dropdown-menu">
+                                    <a href="profile.php" class="dropdown-item">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                            <circle cx="12" cy="7" r="4"></circle>
+                                        </svg>
+                                        <span>Profile</span>
+                                    </a>
+                                    <?php if ($isAdmin): ?>
+                                    <a href="admin/index.php" class="dropdown-item">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                            <line x1="9" y1="3" x2="9" y2="21"></line>
+                                            <line x1="3" y1="9" x2="21" y2="9"></line>
+                                        </svg>
+                                        <span>Admin Panel</span>
+                                    </a>
+                                    <?php endif; ?>
+                                    <a href="logout.php" class="dropdown-item">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                                            <polyline points="16 17 21 12 16 7"></polyline>
+                                            <line x1="21" y1="12" x2="9" y2="12"></line>
+                                        </svg>
+                                        <span>Logout</span>
+                                    </a>
+                                </div>
+                            </div>
                         </div>
                     <?php else: ?>
                         <!-- FIX: Using a single <a> element with button styling for valid HTML -->

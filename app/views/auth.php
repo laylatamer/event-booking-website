@@ -57,6 +57,13 @@ function redirectToHomepage(string $path = 'homepage.php') {
 
 // Global variable for messages
 $message = ['text' => '', 'type' => 'hidden'];
+
+// Check if there's a message from session (e.g., redirected from contact form)
+if (isset($_SESSION['auth_message'])) {
+    $message = $_SESSION['auth_message'];
+    unset($_SESSION['auth_message']); // Clear it after using
+}
+
 $is_register_mode = false; // Default view is login
 
 
@@ -945,6 +952,13 @@ $initial_form = $is_register_mode ? 'register' : 'login';
                 renderLoginForm(); 
             } else {
                 renderRegisterForm(); 
+            }
+            
+            // Check if there's a message about needing to log in to send a message
+            const messageAlert = document.getElementById('message-alert');
+            if (messageAlert && messageAlert.textContent.includes('You should be logged in to send a message')) {
+                // Show popup alert
+                alert('You should be logged in to send a message');
             }
             
             // 2. Attach form switch listener
