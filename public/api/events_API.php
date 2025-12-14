@@ -1,5 +1,5 @@
 <?php
-// /public/api/admin_events_API.php - Admin Events CRUD API
+// /public/api/events_API.php - Unified Events API (Both Admin & Public)
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
@@ -27,45 +27,67 @@ if (!file_exists($configPath)) {
 
 require_once $configPath;
 
-// Include AdminController
-$controllerPath = $projectRoot . '/app/controllers/AdminController.php';
-if (!file_exists($controllerPath)) {
-    http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'AdminController not found']);
-    exit;
-}
+// Determine which controller to use based on the action
+$action = $_GET['action'] ?? '';
+$method = $_SERVER['REQUEST_METHOD'];
 
-require_once $controllerPath;
+// Actions that need AdminController
+$adminActions = ['addEvent', 'updateEvent', 'deleteEvent', 'getEvent', 'getAll', 'getSubcategories'];
+
+// Actions that need EventController (public)
+$publicActions = ['getPublicEvent', 'getPublicEvents', 'getByCategory', 'getCategories', 
+                  'getVenues', 'getUpcoming', 'getSubcategoriesByCategory'];
 
 try {
     $database = new Database();
     $db = $database->getConnection();
     
-    $adminController = new AdminController($db);
-    
-    $action = $_GET['action'] ?? '';
-    $method = $_SERVER['REQUEST_METHOD'];
-    
-    switch ($method) {
-        case 'GET':
-            handleGetRequest($adminController, $action);
-            break;
-            
-        case 'POST':
-            handlePostRequest($adminController, $action);
-            break;
-            
-        case 'PUT':
-            handlePutRequest($adminController, $action);
-            break;
-            
-        case 'DELETE':
-            handleDeleteRequest($adminController, $action);
-            break;
-            
-        default:
-            http_response_code(405);
-            echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+    // Load the appropriate controller based on action
+    if (in_array($action, $adminActions)) {
+        // Include AdminController
+        $controllerPath = $projectRoot . '/app/controllers/AdminController.php';
+        if (!file_exists($controllerPath)) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'AdminController not found']);
+            exit;
+        }
+        require_once $controllerPath;
+        $controller = new AdminController($db);
+        
+        switch ($method) {
+            case 'GET':
+                handleAdminGetRequest($controller, $action);
+                break;
+                
+            case 'POST':
+                handleAdminPostRequest($controller, $action);
+                break;
+                
+            case 'PUT':
+                handleAdminPutRequest($controller, $action);
+                break;
+                
+            case 'DELETE':
+                handleAdminDeleteRequest($controller, $action);
+                break;
+                
+            default:
+                http_response_code(405);
+                echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+        }
+        
+    } else {
+        // Default to EventController for public actions
+        $controllerPath = $projectRoot . '/app/controllers/EventController.php';
+        if (!file_exists($controllerPath)) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'EventController not found']);
+            exit;
+        }
+        require_once $controllerPath;
+        $controller = new EventController($db);
+        
+        handlePublicRequest($controller, $action, $method);
     }
     
 } catch (Exception $e) {
@@ -76,13 +98,14 @@ try {
     ]);
 }
 
-function handleGetRequest($adminController, $action) {
+// ==================== ADMIN HANDLERS ====================
+function handleAdminGetRequest($controller, $action) {
     switch ($action) {
         case 'getEvent':
             $id = $_GET['id'] ?? 0;
             if ($id) {
                 try {
-                    $event = $adminController->getEvent($id);
+                    $event = $controller->getEvent($id);
                     if ($event) {
                         echo json_encode(['success' => true, 'event' => $event]);
                     } else {
@@ -98,7 +121,7 @@ function handleGetRequest($adminController, $action) {
             
         case 'getAll':
             try {
-                $events = $adminController->getAllEvents();
+                $events = $controller->getAllEvents();
                 echo json_encode([
                     'success' => true,
                     'events' => $events,
@@ -113,7 +136,7 @@ function handleGetRequest($adminController, $action) {
             $main_category_id = $_GET['main_category_id'] ?? 0;
             if ($main_category_id) {
                 try {
-                    $subcategories = $adminController->getSubcategoriesByMainCategory($main_category_id);
+                    $subcategories = $controller->getSubcategoriesByMainCategory($main_category_id);
                     echo json_encode([
                         'success' => true,
                         'subcategories' => $subcategories
@@ -127,11 +150,11 @@ function handleGetRequest($adminController, $action) {
             break;
             
         default:
-            echo json_encode(['success' => false, 'message' => 'Invalid action']);
+            echo json_encode(['success' => false, 'message' => 'Invalid admin action']);
     }
 }
 
-function handlePostRequest($adminController, $action) {
+function handleAdminPostRequest($controller, $action) {
     switch ($action) {
         case 'addEvent':
             try {
@@ -165,21 +188,21 @@ function handlePostRequest($adminController, $action) {
                 }
                 
                 // Check if venue exists and is active
-                $venue = $adminController->getVenue($eventData['venue_id']);
+                $venue = $controller->getVenue($eventData['venue_id']);
                 if (!$venue || ($venue['status'] ?? '') !== 'active') {
                     echo json_encode(['success' => false, 'message' => 'Selected venue is not available']);
                     return;
                 }
                 
                 // Check if subcategory exists
-                $subcategory = $adminController->getSubcategory($eventData['subcategory_id']);
+                $subcategory = $controller->getSubcategory($eventData['subcategory_id']);
                 if (!$subcategory) {
                     echo json_encode(['success' => false, 'message' => 'Selected subcategory does not exist']);
                     return;
                 }
                 
                 // Create event
-                $result = $adminController->createEvent($eventData);
+                $result = $controller->createEvent($eventData);
                 
                 if ($result) {
                     echo json_encode([
@@ -197,11 +220,11 @@ function handlePostRequest($adminController, $action) {
             break;
             
         default:
-            echo json_encode(['success' => false, 'message' => 'Invalid action']);
+            echo json_encode(['success' => false, 'message' => 'Invalid admin action']);
     }
 }
 
-function handlePutRequest($adminController, $action) {
+function handleAdminPutRequest($controller, $action) {
     if ($action === 'updateEvent') {
         try {
             $json = file_get_contents('php://input');
@@ -218,7 +241,7 @@ function handlePutRequest($adminController, $action) {
             }
             
             // Update event
-            $result = $adminController->updateEvent($eventId, $data);
+            $result = $controller->updateEvent($eventId, $data);
             
             if ($result) {
                 echo json_encode([
@@ -235,7 +258,7 @@ function handlePutRequest($adminController, $action) {
     }
 }
 
-function handleDeleteRequest($adminController, $action) {
+function handleAdminDeleteRequest($controller, $action) {
     if ($action === 'deleteEvent') {
         try {
             $json = file_get_contents('php://input');
@@ -252,7 +275,7 @@ function handleDeleteRequest($adminController, $action) {
             }
             
             // Delete event
-            $result = $adminController->deleteEvent($eventId);
+            $result = $controller->deleteEvent($eventId);
             
             if ($result) {
                 echo json_encode([
@@ -266,6 +289,168 @@ function handleDeleteRequest($adminController, $action) {
         } catch (Exception $e) {
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }
+    }
+}
+
+// ==================== PUBLIC HANDLERS ====================
+function handlePublicRequest($controller, $action, $method) {
+    if ($method !== 'GET') {
+        http_response_code(405);
+        echo json_encode(['success' => false, 'message' => 'Method not allowed for public access']);
+        return;
+    }
+    
+    switch ($action) {
+        case 'getPublicEvents':
+        case 'getAllActive':  // Alias for getPublicEvents
+            handleGetAllPublicEvents($controller);
+            break;
+            
+        case 'getPublicEvent':
+        case 'getOne':  // Alias for getPublicEvent
+            handleGetPublicEvent($controller);
+            break;
+            
+        case 'getByCategory':
+            handleGetEventsByCategory($controller);
+            break;
+            
+        case 'getCategories':
+            handleGetCategories($controller);
+            break;
+            
+        case 'getVenues':
+            handleGetVenues($controller);
+            break;
+            
+        case 'getUpcoming':
+            handleGetUpcomingEvents($controller);
+            break;
+            
+        case 'getSubcategoriesByCategory':
+            handleGetSubcategoriesByCategory($controller);
+            break;
+            
+        default:
+            // If no action specified, return all active events
+            handleGetAllPublicEvents($controller);
+    }
+}
+
+function handleGetAllPublicEvents($controller) {
+    try {
+        $events = $controller->getAllActiveEvents();
+        echo json_encode([
+            'success' => true,
+            'events' => $events,
+            'count' => count($events)
+        ]);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    }
+}
+
+function handleGetPublicEvent($controller) {
+    $id = $_GET['id'] ?? 0;
+    if ($id) {
+        try {
+            $event = $controller->getEventForPublicDisplay($id);
+            if ($event) {
+                echo json_encode(['success' => true, 'event' => $event]);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Event not found or inactive']);
+            }
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Event ID required']);
+    }
+}
+
+function handleGetEventsByCategory($controller) {
+    $categoryId = $_GET['category_id'] ?? 0;
+    $categoryName = $_GET['category_name'] ?? '';
+    
+    if ($categoryId) {
+        try {
+            $events = $controller->getEventsByMainCategoryId($categoryId);
+            echo json_encode([
+                'success' => true,
+                'events' => $events,
+                'count' => count($events)
+            ]);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+    } elseif ($categoryName) {
+        try {
+            $events = $controller->getEventsByMainCategoryName($categoryName);
+            echo json_encode([
+                'success' => true,
+                'events' => $events,
+                'count' => count($events)
+            ]);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Category ID or Name required']);
+    }
+}
+
+function handleGetCategories($controller) {
+    try {
+        $categories = $controller->getMainCategoriesWithEvents();
+        echo json_encode([
+            'success' => true,
+            'categories' => $categories
+        ]);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    }
+}
+
+function handleGetVenues($controller) {
+    try {
+        $venues = $controller->getVenuesWithEvents();
+        echo json_encode([
+            'success' => true,
+            'venues' => $venues
+        ]);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    }
+}
+
+function handleGetUpcomingEvents($controller) {
+    $limit = $_GET['limit'] ?? 10;
+    try {
+        $events = $controller->getUpcomingEvents($limit);
+        echo json_encode([
+            'success' => true,
+            'events' => $events,
+            'count' => count($events)
+        ]);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    }
+}
+
+function handleGetSubcategoriesByCategory($controller) {
+    $categoryName = $_GET['category'] ?? '';
+    if ($categoryName) {
+        try {
+            $subcategories = $controller->getSubcategoriesByMainCategoryName($categoryName);
+            echo json_encode([
+                'success' => true,
+                'subcategories' => $subcategories
+            ]);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Category name required']);
     }
 }
 ?>

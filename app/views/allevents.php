@@ -1,24 +1,39 @@
+<?php
+// app/views/allevents.php
+require_once __DIR__ . '/../../config/db_connect.php';
+require_once __DIR__ . '/../../app/controllers/EventController.php';
+
+// Create database connection and controller
+$database = new Database();
+$db = $database->getConnection();
+$eventController = new EventController($db);
+
+// Fetch all active events
+$events = $eventController->getAllActiveEvents();
+
+// Fetch categories and venues for filters
+$categories = $eventController->getMainCategoriesWithEvents();
+$venues = $eventController->getVenuesWithEvents();
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All Events & Activities - Dark Mode</title>
+    <title>All Events & Activities</title>
 
     <script type="module" src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-
     <link rel="stylesheet" href="../../public/css/allevents.css">
     
 </head>
 <body class="page-body">
 <?php
-// Include the header file
 include 'partials/header.php';
 ?>
     
     <main class="main-content">
         
-        <h1 class="page-title"> Entertainment & Sports</h1>
+        <h1 class="page-title">Entertainment & Sports</h1>
 
         <section class="filter-section filter-bg">
             <div class="filter-buttons-list" id="filter-buttons-container">
@@ -41,7 +56,29 @@ include 'partials/header.php';
         </section>
 
         <section class="events-grid" id="events-grid">
-            <div id="loading-indicator" class="loading-indicator">Loading events...</div>
+            <?php if (empty($events)): ?>
+                <div class="loading-indicator">No upcoming events found.</div>
+            <?php else: ?>
+                <?php foreach ($events as $event): ?>
+                    <div class="event-card-base" data-event-id="<?php echo $event['id']; ?>">
+                        <div class="event-image-container">
+                            <img src="<?php echo htmlspecialchars($event['image']); ?>" 
+                                 onerror="this.onerror=null; this.src='https://placehold.co/400x400/2a2a2a/f97316?text=<?php echo urlencode($event['category']); ?>'" 
+                                 alt="<?php echo htmlspecialchars($event['title']); ?>" 
+                                 class="event-card-img">
+                            <span class="event-category-tag"><?php echo htmlspecialchars($event['category']); ?></span>
+                        </div>
+                        <div class="event-details">
+                            <h3 class="event-title"><?php echo htmlspecialchars($event['title']); ?></h3>
+                            <p class="event-date"><?php echo $event['formattedDate']; ?></p>
+                            <p class="event-venue"><?php echo htmlspecialchars($event['location']); ?></p>
+                            <button class="book-now-button" onclick="window.location.href='booking.php?id=<?php echo $event['id']; ?>'">
+                                Book Now
+                            </button>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
         </section>
 
     </main>
@@ -158,19 +195,18 @@ include 'partials/header.php';
             </div>
         </div>
     </div>
+   
 
-
-    <?php
-    // 1. Include the canonical event data array
-    include 'partials/event_data.php';
-
-    // 2. Encode the PHP array into a JSON string
-    $js_events_json = json_encode($events);
-    ?>
     <script>
-        // 3. Inject the JSON string directly into a global JavaScript variable
-        // The allevents.js file will now use this variable instead of a hardcoded mock array.
-        const allEvents = <?php echo $js_events_json; ?>;
+        const allEvents = <?php echo json_encode($events); ?>;
+        const API_BASE = '../../public/api/events_API.php';
+        
+        // Initialize Lucide icons
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        });
     </script>
     <script type="module" src="../../public/js/allevents.js"></script>
     <?php
