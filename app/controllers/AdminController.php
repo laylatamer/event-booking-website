@@ -162,6 +162,7 @@ class AdminController {
         $this->venue->facilities = $data['facilities'] ?? [];
         $this->venue->google_maps_url = $data['google_maps_url'];
         $this->venue->status = $data['status'] ?? 'active';
+        $this->venue->seating_type = $data['seating_type'] ?? null;
         
         // Handle image upload
         if ($imageFile && $imageFile['error'] === UPLOAD_ERR_OK) {
@@ -189,6 +190,7 @@ class AdminController {
             $this->venue->facilities = $data['facilities'] ?? [];
             $this->venue->google_maps_url = $data['google_maps_url'];
             $this->venue->status = $data['status'] ?? 'active';
+            $this->venue->seating_type = $data['seating_type'] ?? null;
             
             // Handle image upload
             if ($imageFile && $imageFile['error'] === UPLOAD_ERR_OK) {
@@ -267,7 +269,12 @@ class AdminController {
         $this->event->additional_info = $data['additional_info'] ?? [];
         $this->event->status = $data['status'] ?? 'active';
         
-        return $this->event->create();
+        $eventId = $this->event->create();
+        if ($eventId) {
+            $this->event->id = $eventId;
+            return $eventId; // Return event ID on success
+        }
+        return false;
     }
 
     public function updateEvent($id, $data) {

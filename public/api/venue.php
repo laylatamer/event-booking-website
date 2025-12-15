@@ -44,7 +44,8 @@ try {
                     'facilities' => is_array($venue->facilities) ? $venue->facilities : (json_decode($venue->facilities, true) ?: []),
                     'google_maps_url' => $venue->google_maps_url,
                     'image_url' => $venue->image_url,
-                    'status' => $venue->status
+                    'status' => $venue->status,
+                    'seating_type' => $venue->seating_type
                 ]
             ];
         } else {
@@ -62,6 +63,7 @@ try {
         $venue->description = $_POST['description'] ?? '';
         $venue->google_maps_url = $_POST['google_maps_url'] ?? '';
         $venue->status = $_POST['status'] ?? 'active';
+        $venue->seating_type = $_POST['seating_type'] ?? null;
         
         // Handle image upload
         if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
@@ -125,6 +127,7 @@ try {
         $venue->description = $_POST['description'] ?? '';
         $venue->google_maps_url = $_POST['google_maps_url'] ?? '';
         $venue->status = $_POST['status'] ?? 'active';
+        $venue->seating_type = $_POST['seating_type'] ?? null;
         
         // Handle image upload
         if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {

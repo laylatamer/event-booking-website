@@ -174,35 +174,14 @@
                     </div>
                 </div>
 
-                <!-- Pricing -->
-                <div class="form-section">
-                    <h4>Pricing</h4>
-                    <div class="form-group two-columns">
-                        <div>
-                            <label>Regular Price *</label>
-                            <input type="number" id="admin-event-price" name="price" min="0" step="0.01" required>
-                        </div>
-                        <div>
-                            <label>Discounted Price (Optional)</label>
-                            <input type="number" id="admin-event-discounted-price" name="discounted_price" min="0" step="0.01">
-                        </div>
+                <!-- Ticket Categories (Dynamic based on venue seating type) -->
+                <!-- Note: Pricing is now set per category below, no need for general pricing -->
+                <div class="form-section" id="ticket-categories-section" style="display: none;">
+                    <h4>Ticket Categories</h4>
+                    <div id="ticket-categories-container">
+                        <!-- Dynamic category inputs will be inserted here -->
                     </div>
-                </div>
-
-                <!-- Tickets -->
-                <div class="form-section">
-                    <h4>Tickets</h4>
-                    <div class="form-group two-columns">
-                        <div>
-                            <label>Total Tickets *</label>
-                            <input type="number" id="admin-event-total-tickets" name="total_tickets" min="1" required>
-                        </div>
-                        <div>
-                            <label>Available Tickets *</label>
-                            <input type="number" id="admin-event-available-tickets" name="available_tickets" min="1" required>
-                        </div>
-                    </div>
-                    <div class="form-group two-columns">
+                    <div class="form-group two-columns" style="margin-top: 1rem;">
                         <div>
                             <label>Min per Booking</label>
                             <input type="number" id="admin-event-min-tickets" name="min_tickets_per_booking" min="1" value="1">
@@ -212,6 +191,12 @@
                             <input type="number" id="admin-event-max-tickets" name="max_tickets_per_booking" min="1" value="10">
                         </div>
                     </div>
+                </div>
+                
+                <!-- Legacy Tickets (Hidden, kept for backward compatibility) -->
+                <div class="form-section" style="display: none;">
+                    <input type="hidden" id="admin-event-total-tickets" name="total_tickets" value="0">
+                    <input type="hidden" id="admin-event-available-tickets" name="available_tickets" value="0">
                 </div>
 
                 <!-- Media - UPDATED WITH FILE UPLOAD -->
@@ -348,20 +333,13 @@
                     </div>
                 </div>
 
-                <!-- Tickets -->
-                <div class="form-section">
-                    <h4>Tickets</h4>
-                    <div class="form-group two-columns">
-                        <div>
-                            <label>Total Tickets *</label>
-                            <input type="number" id="admin-edit-event-total-tickets" name="total_tickets" min="1" required>
-                        </div>
-                        <div>
-                            <label>Available Tickets *</label>
-                            <input type="number" id="admin-edit-event-available-tickets" name="available_tickets" min="1" required>
-                        </div>
+                <!-- Ticket Categories (Dynamic based on venue seating type) -->
+                <div class="form-section" id="edit-ticket-categories-section" style="display: none;">
+                    <h4>Ticket Categories</h4>
+                    <div id="edit-ticket-categories-container">
+                        <!-- Dynamic category inputs will be inserted here -->
                     </div>
-                    <div class="form-group two-columns">
+                    <div class="form-group two-columns" style="margin-top: 1rem;">
                         <div>
                             <label>Min per Booking</label>
                             <input type="number" id="admin-edit-event-min-tickets" name="min_tickets_per_booking" min="1">
@@ -369,6 +347,21 @@
                         <div>
                             <label>Max per Booking</label>
                             <input type="number" id="admin-edit-event-max-tickets" name="max_tickets_per_booking" min="1">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Legacy Tickets (Hidden, kept for backward compatibility) -->
+                <div class="form-section" style="display: none;">
+                    <h4>Tickets (Legacy)</h4>
+                    <div class="form-group two-columns">
+                        <div>
+                            <label>Total Tickets *</label>
+                            <input type="number" id="admin-edit-event-total-tickets" name="total_tickets" min="1" value="0">
+                        </div>
+                        <div>
+                            <label>Available Tickets *</label>
+                            <input type="number" id="admin-edit-event-available-tickets" name="available_tickets" min="1" value="0">
                         </div>
                     </div>
                 </div>

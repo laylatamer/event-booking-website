@@ -115,6 +115,74 @@
     margin-right: 5px;
 }
 
+/* New Legend Styles for Theatre/Stadium Views */
+.legend {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.legend-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+.legend-group:last-child {
+    margin-bottom: 0;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.legend-item span {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.875rem;
+}
+
+.legend-color {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 0.25rem;
+}
+
+.legend-color.available {
+    background: #10b981;
+}
+
+.legend-color.selected {
+    background: #f97316; /* Orange-500 */
+}
+
+.legend-color.booked {
+    background: #475569;
+}
+
+.legend-badge {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Category badges - Orange color scheme */
+.legend-badge.vip {
+    background: #f97316; /* Orange-500 - Gold/Cat1 */
+}
+
+.legend-badge.premium {
+    background: #fb923c; /* Orange-400 - Premium/Cat2 */
+}
+
+.legend-badge.regular {
+    background: #fdba74; /* Orange-300 - Regular/Cat3 */
+}
+
 /* Aisle/Concourse Styling */
 .aisle-space {
     padding: 10px 0;

@@ -137,6 +137,28 @@ class EventController {
         $date = new DateTime($eventData['date']);
         $endDate = $eventData['end_date'] ? new DateTime($eventData['end_date']) : null;
         
+        // Handle gallery_images - could be JSON string or array
+        $galleryImages = [];
+        if (!empty($eventData['gallery_images'])) {
+            if (is_string($eventData['gallery_images'])) {
+                $decoded = json_decode($eventData['gallery_images'], true);
+                $galleryImages = is_array($decoded) ? $decoded : [];
+            } elseif (is_array($eventData['gallery_images'])) {
+                $galleryImages = $eventData['gallery_images'];
+            }
+        }
+        
+        // Handle additional_info - could be JSON string or array
+        $additionalInfo = [];
+        if (!empty($eventData['additional_info'])) {
+            if (is_string($eventData['additional_info'])) {
+                $decoded = json_decode($eventData['additional_info'], true);
+                $additionalInfo = is_array($decoded) ? $decoded : [];
+            } elseif (is_array($eventData['additional_info'])) {
+                $additionalInfo = $eventData['additional_info'];
+            }
+        }
+        
         return [
             'id' => $eventData['id'],
             'title' => $eventData['title'],
@@ -155,13 +177,13 @@ class EventController {
             'formattedPrice' => '$' . number_format($eventData['price'], 2),
             'formattedDiscountedPrice' => $eventData['discounted_price'] ? '$' . number_format($eventData['discounted_price'], 2) : null,
             'image' => $eventData['image_url'],
-            'gallery_images' => $eventData['gallery_images'] ?? [],
+            'gallery_images' => $galleryImages,
             'total_tickets' => $eventData['total_tickets'],
             'available_tickets' => $eventData['available_tickets'],
             'min_tickets_per_booking' => $eventData['min_tickets_per_booking'],
             'max_tickets_per_booking' => $eventData['max_tickets_per_booking'],
             'terms_conditions' => $eventData['terms_conditions'],
-            'additional_info' => $eventData['additional_info'] ?? [],
+            'additional_info' => $additionalInfo,
             'status' => $eventData['status'],
             // Venue details
             'venue' => [
@@ -172,8 +194,9 @@ class EventController {
                 'country' => $eventData['venue_country'],
                 'capacity' => $eventData['venue_capacity'],
                 'description' => $eventData['venue_description'],
-                'facilities' => json_decode($eventData['venue_facilities'], true),
-                'google_maps_url' => $eventData['venue_google_maps_url']
+                'facilities' => !empty($eventData['venue_facilities']) ? (is_string($eventData['venue_facilities']) ? json_decode($eventData['venue_facilities'], true) : $eventData['venue_facilities']) : [],
+                'google_maps_url' => $eventData['venue_google_maps_url'],
+                'seating_type' => $eventData['venue_seating_type'] ?? null
             ]
         ];
     }

@@ -108,7 +108,8 @@ class Event {
                          v.capacity as venue_capacity,
                          v.description as venue_description,
                          v.facilities as venue_facilities,
-                         v.google_maps_url as venue_google_maps_url
+                         v.google_maps_url as venue_google_maps_url,
+                         v.seating_type as venue_seating_type
                   FROM " . $this->table_name . " e
                   JOIN subcategories s ON e.subcategory_id = s.id
                   JOIN main_categories mc ON s.main_category_id = mc.id

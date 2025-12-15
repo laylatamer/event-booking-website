@@ -1,26 +1,104 @@
 <?php
 // Start session
 require_once __DIR__ . '/../../database/session_init.php';
+require_once __DIR__ . '/../../config/db_connect.php';
+require_once __DIR__ . '/../../app/controllers/EventController.php';
 
-// Use include_once for safety to load the $events array from the centralized file.
-// The path '../../includes/event_data.php' assumes booking.php is in 'projectSoft/src/views/'
-// and event_data.php is in 'projectSoft/includes/'.
-include_once 'partials/event_data.php';
+// Get event ID from URL
+$eventId = $_GET['id'] ?? null;
 
-// The $events array is now available.
-// PHP logic to find the event by ID from the URL (GET parameter)
-// If no ID is provided in the URL (e.g., event-details.php?id=1), it defaults to event ID 1.
-$eventId = $_GET['id'] ?? 1; // Default to ID 1 to show a valid event on initial load
-$event = null;
+if (!$eventId) {
+    // Redirect to homepage if no event ID provided
+    header('Location: homepage.php');
+    exit;
+}
 
-// Find the event
-if (isset($events)) {
-    foreach ($events as $e) {
-        if ($e['id'] == $eventId) {
-            $event = $e;
-            break;
+// Fetch event from database
+try {
+    $database = new Database();
+    $db = $database->getConnection();
+    $eventController = new EventController($db);
+    $eventData = $eventController->getEventById($eventId);
+    
+    // Fetch ticket categories
+    require_once __DIR__ . '/../../app/models/EventTicketCategory.php';
+    $ticketCategoryModel = new EventTicketCategory($db);
+    
+    try {
+        $ticketCategoriesStmt = $ticketCategoryModel->getByEventId($eventId);
+        $ticketCategories = [];
+        while ($row = $ticketCategoriesStmt->fetch(PDO::FETCH_ASSOC)) {
+            $ticketCategories[] = $row;
+        }
+    } catch (Exception $e) {
+        error_log("Error fetching ticket categories: " . $e->getMessage());
+        $ticketCategories = [];
+    }
+    
+    if (!$eventData) {
+        // Event not found - set defaults
+        $event = null;
+        $venueSeatingType = null;
+    } else {
+        // Build full location from venue data
+        $fullLocation = $eventData['venue']['name'];
+        if (!empty($eventData['venue']['address'])) {
+            $fullLocation .= ', ' . $eventData['venue']['address'];
+        }
+        if (!empty($eventData['venue']['city'])) {
+            $fullLocation .= ', ' . $eventData['venue']['city'];
+        }
+        if (!empty($eventData['venue']['country'])) {
+            $fullLocation .= ', ' . $eventData['venue']['country'];
+        }
+        
+        // Gallery images are already decoded by EventController
+        $galleryImages = $eventData['gallery_images'] ?? [];
+        
+        // Map database event data to booking page format
+        $event = [
+            'id' => (int)$eventData['id'],
+            'title' => $eventData['title'],
+            'description' => $eventData['description'] ?? '',
+            'date' => $eventData['date'],
+            'location' => $eventData['venue']['name'],
+            'fullLocation' => $fullLocation,
+            'category' => $eventData['main_category'] ?? $eventData['subcategory'],
+            'subcategory' => $eventData['subcategory'],
+            'price' => (float)$eventData['price'],
+            'discounted_price' => $eventData['discounted_price'] ? (float)$eventData['discounted_price'] : null,
+            'image' => $eventData['image'] ?: 'https://placehold.co/1200x630/1f2937/f1f1f1?text=Event',
+            'gallery' => $galleryImages,
+            'organizer' => $eventData['venue']['name'],
+            'available_tickets' => (int)$eventData['available_tickets'],
+            'total_tickets' => (int)$eventData['total_tickets'],
+            'min_tickets_per_booking' => (int)$eventData['min_tickets_per_booking'],
+            'max_tickets_per_booking' => (int)$eventData['max_tickets_per_booking'],
+            'terms_conditions' => $eventData['terms_conditions'] ?? '',
+            'additional_info' => $eventData['additional_info'] ?? [],
+            'venue' => $eventData['venue'],
+            'ticket_categories' => $ticketCategories
+        ];
+        
+        // Get venue seating type
+        $venueSeatingType = $eventData['venue']['seating_type'] ?? null;
+        
+        // Fetch venue seating type if not in event data
+        if (!$venueSeatingType) {
+            require_once __DIR__ . '/../../app/models/Venue.php';
+            $venueModel = new Venue($db);
+            $venueModel->id = $eventData['venue']['id'];
+            if ($venueModel->readOne()) {
+                $venueSeatingType = $venueModel->seating_type;
+            }
         }
     }
+} catch (Exception $e) {
+    error_log("Error fetching event: " . $e->getMessage());
+    // Fallback to default "Event Not Found"
+    $event = null;
+    $venueSeatingType = null;
+    $ticketCategories = [];
 }
 
 
@@ -34,6 +112,12 @@ function getCategoryClass($category) {
         case 'conference': return 'bg-yellow-600';
         case 'food': return 'bg-pink-600';
         case 'art': return 'bg-indigo-600';
+        case 'entertainment': return 'bg-purple-600';
+        case 'concerts': return 'bg-purple-600';
+        case 'nightlife': return 'bg-indigo-600';
+        case 'workshops': return 'bg-yellow-600';
+        case 'comedy': return 'bg-orange-600';
+        case 'technology': return 'bg-yellow-600';
         default: return 'bg-gray-600';
     }
 }
@@ -64,6 +148,9 @@ if ($event) {
     $formattedDate = $eventDate->format('l, F j, Y');
     $formattedTime = $eventDate->format('h:i A');
     $formattedDateTime = $formattedDate . ' at ' . $formattedTime;
+    
+    // Use venue data if available
+    $venueData = $event['venue'] ?? null;
 } else {
     // Event Not Found defaults
     $eventTitle = 'Event Not Found';
@@ -93,6 +180,8 @@ if ($event) {
        <title><?php echo $eventTitle; ?> | Eحgzly</title>
 
     <link rel="stylesheet" href="../../public/css/booking.css">
+    <link rel="stylesheet" href="../../public/css/theatre-seating.css">
+    <link rel="stylesheet" href="../../public/css/stadium-seating.css">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/feather-icons"></script>
@@ -157,29 +246,44 @@ include 'partials/header.php';
                     <div class="md:w-1/3">
                         <div class="bg-black bg-opacity-50 p-6 rounded-xl sticky top-6 border border-gray-700">
                             <h3 class="text-xl font-bold mb-4">Get Tickets</h3>
-                            <div class="space-y-4">
-                                
-                                <div class="flex justify-between items-center pb-2 border-b border-gray-700">
-                                    <div>
-                                        <span class="block font-medium">General Ticket</span>
-                                        <span class="text-xs text-gray-400">Row D-H Admission</span>
+                            <div class="space-y-4" id="ticket-categories-sidebar">
+                                <?php if (!empty($ticketCategories)): ?>
+                                    <?php foreach ($ticketCategories as $category): ?>
+                                        <div class="flex justify-between items-center pb-2 border-b border-gray-700">
+                                            <div>
+                                                <span class="block font-medium"><?php echo htmlspecialchars($category['category_name']); ?></span>
+                                                <span class="text-xs text-gray-400"><?php echo number_format($category['available_tickets']); ?> available</span>
+                                            </div>
+                                            <div class="text-right flex items-center space-x-4">
+                                                <span class="block font-bold" data-ticket-type="<?php echo strtolower(str_replace(' ', '-', $category['category_name'])); ?>" data-base-price="<?php echo $category['price']; ?>">$<?php echo number_format($category['price'], 2); ?></span>
+                                                <span id="ticket-count-<?php echo strtolower(str_replace(' ', '-', $category['category_name'])); ?>" class="text-lg font-bold text-orange-400 w-6 text-center">0</span>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <!-- Fallback for events without categories -->
+                                    <div class="flex justify-between items-center pb-2 border-b border-gray-700">
+                                        <div>
+                                            <span class="block font-medium">General Ticket</span>
+                                            <span class="text-xs text-gray-400">Row D-H Admission</span>
+                                        </div>
+                                        <div class="text-right flex items-center space-x-4">
+                                            <span class="block font-bold" data-ticket-type="general" data-base-price="<?php echo $generalPrice; ?>"><?php echo $formattedGeneralPrice; ?></span>
+                                            <span id="ticket-count-general" class="text-lg font-bold text-orange-400 w-6 text-center">0</span>
+                                        </div>
                                     </div>
-                                    <div class="text-right flex items-center space-x-4">
-                                        <span class="block font-bold" data-ticket-type="general" data-base-price="<?php echo $generalPrice; ?>"><?php echo $formattedGeneralPrice; ?></span>
-                                        <span id="general-ticket-count" class="text-lg font-bold text-orange-400 w-6 text-center">0</span>
+                                    <div class="flex justify-between items-center pb-2 border-b border-gray-700">
+                                        <div>
+                                            <span class="block font-medium">VIP Ticket</span>
+                                            <span class="text-xs text-gray-400">Row A-C Admission</span>
+                                        </div>
+                                        <div class="text-right flex items-center space-x-4">
+                                            <span class="block font-bold" data-ticket-type="vip" data-base-price="<?php echo $vipPrice; ?>"><?php echo $formattedVipPrice; ?></span>
+                                            <span id="ticket-count-vip" class="text-lg font-bold text-orange-400 w-6 text-center">0</span>
+                                        </div>
                                     </div>
-                                </div>
-                                
-                                <div class="flex justify-between items-center pb-2 border-b border-gray-700">
-                                    <div>
-                                        <span class="block font-medium">VIP Ticket</span>
-                                        <span class="text-xs text-gray-400">Row A-C Admission</span>
-                                    </div>
-                                    <div class="text-right flex items-center space-x-4">
-                                        <span class="block font-bold" data-ticket-type="vip" data-base-price="<?php echo $vipPrice; ?>"><?php echo $formattedVipPrice; ?></span>
-                                        <span id="vip-ticket-count" class="text-lg font-bold text-orange-400 w-6 text-center">0</span>
-                                    </div>
-                                </div>
+                                <?php endif; ?>
+                            </div>
 
                                 <div class="text-center text-sm text-gray-400 font-medium mb-4 pt-2">
                                     <span id="selected-seats-count" class="text-orange-400 font-bold">0</span> Total Tickets Selected (+$5.99 Fee/Ticket)
@@ -189,7 +293,7 @@ include 'partials/header.php';
                                     <button id="open-seat-modal-btn" class="w-1/3 py-3 px-4 text-md font-bold rounded-lg text-white bg-orange-600 transition duration-300 hover:bg-orange-700 hover:shadow-lg flex items-center justify-center" aria-label="Open Seat Selection Map">
                                         <i data-feather="grid" class="w-5 h-5"></i>
                                     </button>
-                                    <button id="checkout-btn" data-event-id="<?php echo $eventId; ?>" class="w-2/3 py-3 text-md font-bold rounded-lg text-white transition duration-300 gradient-bg opacity-50 cursor-not-allowed hover:shadow-lg hover:shadow-orange-700/50" disabled>
+                                    <button id="checkout-btn" data-event-id="<?php echo $event ? $event['id'] : ($eventId ?? ''); ?>" class="w-2/3 py-3 text-md font-bold rounded-lg text-white transition duration-300 gradient-bg opacity-50 cursor-not-allowed hover:shadow-lg hover:shadow-orange-700/50" disabled>
                                         Proceed to Checkout
                                     </button>
                                 </div>
@@ -217,14 +321,32 @@ include 'partials/header.php';
                                         <i data-feather="home" class="w-4 h-4 mr-2 mt-1"></i>
                                         <span><?php echo $eventFullLocation; ?></span>
                                     </p>
-                                    <p class="flex items-start">
-                                        <i data-feather="clock" class="w-4 h-4 mr-2 mt-1"></i>
-                                        <span>Doors open 1 hour before event</span>
-                                    </p>
+                                    <?php if ($event && !empty($event['venue']['description'])): ?>
                                     <p class="flex items-start">
                                         <i data-feather="info" class="w-4 h-4 mr-2 mt-1"></i>
-                                        <span>Age restriction: 18+</span>
+                                        <span><?php echo htmlspecialchars($event['venue']['description']); ?></span>
                                     </p>
+                                    <?php endif; ?>
+                                    <?php if ($event && !empty($event['venue']['capacity'])): ?>
+                                    <p class="flex items-start">
+                                        <i data-feather="users" class="w-4 h-4 mr-2 mt-1"></i>
+                                        <span>Capacity: <?php echo number_format($event['venue']['capacity']); ?> people</span>
+                                    </p>
+                                    <?php endif; ?>
+                                    <?php if ($event && !empty($event['venue']['facilities']) && is_array($event['venue']['facilities'])): ?>
+                                        <?php foreach ($event['venue']['facilities'] as $facility): ?>
+                                        <p class="flex items-start">
+                                            <i data-feather="check-circle" class="w-4 h-4 mr-2 mt-1"></i>
+                                            <span><?php echo htmlspecialchars($facility); ?></span>
+                                        </p>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                    <?php if ($event && !empty($event['additional_info']['age_restriction'])): ?>
+                                    <p class="flex items-start">
+                                        <i data-feather="shield" class="w-4 h-4 mr-2 mt-1"></i>
+                                        <span>Age restriction: <?php echo htmlspecialchars($event['additional_info']['age_restriction']); ?></span>
+                                    </p>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                             <div>
@@ -233,27 +355,54 @@ include 'partials/header.php';
                                     Getting There
                                 </h3>
                                 <div class="space-y-3">
+                                    <?php if ($event && !empty($event['additional_info']['parking'])): ?>
                                     <p class="flex items-start">
                                         <i data-feather="car" class="w-4 h-4 mr-2 mt-1"></i>
-                                        <span>Parking available ($15 per vehicle)</span>
+                                        <span><?php echo htmlspecialchars($event['additional_info']['parking']); ?></span>
                                     </p>
+                                    <?php else: ?>
+                                    <p class="flex items-start">
+                                        <i data-feather="car" class="w-4 h-4 mr-2 mt-1"></i>
+                                        <span>Parking information available at venue</span>
+                                    </p>
+                                    <?php endif; ?>
+                                    <?php if ($event && !empty($event['additional_info']['transportation'])): ?>
                                     <p class="flex items-start">
                                         <i data-feather="train" class="w-4 h-4 mr-2 mt-1"></i>
-                                        <span>Nearest metro station: Central Station (0.5 miles)</span>
+                                        <span><?php echo htmlspecialchars($event['additional_info']['transportation']); ?></span>
                                     </p>
+                                    <?php else: ?>
+                                    <p class="flex items-start">
+                                        <i data-feather="map-pin" class="w-4 h-4 mr-2 mt-1"></i>
+                                        <span>Check venue location for transportation options</span>
+                                    </p>
+                                    <?php endif; ?>
+                                    <?php if ($event && !empty($event['additional_info']['doors_open'])): ?>
+                                    <p class="flex items-start">
+                                        <i data-feather="clock" class="w-4 h-4 mr-2 mt-1"></i>
+                                        <span>Doors open: <?php echo htmlspecialchars($event['additional_info']['doors_open']); ?></span>
+                                    </p>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
                         <div class="mt-8">
-                            <iframe
-                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3305.360356087998!2d-118.2436836847844!3d34.05223418060081!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x80c2c75ddc27da13%3A0xe22fdf6f254608f4!2sLos%20Angeles%2C%20CA!5e0!3m2!1sen!2sus!4v1620000000000!5m2!1sen!2sus"
-                                width="100%"
-                                height="300"
-                                style="border:0;"
-                                allowfullscreen=""
-                                loading="lazy"
-                                class="rounded-lg shadow-lg">
-                            </iframe>
+                            <?php if ($event && !empty($event['venue']['google_maps_url'])): ?>
+                                <iframe
+                                    src="<?php echo htmlspecialchars($event['venue']['google_maps_url']); ?>"
+                                    width="100%"
+                                    height="300"
+                                    style="border:0;"
+                                    allowfullscreen=""
+                                    loading="lazy"
+                                    class="rounded-lg shadow-lg">
+                                </iframe>
+                            <?php else: ?>
+                                <div class="bg-gray-800 rounded-lg p-8 text-center text-gray-400">
+                                    <i data-feather="map" class="w-12 h-12 mx-auto mb-4"></i>
+                                    <p>Map location not available</p>
+                                </div>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -290,132 +439,158 @@ include 'partials/header.php';
                 </button>
             </div>
             
+            <?php 
+            // Show layout toggle only if venue has seating type
+            if ($venueSeatingType === 'stadium' || $venueSeatingType === 'theatre'): 
+            ?>
             <div class="flex justify-center mb-6">
                 <div class="inline-flex rounded-lg bg-gray-900 p-1 shadow-inner" role="group">
-                    <button id="layout-theatre-btn" data-layout="theatre" class="layout-toggle-btn active-layout px-4 py-2 text-sm font-medium rounded-l-md text-white bg-orange-600 transition duration-150">
+                    <?php if ($venueSeatingType === 'theatre'): ?>
+                    <button id="layout-theatre-btn" data-layout="theatre" class="layout-toggle-btn active-layout px-4 py-2 text-sm font-medium rounded-md text-white bg-orange-600 transition duration-150">
                         Theatre View
                     </button>
-                    <button id="layout-stadium-btn" data-layout="stadium" class="layout-toggle-btn px-4 py-2 text-sm font-medium rounded-r-md text-gray-400 hover:text-white hover:bg-gray-700 transition duration-150">
+                    <?php elseif ($venueSeatingType === 'stadium'): ?>
+                    <button id="layout-stadium-btn" data-layout="stadium" class="layout-toggle-btn active-layout px-4 py-2 text-sm font-medium rounded-md text-white bg-orange-600 transition duration-150">
                         Stadium View
                     </button>
+                    <?php endif; ?>
                 </div>
             </div>
+            <?php endif; ?>
             <div class="p-0">
                 <div id="seating-map-views">
 
-                    <div id="layout-theatre" class="seating-layout-view">
+                    <div id="layout-theatre" class="seating-layout-view <?php echo ($venueSeatingType === 'theatre' || $venueSeatingType === 'standing') ? '' : 'hidden'; ?>">
                         <div id="seating-builder-container" class="bg-gray-900 rounded-xl p-8 shadow-inner">
                             <div class="seating-map-area">
-                                
-                                <div class="stage-container">
-                                    <span class="stage-label">STAGE / SCREEN</span>
+                                <!-- Stage -->
+                                <div class="stage">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect width="20" height="14" x="2" y="7" rx="2" ry="2"></rect>
+                                        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                                    </svg>
+                                    <span>STAGE / SCREEN</span>
                                 </div>
 
-                                <div class="flex justify-center flex-wrap space-x-6 text-sm text-gray-300 mb-8 mt-4">
-                                    <div class="flex items-center mt-2">
-                                        <div class="seat legend available mr-2"></div> Available (General)
-                                    </div>
-                                    <div class="flex items-center mt-2">
-                                        <div class="seat legend selected mr-2"></div> Selected
-                                    </div>
-                                    <div class="flex items-center mt-2">
-                                        <div class="seat legend reserved mr-2"></div> Reserved
-                                    </div>
-                                    <div class="flex items-center mt-2">
-                                        <div class="seat legend vip mr-2"></div> VIP (Higher Price)
-                                    </div>
-                                </div>
+                                <!-- Theatre Seating Grid -->
+                                <div id="theatre-seats" class="theatre-seating-grid"></div>
 
-                                <div class="seating-rows-container">
-                                    
-                                    <div class="seating-section vip-section">
-                                        <?php 
-                                        // Price calculated as 1.5 times the base price
-                                        $vipPrice = ($event && isset($eventPrice)) ? $eventPrice * 1.5 : 0;
+                                <!-- Legend -->
+                                <div class="legend">
+                                    <div class="legend-group">
+                                        <div class="legend-item">
+                                            <div class="legend-color available"></div>
+                                            <span>Available</span>
+                                        </div>
+                                        <div class="legend-item">
+                                            <div class="legend-color selected"></div>
+                                            <span>Selected</span>
+                                        </div>
+                                        <div class="legend-item">
+                                            <div class="legend-color booked"></div>
+                                            <span>Booked</span>
+                                        </div>
+                                    </div>
+                                    <?php if (!empty($ticketCategories)): ?>
+                                    <div class="legend-group">
+                                        <?php foreach ($ticketCategories as $category): 
+                                            // Map category names to badge classes for Theatre
+                                            $badgeClass = 'regular';
+                                            if ($category['category_name'] === 'Gold') {
+                                                $badgeClass = 'vip';
+                                            } elseif ($category['category_name'] === 'Premium') {
+                                                $badgeClass = 'premium';
+                                            }
                                         ?>
-                                        <div class="section-label">VIP (A-C) - $<?php echo number_format($vipPrice, 2); ?></div>
-                                        <?php for ($i = 65; $i <= 67; $i++): // Rows A, B, C ?>
-                                            <div class="seat-row" data-row="<?php echo chr($i); ?>">
-                                                <span class="row-label"><?php echo chr($i); ?></span>
-                                                <?php for ($j = 1; $j <= 10; $j++): ?>
-                                                    <?php $status = ($j % 5 === 0) ? 'reserved' : 'available'; ?>
-                                                    <div class="seat vip <?php echo $status; ?>" data-seat-type="vip" data-price="<?php echo $vipPrice; ?>" data-seat-id="<?php echo chr($i) . $j; ?>"></div>
-                                                <?php endfor; ?>
-                                                <span class="row-label"><?php echo chr($i); ?></span>
-                                            </div>
-                                        <?php endfor; ?>
+                                        <div class="legend-item">
+                                            <div class="legend-badge <?php echo $badgeClass; ?>"></div>
+                                            <span><?php echo htmlspecialchars($category['category_name']); ?> - $<?php echo number_format($category['price'], 2); ?></span>
+                                        </div>
+                                        <?php endforeach; ?>
                                     </div>
-
-                                    <div class="aisle-space">AISLE</div>
-
-                                    <div class="seating-section general-section">
-                                        <?php 
-                                        // General price is the base price
-                                        $generalPrice = ($event && isset($eventPrice)) ? $eventPrice : 0;
-                                        ?>
-                                        <div class="section-label">General (D-H) - <?php echo $formattedPrice; ?></div>
-                                        <?php for ($i = 68; $i <= 72; $i++): // Rows D, E, F, G, H ?>
-                                            <div class="seat-row" data-row="<?php echo chr($i); ?>">
-                                                <span class="row-label"><?php echo chr($i); ?></span>
-                                                <?php for ($j = 1; $j <= 12; $j++): ?>
-                                                    <?php $status = ($j % 7 === 0 || $j % 8 === 0) ? 'reserved' : 'available'; ?>
-                                                    <div class="seat <?php echo $status; ?>" data-seat-type="general" data-price="<?php echo $generalPrice; ?>" data-seat-id="<?php echo chr($i) . $j; ?>"></div>
-                                                <?php endfor; ?>
-                                                <span class="row-label"><?php echo chr($i); ?></span>
-                                            </div>
-                                        <?php endfor; ?>
-                                    </div>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div id="layout-stadium" class="seating-layout-view hidden">
+                    <div id="layout-stadium" class="seating-layout-view <?php echo $venueSeatingType === 'stadium' ? '' : 'hidden'; ?>">
                         <div id="stadium-builder-container" class="bg-gray-900 rounded-xl p-8 shadow-inner">
                             <div class="seating-map-area">
-                                
-                                <div class="stage-container">
-                                    <span class="stage-label">FIELD / PITCH</span>
+                                <!-- Stadium Circular Layout -->
+                                <div class="stadium-container">
+                                    <!-- Playing Field -->
+                                    <div class="playing-field">
+                                        <div class="field-markings"></div>
+                                        <div class="field-center-line"></div>
+                                        <div class="field-center-circle"></div>
+                                        <div class="field-label">FIELD</div>
+                                    </div>
+
+                                    <!-- North Section -->
+                                    <div class="stadium-section north-section">
+                                        <div class="section-title">North Stand</div>
+                                        <div id="north-seats" class="section-seats"></div>
+                                    </div>
+
+                                    <!-- South Section -->
+                                    <div class="stadium-section south-section">
+                                        <div class="section-title">South Stand</div>
+                                        <div id="south-seats" class="section-seats"></div>
+                                    </div>
+
+                                    <!-- West Section -->
+                                    <div class="stadium-section west-section">
+                                        <div class="section-title">West</div>
+                                        <div id="west-seats" class="section-seats"></div>
+                                    </div>
+
+                                    <!-- East Section -->
+                                    <div class="stadium-section east-section">
+                                        <div class="section-title">East</div>
+                                        <div id="east-seats" class="section-seats"></div>
+                                    </div>
                                 </div>
-                                
-                                <div class="seating-rows-container stadium-seating">
-                                    
-                                    <div class="seating-section vip-section">
-                                        <?php $vipPrice = ($event && isset($eventPrice)) ? $eventPrice * 1.5 : 0; ?>
-                                        <div class="section-label">Lower Tier VIP (1-5) - $<?php echo number_format($vipPrice, 2); ?></div>
-                                        <?php for ($i = 1; $i <= 5; $i++): // Rows 1-5 ?>
-                                            <div class="seat-row" data-row="<?php echo $i; ?>">
-                                                <span class="row-label"><?php echo $i; ?></span>
-                                                <?php for ($j = 1; $j <= 15; $j++): ?>
-                                                    <?php $status = ($j % 8 === 0) ? 'reserved' : 'available'; ?>
-                                                    <div class="seat vip <?php echo $status; ?>" data-seat-type="vip" data-price="<?php echo $vipPrice; ?>" data-seat-id="<?php echo 'S' . $i . '-' . $j; ?>"></div>
-                                                <?php endfor; ?>
-                                                <span class="row-label"><?php echo $i; ?></span>
-                                            </div>
-                                        <?php endfor; ?>
-                                    </div>
 
-                                    <div class="aisle-space">CONCOURSE</div>
-
-                                    <div class="seating-section general-section">
-                                        <?php $generalPrice = ($event && isset($eventPrice)) ? $eventPrice : 0; ?>
-                                        <div class="section-label">Upper Tier General (6-12) - <?php echo $formattedPrice; ?></div>
-                                        <?php for ($i = 6; $i <= 12; $i++): // Rows 6-12 ?>
-                                            <div class="seat-row" data-row="<?php echo $i; ?>">
-                                                <span class="row-label"><?php echo $i; ?></span>
-                                                <?php for ($j = 1; $j <= 20; $j++): ?>
-                                                    <?php $status = ($j % 10 === 0 || $j % 11 === 0) ? 'reserved' : 'available'; ?>
-                                                    <div class="seat <?php echo $status; ?>" data-seat-type="general" data-price="<?php echo $generalPrice; ?>" data-seat-id="<?php echo 'S' . $i . '-' . $j; ?>"></div>
-                                                <?php endfor; ?>
-                                                <span class="row-label"><?php echo $i; ?></span>
-                                            </div>
-                                        <?php endfor; ?>
+                                <!-- Legend -->
+                                <div class="legend">
+                                    <div class="legend-group">
+                                        <div class="legend-item">
+                                            <div class="legend-color available"></div>
+                                            <span>Available</span>
+                                        </div>
+                                        <div class="legend-item">
+                                            <div class="legend-color selected"></div>
+                                            <span>Selected</span>
+                                        </div>
+                                        <div class="legend-item">
+                                            <div class="legend-color booked"></div>
+                                            <span>Booked</span>
+                                        </div>
                                     </div>
+                                    <?php if (!empty($ticketCategories)): ?>
+                                    <div class="legend-group">
+                                        <?php foreach ($ticketCategories as $category): 
+                                            // Map category names to badge classes for Stadium
+                                            $badgeClass = 'regular';
+                                            if ($category['category_name'] === 'Cat1') {
+                                                $badgeClass = 'vip';
+                                            } elseif ($category['category_name'] === 'Cat2') {
+                                                $badgeClass = 'premium';
+                                            }
+                                        ?>
+                                        <div class="legend-item">
+                                            <div class="legend-badge <?php echo $badgeClass; ?>"></div>
+                                            <span><?php echo htmlspecialchars($category['category_name']); ?> - $<?php echo number_format($category['price'], 2); ?></span>
+                                        </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    </div>
                 </div>
+            </div>
             
             <div class="flex justify-end pt-4">
                  <button id="done-selecting-btn" class="px-6 py-3 text-lg font-bold rounded-lg text-white bg-orange-500 hover:bg-orange-600 transition">
@@ -433,13 +608,34 @@ include 'partials/header.php';
                 </button>
             </div>
             <div class="prose max-w-none text-gray-300">
-                <p><strong>1. Ticket Purchase:</strong> All sales are final. *Refunds/exchanges only if the event is canceled or postponed*.</p>
-                <p><strong>2. Entry & ID:</strong> Requires a *valid ticket* (printed/mobile) and *government-issued photo ID*. Admission may be refused.</p>
-                <p><strong>3. Conduct:</strong> Follow all rules. *Disorderly conduct/non-compliance will result in immediate ejection without refund*.</p>
-                <p><strong>4. Photography/Recording:</strong> Professional cameras, video, or audio recording devices are *prohibited without organizer consent*.</p>
-                <p><strong>5. Personal Liability:</strong> Organizers are *not responsible* for lost/stolen property or injuries. Attend at your own risk.</p>
-                <p><strong>6. Rescheduling/Cancellation:</strong> Rescheduled tickets remain valid. *Canceled events will be refunded* per organizer policy.</p>
-                </div>
+                <?php if ($event && !empty($event['terms_conditions'])): ?>
+                    <?php 
+                    // Display terms and conditions from database
+                    // If it's HTML, display as-is, otherwise format as paragraphs
+                    $terms = $event['terms_conditions'];
+                    if (strip_tags($terms) === $terms) {
+                        // Plain text - split by newlines and format as paragraphs
+                        $termsLines = explode("\n", $terms);
+                        foreach ($termsLines as $line) {
+                            $line = trim($line);
+                            if (!empty($line)) {
+                                echo '<p>' . nl2br(htmlspecialchars($line)) . '</p>';
+                            }
+                        }
+                    } else {
+                        // HTML content - display as-is (already sanitized in database)
+                        echo $terms;
+                    }
+                    ?>
+                <?php else: ?>
+                    <p><strong>1. Ticket Purchase:</strong> All sales are final. *Refunds/exchanges only if the event is canceled or postponed*.</p>
+                    <p><strong>2. Entry & ID:</strong> Requires a *valid ticket* (printed/mobile) and *government-issued photo ID*. Admission may be refused.</p>
+                    <p><strong>3. Conduct:</strong> Follow all rules. *Disorderly conduct/non-compliance will result in immediate ejection without refund*.</p>
+                    <p><strong>4. Photography/Recording:</strong> Professional cameras, video, or audio recording devices are *prohibited without organizer consent*.</p>
+                    <p><strong>5. Personal Liability:</strong> Organizers are *not responsible* for lost/stolen property or injuries. Attend at your own risk.</p>
+                    <p><strong>6. Rescheduling/Cancellation:</strong> Rescheduled tickets remain valid. *Canceled events will be refunded* per organizer policy.</p>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 
@@ -448,6 +644,18 @@ include 'partials/header.php';
 // Assuming includes/header.php and includes/footer.php exist relative to this file's location
 include 'partials/footer.php';
 ?>
+    <script>
+        // Pass PHP data to JavaScript
+        window.eventData = {
+            eventId: <?php echo $event ? $event['id'] : 'null'; ?>,
+            venueSeatingType: <?php echo $venueSeatingType ? "'" . htmlspecialchars($venueSeatingType, ENT_QUOTES) . "'" : 'null'; ?>,
+            ticketCategories: <?php echo json_encode($ticketCategories, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+            minTickets: <?php echo $event ? $event['min_tickets_per_booking'] : 1; ?>,
+            maxTickets: <?php echo $event ? $event['max_tickets_per_booking'] : 10; ?>
+        };
+    </script>
+    <script src="../../public/js/theatre-seating.js"></script>
+    <script src="../../public/js/stadium-seating.js"></script>
     <script type="module" src="../../public/js/booking.js"></script>
 
 </body>

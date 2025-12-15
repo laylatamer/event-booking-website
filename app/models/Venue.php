@@ -14,6 +14,7 @@ class Venue {
     public $google_maps_url;
     public $image_url;
     public $status;
+    public $seating_type;
     public $created_at;
     public $updated_at;
 
@@ -88,7 +89,8 @@ class Venue {
                     facilities = :facilities,
                     google_maps_url = :google_maps_url,
                     image_url = :image_url,
-                    status = :status";
+                    status = :status,
+                    seating_type = :seating_type";
         
         $stmt = $this->conn->prepare($query);
         
@@ -108,6 +110,7 @@ class Venue {
         $stmt->bindParam(":google_maps_url", $this->google_maps_url);
         $stmt->bindParam(":image_url", $this->image_url);
         $stmt->bindParam(":status", $this->status);
+        $stmt->bindParam(":seating_type", $this->seating_type);
         
         if($stmt->execute()) {
             $this->id = $this->conn->lastInsertId();
@@ -149,6 +152,7 @@ class Venue {
             $this->google_maps_url = $row['google_maps_url'];
             $this->image_url = $row['image_url'];
             $this->status = $row['status'];
+            $this->seating_type = $row['seating_type'] ?? null;
             $this->created_at = $row['created_at'];
             $this->updated_at = $row['updated_at'];
             return true;
@@ -168,6 +172,7 @@ class Venue {
                     google_maps_url = :google_maps_url,
                     image_url = :image_url,
                     status = :status,
+                    seating_type = :seating_type,
                     updated_at = CURRENT_TIMESTAMP
                 WHERE id = :id";
         
@@ -189,6 +194,7 @@ class Venue {
         $stmt->bindParam(":google_maps_url", $this->google_maps_url);
         $stmt->bindParam(":image_url", $this->image_url);
         $stmt->bindParam(":status", $this->status);
+        $stmt->bindParam(":seating_type", $this->seating_type);
         $stmt->bindParam(":id", $this->id);
         
         return $stmt->execute();

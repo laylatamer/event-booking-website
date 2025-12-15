@@ -165,6 +165,16 @@ $venues = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     <input type="number" id="location-capacity" name="capacity" required min="1">
                 </div>
                 <div class="form-group">
+                    <label>Seating Type *</label>
+                    <select id="location-seating-type" name="seating_type" required>
+                        <option value="">Select Seating Type</option>
+                        <option value="stadium">Stadium View (Cat1, Cat2, Cat3)</option>
+                        <option value="theatre">Theatre View (Gold, Premium, Regular)</option>
+                        <option value="standing">Standing (Regular, Fanpit, Golden Circle)</option>
+                    </select>
+                    <small class="form-help">Choose the seating layout type for this venue</small>
+                </div>
+                <div class="form-group">
                     <label>Description</label>
                     <textarea id="location-description" name="description" rows="3" placeholder="Brief description of the venue..."></textarea>
                 </div>
@@ -249,6 +259,16 @@ $venues = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <div class="form-group">
                     <label>Capacity *</label>
                     <input type="number" id="edit-location-capacity" name="capacity" required min="1">
+                </div>
+                <div class="form-group">
+                    <label>Seating Type *</label>
+                    <select id="edit-location-seating-type" name="seating_type" required>
+                        <option value="">Select Seating Type</option>
+                        <option value="stadium">Stadium View (Cat1, Cat2, Cat3)</option>
+                        <option value="theatre">Theatre View (Gold, Premium, Regular)</option>
+                        <option value="standing">Standing (Regular, Fanpit, Golden Circle)</option>
+                    </select>
+                    <small class="form-help">Choose the seating layout type for this venue</small>
                 </div>
                 <div class="form-group">
                     <label>Description</label>
@@ -567,6 +587,7 @@ function editVenue(venueId) {
                 document.getElementById('edit-location-city').value = venue.city;
                 document.getElementById('edit-location-country').value = venue.country;
                 document.getElementById('edit-location-capacity').value = venue.capacity;
+                document.getElementById('edit-location-seating-type').value = venue.seating_type || '';
                 document.getElementById('edit-location-description').value = venue.description || '';
                 document.getElementById('edit-location-google-maps').value = venue.google_maps_url || '';
                 document.getElementById('edit-location-status').value = venue.status;

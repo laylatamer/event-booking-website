@@ -98,6 +98,32 @@ function setupFormDependencies() {
         });
     }
     
+    // Venue change - load seating type and show ticket categories
+    const venueSelect = document.getElementById('admin-event-venue');
+    const editVenueSelect = document.getElementById('admin-edit-event-venue');
+    
+    if (venueSelect) {
+        venueSelect.addEventListener('change', function() {
+            if (this.value) {
+                loadTicketCategories(this.value, 'add');
+            } else {
+                const section = document.getElementById('ticket-categories-section');
+                if (section) section.style.display = 'none';
+            }
+        });
+    }
+    
+    if (editVenueSelect) {
+        editVenueSelect.addEventListener('change', function() {
+            if (this.value) {
+                loadTicketCategories(this.value, 'edit');
+            } else {
+                const section = document.getElementById('edit-ticket-categories-section');
+                if (section) section.style.display = 'none';
+            }
+        });
+    }
+    
     if (editMainCategorySelect) {
         editMainCategorySelect.addEventListener('change', function() {
             loadSubcategories(this.value, 'admin-edit-event-subcategory');
@@ -283,6 +309,131 @@ function setupFormDependencies() {
     });
 }
 
+async function loadTicketCategories(venueId, formType, existingTicketCategories = null) {
+    // Determine which container/section to use based on form type
+    const isEditForm = formType === 'edit';
+    const containerId = isEditForm ? 'edit-ticket-categories-container' : 'ticket-categories-container';
+    const sectionId = isEditForm ? 'edit-ticket-categories-section' : 'ticket-categories-section';
+    
+    if (!venueId) {
+        const section = document.getElementById(sectionId);
+        if (section) section.style.display = 'none';
+        return;
+    }
+    
+    const container = document.getElementById(containerId);
+    const section = document.getElementById(sectionId);
+    
+    if (!container || !section) {
+        console.error('Ticket categories container or section not found!', { containerId, sectionId });
+        return;
+    }
+    
+    // Show loading state
+    container.innerHTML = '<p style="padding: 1rem; color: #666;">Loading venue information...</p>';
+    section.style.display = 'block';
+    
+    try {
+        const response = await fetch(`../../../public/api/venue.php?action=get&id=${venueId}`);
+        const data = await response.json();
+        
+        if (!data.success) {
+            console.error('API error:', data.message);
+            container.innerHTML = `<p style="padding: 1rem; color: #dc2626;">Error: ${data.message || 'Failed to load venue'}</p>`;
+            return;
+        }
+        
+        if (!data.venue) {
+            console.error('No venue data in response');
+            container.innerHTML = '<p style="padding: 1rem; color: #dc2626;">Venue not found</p>';
+            return;
+        }
+        
+        if (!data.venue.seating_type) {
+            console.warn('Venue has no seating_type set:', data.venue);
+            container.innerHTML = `
+                <div style="padding: 1rem; background: #fef3c7; border: 1px solid #fbbf24; border-radius: 8px; color: #92400e;">
+                    <strong>⚠️ Warning:</strong> This venue doesn't have a seating type set.<br>
+                    Please go to <strong>Locations</strong> section and set the seating type for this venue first.
+                </div>
+            `;
+            section.style.display = 'block';
+            return;
+        }
+        
+        const seatingType = data.venue.seating_type;
+        container.innerHTML = '';
+        
+        let categories = [];
+        if (seatingType === 'stadium') {
+            categories = ['Cat1', 'Cat2', 'Cat3'];
+        } else if (seatingType === 'theatre') {
+            categories = ['Gold', 'Premium', 'Regular'];
+        } else if (seatingType === 'standing') {
+            categories = ['Regular', 'Fanpit', 'Golden Circle'];
+        } else {
+            container.innerHTML = `<p style="padding: 1rem; color: #dc2626;">Unknown seating type: ${seatingType}</p>`;
+            return;
+        }
+        
+        // If editing, use provided existing ticket categories
+        let existingCategories = {};
+        if (isEditForm && existingTicketCategories && Array.isArray(existingTicketCategories)) {
+            existingTicketCategories.forEach(cat => {
+                existingCategories[cat.category_name] = cat;
+            });
+        }
+        
+        categories.forEach((category, index) => {
+            const existing = existingCategories[category] || {};
+            const categoryDiv = document.createElement('div');
+            categoryDiv.className = 'form-group';
+            categoryDiv.style.marginBottom = '1rem';
+            categoryDiv.innerHTML = `
+                <div style="background: #f3f4f6; padding: 1rem; border-radius: 8px; border: 1px solid #e5e7eb;">
+                    <label style="font-weight: 600; margin-bottom: 0.5rem; display: block; color: #111;">${category} Category *</label>
+                    <div class="form-group two-columns" style="margin: 0;">
+                        <div>
+                            <label style="font-size: 0.875rem; color: #374151; margin-bottom: 0.25rem; display: block;">Total Tickets *</label>
+                            <input type="number" 
+                                   name="ticket_categories[${category}][total_tickets]" 
+                                   class="ticket-category-input" 
+                                   data-category="${category}"
+                                   min="1" 
+                                   required
+                                   value="${existing.total_tickets || ''}"
+                                   placeholder="e.g., 2000"
+                                   style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.875rem; color: #374151; margin-bottom: 0.25rem; display: block;">Price per Ticket *</label>
+                            <input type="number" 
+                                   name="ticket_categories[${category}][price]" 
+                                   class="ticket-category-input" 
+                                   data-category="${category}"
+                                   min="0" 
+                                   step="0.01"
+                                   required
+                                   value="${existing.price || ''}"
+                                   placeholder="e.g., 50.00"
+                                   style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+                        </div>
+                    </div>
+                    <input type="hidden" name="ticket_categories[${category}][category_name]" value="${category}">
+                </div>
+            `;
+            container.appendChild(categoryDiv);
+        });
+        
+        section.style.display = 'block';
+        
+    } catch (error) {
+        console.error('Error loading ticket categories:', error);
+        container.innerHTML = `<p style="padding: 1rem; color: #dc2626;">Error: ${error.message}</p>`;
+        section.style.display = 'block';
+    }
+}
+
 async function loadSubcategories(mainCategoryId, targetSelectId) {
     const subcategorySelect = document.getElementById(targetSelectId);
     
@@ -328,6 +479,12 @@ function openAddEventModal() {
     const form = document.getElementById('add-event-form');
     if (form) {
         form.reset();
+        
+        // Hide ticket categories section
+        const ticketSection = document.getElementById('ticket-categories-section');
+        if (ticketSection) {
+            ticketSection.style.display = 'none';
+        }
         
         // Reset subcategory
         const subcategorySelect = document.getElementById('admin-event-subcategory');
@@ -381,10 +538,16 @@ async function editEvent(eventId) {
         const response = await fetch(`${API_BASE}?action=getEvent&id=${eventId}`);
         
         if (!response.ok) {
-            throw new Error('Failed to load event data');
+            const errorText = await response.text();
+            console.error('API response error:', response.status, errorText);
+            throw new Error(`Failed to load event data: ${response.status}`);
         }
         
         const data = await response.json();
+        
+        if (!data) {
+            throw new Error('No data received from server');
+        }
         
         if (data.success && data.event) {
             const event = data.event;
@@ -493,6 +656,11 @@ async function editEvent(eventId) {
             
             document.getElementById('admin-edit-event-status').value = event.status || 'draft';
             
+            // Load ticket categories AFTER all form fields are populated (pass existing categories if available)
+            if (event.venue_id) {
+                await loadTicketCategories(event.venue_id, 'edit', event.ticket_categories || []);
+            }
+            
             openModal('edit-event-modal');
             
         } else {
@@ -543,8 +711,63 @@ async function handleAddEvent(e) {
         // Get form data
         const formData = new FormData(e.target);
         
-        // Validate required fields
-        const requiredFields = ['title', 'description', 'subcategory_id', 'venue_id', 'date', 'price', 'total_tickets'];
+        // Collect ticket categories directly from form inputs (more reliable than FormData)
+        const ticketCategoriesObj = {};
+        const ticketCategoryInputs = document.querySelectorAll('#ticket-categories-container input.ticket-category-input');
+        const ticketCategoryHiddenInputs = document.querySelectorAll('#ticket-categories-container input[type="hidden"][name*="category_name"]');
+        
+        // Get data from visible inputs
+        ticketCategoryInputs.forEach(input => {
+            const categoryName = input.getAttribute('data-category');
+            if (!categoryName) return;
+            
+            if (!ticketCategoriesObj[categoryName]) {
+                ticketCategoriesObj[categoryName] = {};
+            }
+            
+            if (input.name.includes('[total_tickets]')) {
+                ticketCategoriesObj[categoryName].total_tickets = input.value;
+            } else if (input.name.includes('[price]')) {
+                ticketCategoriesObj[categoryName].price = input.value;
+            }
+        });
+        
+        // Get category names from hidden inputs
+        ticketCategoryHiddenInputs.forEach(input => {
+            const match = input.name.match(/ticket_categories\[([^\]]+)\]/);
+            if (match) {
+                const categoryName = match[1];
+                if (ticketCategoriesObj[categoryName]) {
+                    ticketCategoriesObj[categoryName].category_name = input.value || categoryName;
+                }
+            }
+        });
+        
+        console.log('Collected ticket categories:', ticketCategoriesObj);
+        
+        // Check if ticket categories section is visible and has data
+        const ticketSection = document.getElementById('ticket-categories-section');
+        const isTicketSectionVisible = ticketSection && ticketSection.style.display !== 'none';
+        
+        if (isTicketSectionVisible && Object.keys(ticketCategoriesObj).length === 0) {
+            throw new Error('Please fill in ticket categories. Make sure you selected a venue with seating type and filled in all category fields.');
+        }
+        
+        // Validate each category has tickets and price
+        for (const [categoryName, category] of Object.entries(ticketCategoriesObj)) {
+            const totalTickets = parseInt(category.total_tickets || 0);
+            const price = parseFloat(category.price || 0);
+            
+            if (totalTickets <= 0) {
+                throw new Error(`Please enter a valid ticket count (greater than 0) for ${categoryName} category`);
+            }
+            if (isNaN(price) || price < 0) {
+                throw new Error(`Please enter a valid price (0 or greater) for ${categoryName} category`);
+            }
+        }
+        
+        // Validate required fields (removed price and total_tickets - they're calculated from categories)
+        const requiredFields = ['title', 'description', 'subcategory_id', 'venue_id', 'date'];
         let isValid = true;
         let missingField = '';
         
@@ -559,6 +782,31 @@ async function handleAddEvent(e) {
         
         if (!isValid) {
             throw new Error(`Please fill in the ${missingField} field`);
+        }
+        
+        // Set price and total_tickets as hidden values (will be calculated on server)
+        formData.set('price', '0'); // Will be calculated from categories
+        formData.set('total_tickets', '0'); // Will be calculated from categories
+        
+        // Clear existing ticket_categories from FormData
+        const keysToDelete = [];
+        formData.forEach((value, key) => {
+            if (key.startsWith('ticket_categories[')) {
+                keysToDelete.push(key);
+            }
+        });
+        keysToDelete.forEach(key => formData.delete(key));
+        
+        // Send ticket categories as JSON string (more reliable than nested FormData)
+        if (Object.keys(ticketCategoriesObj).length > 0) {
+            // Convert to array format for easier PHP parsing
+            const ticketCategoriesArray = Object.entries(ticketCategoriesObj).map(([categoryName, category]) => ({
+                category_name: category.category_name || categoryName,
+                total_tickets: parseInt(category.total_tickets || 0),
+                price: parseFloat(category.price || 0)
+            }));
+            formData.set('ticket_categories_json', JSON.stringify(ticketCategoriesArray));
+            console.log('Added ticket categories as JSON:', ticketCategoriesArray);
         }
         
         // Convert JSON fields
@@ -672,6 +920,43 @@ async function handleEditEvent(e) {
             }
         }
         
+        // Collect ticket categories (same as add event, but check both containers)
+        const ticketCategoriesObj = {};
+        const ticketCategoryInputs = document.querySelectorAll('#ticket-categories-container input.ticket-category-input, #edit-ticket-categories-container input.ticket-category-input');
+        const ticketCategoryHiddenInputs = document.querySelectorAll('#ticket-categories-container input[type="hidden"][name*="category_name"], #edit-ticket-categories-container input[type="hidden"][name*="category_name"]');
+        
+        ticketCategoryInputs.forEach(input => {
+            const categoryName = input.getAttribute('data-category');
+            if (!categoryName) return;
+            
+            if (!ticketCategoriesObj[categoryName]) {
+                ticketCategoriesObj[categoryName] = {};
+            }
+            
+            if (input.name.includes('[total_tickets]')) {
+                ticketCategoriesObj[categoryName].total_tickets = input.value;
+            } else if (input.name.includes('[price]')) {
+                ticketCategoriesObj[categoryName].price = input.value;
+            }
+        });
+        
+        ticketCategoryHiddenInputs.forEach(input => {
+            const match = input.name.match(/ticket_categories\[([^\]]+)\]/);
+            if (match) {
+                const categoryName = match[1];
+                if (ticketCategoriesObj[categoryName]) {
+                    ticketCategoriesObj[categoryName].category_name = input.value || categoryName;
+                }
+            }
+        });
+        
+        // Convert to array format
+        const ticketCategoriesArray = Object.entries(ticketCategoriesObj).map(([categoryName, category]) => ({
+            category_name: category.category_name || categoryName,
+            total_tickets: parseInt(category.total_tickets || 0),
+            price: parseFloat(category.price || 0)
+        }));
+        
         // Prepare event data
         const eventData = {
             id: eventId,
@@ -693,6 +978,11 @@ async function handleEditEvent(e) {
             terms_conditions: document.getElementById('admin-edit-event-terms').value || '',
             status: document.getElementById('admin-edit-event-status').value || 'draft'
         };
+        
+        // Add ticket categories if provided
+        if (ticketCategoriesArray.length > 0) {
+            eventData.ticket_categories_json = JSON.stringify(ticketCategoriesArray);
+        }
         
         // Handle additional info
         const additionalInfoTextarea = document.getElementById('admin-edit-event-additional-info');

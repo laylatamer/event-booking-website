@@ -1,0 +1,174 @@
+/* Theatre Seating Styles - Orange Color Scheme */
+
+/* Stage */
+.stage {
+    background: linear-gradient(90deg, #f97316 0%, #ea580c 100%);
+    border-radius: 0.5rem;
+    padding: 1rem 1.5rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.stage::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(4px);
+}
+
+.stage svg {
+    color: white;
+    z-index: 1;
+}
+
+.stage span {
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    z-index: 1;
+}
+
+/* Theatre Seating Grid */
+.theatre-seating-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.theatre-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.row-label {
+    width: 2rem;
+    flex-shrink: 0;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.row-seats {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.aisle-gap {
+    width: 1rem;
+}
+
+/* Seat Button */
+.seat-btn {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.5rem 0.5rem 0.25rem 0.25rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.seat-btn:hover:not(:disabled) {
+    transform: scale(1.1);
+}
+
+.seat-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+/* Available seats by category - Orange color scheme */
+/* VIP = Gold (rows A-C) */
+.seat-btn.available.vip {
+    background: #f97316; /* Orange-500 */
+    border: 1px solid #ea580c;
+}
+
+.seat-btn.available.vip:hover {
+    background: #ea580c; /* Orange-600 */
+    box-shadow: 0 0 8px rgba(249, 115, 22, 0.5);
+}
+
+/* Premium = Premium (rows D-F) */
+.seat-btn.available.premium {
+    background: #fb923c; /* Orange-400 */
+    border: 1px solid #f97316;
+}
+
+.seat-btn.available.premium:hover {
+    background: #f97316;
+    box-shadow: 0 0 8px rgba(251, 146, 60, 0.5);
+}
+
+/* Regular = Regular (rows G-J) */
+.seat-btn.available.regular {
+    background: #fdba74; /* Orange-300 */
+    border: 1px solid #fb923c;
+}
+
+.seat-btn.available.regular:hover {
+    background: #fb923c;
+    box-shadow: 0 0 8px rgba(253, 186, 116, 0.5);
+}
+
+/* Selected seat */
+.seat-btn.selected {
+    background: #f97316;
+    transform: scale(1.1);
+    box-shadow: 0 0 0 2px white, 0 0 0 4px rgba(249, 115, 22, 0.5);
+    border: 2px solid white;
+}
+
+.seat-btn.selected:hover {
+    background: #ea580c;
+}
+
+/* Booked/Reserved seat */
+.seat-btn.booked,
+.seat-btn.reserved {
+    background: #475569;
+    opacity: 0.6;
+}
+
+/* Compact seats for smaller displays */
+.seat-btn.compact {
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .stage span {
+        font-size: 0.875rem;
+    }
+
+    .theatre-row {
+        gap: 0.25rem;
+    }
+
+    .row-seats {
+        gap: 0.25rem;
+    }
+
+    .seat-btn {
+        width: 1.75rem;
+        height: 1.75rem;
+    }
+
+    .seat-btn.compact {
+        width: 1.25rem;
+        height: 1.25rem;
+    }
+}

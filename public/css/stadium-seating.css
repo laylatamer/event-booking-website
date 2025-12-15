@@ -1,0 +1,238 @@
+/* Stadium Seating Styles - Orange Color Scheme */
+
+.stadium-container {
+    position: relative;
+    width: 100%;
+    max-width: 60rem;
+    margin: 0 auto;
+    aspect-ratio: 1;
+}
+
+/* Playing Field */
+.playing-field {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 45%;
+    height: 55%;
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    border-radius: 0.5rem;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.field-markings {
+    position: absolute;
+    inset: 0;
+    opacity: 0.2;
+    border: 2px solid white;
+    margin: 0.5rem;
+}
+
+.field-center-line {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: white;
+    opacity: 0.2;
+    transform: translateY(-50%);
+}
+
+.field-center-circle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 4rem;
+    height: 4rem;
+    border: 2px solid white;
+    border-radius: 50%;
+    opacity: 0.2;
+    transform: translate(-50%, -50%);
+}
+
+.field-label {
+    color: white;
+    font-size: 1.125rem;
+    font-weight: 600;
+    z-index: 1;
+}
+
+/* Stadium Sections */
+.stadium-section {
+    position: absolute;
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.8) 100%);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(249, 115, 22, 0.3);
+    padding: 0.5rem;
+}
+
+.north-section {
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 70%;
+    border-radius: 1rem 1rem 100px 100px;
+}
+
+.south-section {
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 70%;
+    border-radius: 100px 100px 1rem 1rem;
+}
+
+.west-section {
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 15%;
+    border-radius: 100px 1rem 1rem 100px;
+}
+
+.east-section {
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 15%;
+    border-radius: 1rem 100px 100px 1rem;
+}
+
+.section-title {
+    text-align: center;
+    color: white;
+    font-size: 0.75rem;
+    opacity: 0.8;
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+}
+
+.section-seats {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    max-height: 11.25rem;
+    overflow: hidden;
+}
+
+.north-section .section-seats,
+.south-section .section-seats {
+    max-height: 11.25rem;
+}
+
+.west-section .section-seats,
+.east-section .section-seats {
+    max-height: 31.25rem;
+}
+
+/* Seat Rows */
+.seat-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 2px;
+}
+
+.west-section .seat-row,
+.east-section .seat-row {
+    flex-direction: column;
+}
+
+/* Curved seat effect */
+.seat-wrapper {
+    display: inline-block;
+}
+
+/* Stadium seat buttons - Orange color scheme */
+/* VIP = Cat1 (rows 1-2) */
+.seat-btn.compact.available.vip {
+    background: #f97316; /* Orange-500 */
+    border: 1px solid #ea580c;
+}
+
+.seat-btn.compact.available.vip:hover {
+    background: #ea580c;
+    box-shadow: 0 0 6px rgba(249, 115, 22, 0.5);
+}
+
+/* Premium = Cat2 (rows 3-5) */
+.seat-btn.compact.available.premium {
+    background: #fb923c; /* Orange-400 */
+    border: 1px solid #f97316;
+}
+
+.seat-btn.compact.available.premium:hover {
+    background: #f97316;
+    box-shadow: 0 0 6px rgba(251, 146, 60, 0.5);
+}
+
+/* Regular = Cat3 (rows 6+) */
+.seat-btn.compact.available.regular {
+    background: #fdba74; /* Orange-300 */
+    border: 1px solid #fb923c;
+}
+
+.seat-btn.compact.available.regular:hover {
+    background: #fb923c;
+    box-shadow: 0 0 6px rgba(253, 186, 116, 0.5);
+}
+
+/* Selected seat */
+.seat-btn.compact.selected {
+    background: #f97316;
+    transform: scale(1.1);
+    box-shadow: 0 0 0 2px white, 0 0 0 4px rgba(249, 115, 22, 0.5);
+    border: 2px solid white;
+}
+
+.seat-btn.compact.selected:hover {
+    background: #ea580c;
+}
+
+/* Booked/Reserved seat */
+.seat-btn.compact.booked,
+.seat-btn.compact.reserved {
+    background: #475569;
+    opacity: 0.6;
+}
+
+.seat-btn.compact {
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .stadium-container {
+        max-width: 100%;
+    }
+
+    .field-label {
+        font-size: 0.75rem;
+    }
+
+    .section-title {
+        font-size: 0.625rem;
+    }
+
+    .north-section,
+    .south-section {
+        width: 75%;
+    }
+
+    .west-section,
+    .east-section {
+        width: 12%;
+    }
+
+    .seat-btn.compact {
+        width: 1.25rem;
+        height: 1.25rem;
+    }
+}
