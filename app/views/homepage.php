@@ -29,8 +29,8 @@ require_once __DIR__ . '/../../database/session_init.php';
         
         $eventController = new EventController($db);
         
-        // Get upcoming events (limit to 5 for the slider)
-        $upcomingEvents = $eventController->getUpcomingEvents(5);
+        // Get ALL upcoming events for the slider
+        $upcomingEvents = $eventController->getUpcomingEvents(100); // Changed from 5 to 100 to show all
         
         // Get entertainment categories (NEW - Add these lines)
         $entertainmentSubcategories = $eventController->getSubcategoriesByMainCategoryName('Entertainment');
@@ -65,7 +65,7 @@ require_once __DIR__ . '/../../database/session_init.php';
                                 <a href="allevents.php" class="btn primary"><span class="icon" aria-hidden="true">📅</span>View All Events</a>
                             </div>
                         </div>
-                        <div class="event-media" style="background-image: url('../../public/img/default-event.jpg'); background-position: center; background-size: cover;">
+                        <div class="event-media" style="background-image: url('https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=1200&auto=format&fit=crop'); background-position: center; background-size: cover;">
                             <span class="date-badge">Soon</span>
                         </div>
                     </article>
@@ -78,7 +78,7 @@ require_once __DIR__ . '/../../database/session_init.php';
                         $displayDate = $eventDate->format('M d | h:i A');
                         
                         // Default image if none provided
-                        $imageUrl = !empty($event['image']) ? $event['image'] : '../../public/img/default-event.jpg';
+                        $imageUrl = !empty($event['image']) ? $event['image'] : 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=1200&auto=format&fit=crop';
                         ?>
                         <article class="event-card" data-event data-event-id="<?php echo $event['id']; ?>">
                             <div class="event-content">
@@ -232,21 +232,6 @@ require_once __DIR__ . '/../../database/session_init.php';
     <script src="../../public/js/homepage.js"></script>
     <script src="../../public/js/navbar.js"></script>
     
-    <script>
-    // Update the viewCategory function to handle dynamic categories
-    function viewCategory(categoryId, categoryName) {
-        console.log(`Viewing category: ${categoryName} (ID: ${categoryId})`);
-        
-        // Redirect to category events page
-        // You can create a category-events.php page or use allevents.php with filter
-        window.location.href = `allevents.php?category=${categoryId}`;
-    }
-    
-    // Optional: Update existing JavaScript to work with dynamic categories
-    document.addEventListener('DOMContentLoaded', function() {
-        // Your existing homepage.js will still work
-        // The carousel controls will work with the new dynamic categories
-    });
-    </script>
+    <!-- viewCategory function is now in homepage.js -->
 </body>
 </html>

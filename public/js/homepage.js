@@ -151,6 +151,9 @@
     if (!track) return;
     const prev = document.getElementById('catPrev');
     const next = document.getElementById('catNext');
+    
+    // Check if buttons exist before adding listeners
+    if (!prev || !next) return;
 
     function scrollByCard(dir) {
         const card = track.querySelector('.cat-card');
@@ -168,6 +171,9 @@
     if (!track) return;
     const prev = document.getElementById('sportsPrev');
     const next = document.getElementById('sportsNext');
+    
+    // Check if buttons exist before adding listeners
+    if (!prev || !next) return;
 
     function scrollByCard(dir) {
         const card = track.querySelector('.cat-card');
@@ -180,21 +186,15 @@
 })();
 
 // Category view functionality
-function viewCategory(category) {
-    console.log(`Viewing category: ${category}`);
-    
-    // Handle specific category redirects
-    switch(category) {
-        case 'nightlife':
-            window.location.href = 'entertainment.php';
-            break;
-        case 'football':
-            window.location.href = 'sports.php';
-            break;
-        default:
-            // For other categories, show alert for now
-            alert(`Viewing ${category} events! This would typically redirect to a category page or show filtered events.`);
-            break;
+function viewCategory(subcategoryId, subcategoryName) {
+    // Redirect to all events page with subcategory filter
+    if (subcategoryId && subcategoryName) {
+        // Encode the subcategory name to handle special characters
+        const encodedName = encodeURIComponent(subcategoryName);
+        window.location.href = `allevents.php?subcategory=${encodedName}`;
+    } else {
+        // Fallback to all events without filter
+        window.location.href = 'allevents.php';
     }
 }
 

@@ -722,7 +722,7 @@ async function handleEditSubcategorySubmit(e) {
     
     const id = document.getElementById('edit-subcategory-id').value;
     const name = document.getElementById('edit-subcategory-name').value.trim();
-    const mainCategoryId = document.getElementById('edit-subcategory-main-category').value;
+    const mainCategoryId = document.getElementById('edit-subcategory-main-category-id').value;
     const status = document.getElementById('edit-subcategory-status').value;
     const existingImage = document.getElementById('edit-subcategory-existing-image').value;
     const imageInput = document.getElementById('edit-subcategory-image');

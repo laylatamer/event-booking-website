@@ -103,7 +103,7 @@ class EventController {
             $subcategories[] = [
                 'id' => $row['id'],
                 'name' => $row['name'],
-                'image_url' => $row['image_url'],
+                'image_url' => $row['image_url'], // Now includes image_url from database
                 'main_category' => $categoryName,
                 'event_count' => (int)$eventCount
             ];

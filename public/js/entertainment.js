@@ -98,6 +98,14 @@
     // --- UTILITY FUNCTIONS ---
 
     /**
+     * Get URL parameter value
+     */
+    function getUrlParameter(name) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(name);
+    }
+
+    /**
      * Format date for display
      */
     function formatEventDateForCard(dateString) {
@@ -484,6 +492,14 @@
         
         // Fetch events from API
         await fetchEntertainmentEvents();
+        
+        // Check for subcategory filter from URL
+        const subcategoryParam = getUrlParameter('subcategory');
+        if (subcategoryParam) {
+            // Decode and set the category filter
+            const decodedSubcategory = decodeURIComponent(subcategoryParam);
+            activeFilter.category = decodedSubcategory;
+        }
         
         // Initial render
         updateFilterButtonStyles();

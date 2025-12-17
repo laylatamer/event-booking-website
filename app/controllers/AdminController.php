@@ -61,7 +61,7 @@ class AdminController {
         return null;
     }
 
-    // Subcategories CRUD - UPDATED with image support
+    // Subcategories CRUD - with image support
     public function createSubcategory($data) {
         $this->subcategory->main_category_id = $data['main_category_id'];
         $this->subcategory->name = $data['name'];
