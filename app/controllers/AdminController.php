@@ -327,11 +327,15 @@ public function getAllEventsWithDetails() {
                      mc.name as main_category_name,
                      v.name as venue_name,
                      v.city as venue_city,
-                     v.capacity as venue_capacity
+                     v.capacity as venue_capacity,
+                     COALESCE(SUM(etc.total_tickets), e.total_tickets) as total_tickets,
+                     COALESCE(SUM(etc.available_tickets), e.available_tickets) as available_tickets
               FROM events e
               JOIN subcategories s ON e.subcategory_id = s.id
               JOIN main_categories mc ON s.main_category_id = mc.id
               JOIN venues v ON e.venue_id = v.id
+              LEFT JOIN event_ticket_categories etc ON e.id = etc.event_id
+              GROUP BY e.id
               ORDER BY e.date DESC";
     
     $stmt = $this->db->prepare($query);

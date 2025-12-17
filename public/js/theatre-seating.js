@@ -44,29 +44,25 @@ class TheatreSeatingManager {
             let category, price, categoryName;
 
             // Determine category based on row
-            // Theatre: vip → Gold, premium → Premium, regular → Regular
-            // Use actual category names from ticketCategories array (sorted by price DESC)
+            // Categories are sorted by price (ascending: lowest first, highest last)
+            // Front rows (A-C) should get highest price = last index
+            // Back rows (G-J) should get lowest price = first index
             if (rowIndex <= 2) {
-                category = 'vip'; // Maps to highest price category (Gold)
-                // Get the first category (highest price) - should be Gold
-                const gold = this.ticketCategories.find(cat => cat.category_name === 'Gold') || this.ticketCategories[0];
-                categoryName = gold?.category_name || 'Gold';
-                price = parseFloat(gold?.price || 0);
+                category = 'vip'; // Front rows = highest price (last in sorted array)
+                const highestPriceCat = this.ticketCategories[this.ticketCategories.length - 1] || this.ticketCategories[0];
+                categoryName = highestPriceCat?.category_name || 'VIP';
+                price = parseFloat(highestPriceCat?.price || 0);
             } else if (rowIndex <= 5) {
-                category = 'premium'; // Maps to middle price category (Premium)
-                // Get the second category or Premium
-                const premium = this.ticketCategories.find(cat => cat.category_name === 'Premium') || 
-                               (this.ticketCategories.length > 1 ? this.ticketCategories[1] : this.ticketCategories[0]);
-                categoryName = premium?.category_name || 'Premium';
-                price = parseFloat(premium?.price || 0);
+                category = 'premium'; // Middle rows = middle price
+                const middleIndex = Math.floor(this.ticketCategories.length / 2);
+                const middlePriceCat = this.ticketCategories[middleIndex] || this.ticketCategories[0];
+                categoryName = middlePriceCat?.category_name || 'Premium';
+                price = parseFloat(middlePriceCat?.price || 0);
             } else {
-                category = 'regular'; // Maps to lowest price category (Regular)
-                // Get the third category or Regular
-                const regular = this.ticketCategories.find(cat => cat.category_name === 'Regular') || 
-                               (this.ticketCategories.length > 2 ? this.ticketCategories[2] : 
-                                this.ticketCategories.length > 1 ? this.ticketCategories[1] : this.ticketCategories[0]);
-                categoryName = regular?.category_name || 'Regular';
-                price = parseFloat(regular?.price || 0);
+                category = 'regular'; // Back rows = lowest price (first in sorted array)
+                const lowestPriceCat = this.ticketCategories[0];
+                categoryName = lowestPriceCat?.category_name || 'Regular';
+                price = parseFloat(lowestPriceCat?.price || 0);
             }
             
             // Ensure we have ticket categories

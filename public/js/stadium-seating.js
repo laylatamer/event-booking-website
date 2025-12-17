@@ -30,29 +30,25 @@ class StadiumSeatingManager {
                 let category, price, categoryName;
 
                 // Map rows to ticket categories
-                // Stadium: vip → Cat1, premium → Cat2, regular → Cat3
-                // Use actual category names from ticketCategories array (sorted by price DESC)
+                // Categories are sorted by price (ascending: lowest first, highest last)
+                // Front rows (1-2) should get highest price = last index
+                // Back rows (6+) should get lowest price = first index
                 if (rowNum <= 2) {
-                    category = 'vip'; // Maps to highest price category (Cat1)
-                    // Get the first category (highest price) - should be Cat1
-                    const cat1 = this.ticketCategories.find(cat => cat.category_name === 'Cat1') || this.ticketCategories[0];
-                    categoryName = cat1?.category_name || 'Cat1';
-                    price = parseFloat(cat1?.price || 0);
+                    category = 'vip'; // Front rows = highest price (last in sorted array)
+                    const highestPriceCat = this.ticketCategories[this.ticketCategories.length - 1] || this.ticketCategories[0];
+                    categoryName = highestPriceCat?.category_name || 'Cat1';
+                    price = parseFloat(highestPriceCat?.price || 0);
                 } else if (rowNum <= 5) {
-                    category = 'premium'; // Maps to middle price category (Cat2)
-                    // Get the second category or Cat2
-                    const cat2 = this.ticketCategories.find(cat => cat.category_name === 'Cat2') || 
-                                (this.ticketCategories.length > 1 ? this.ticketCategories[1] : this.ticketCategories[0]);
-                    categoryName = cat2?.category_name || 'Cat2';
-                    price = parseFloat(cat2?.price || 0);
+                    category = 'premium'; // Middle rows = middle price
+                    const middleIndex = Math.floor(this.ticketCategories.length / 2);
+                    const middlePriceCat = this.ticketCategories[middleIndex] || this.ticketCategories[0];
+                    categoryName = middlePriceCat?.category_name || 'Cat2';
+                    price = parseFloat(middlePriceCat?.price || 0);
                 } else {
-                    category = 'regular'; // Maps to lowest price category (Cat3)
-                    // Get the third category or Cat3
-                    const cat3 = this.ticketCategories.find(cat => cat.category_name === 'Cat3') || 
-                                (this.ticketCategories.length > 2 ? this.ticketCategories[2] : 
-                                 this.ticketCategories.length > 1 ? this.ticketCategories[1] : this.ticketCategories[0]);
-                    categoryName = cat3?.category_name || 'Cat3';
-                    price = parseFloat(cat3?.price || 0);
+                    category = 'regular'; // Back rows = lowest price (first in sorted array)
+                    const lowestPriceCat = this.ticketCategories[0];
+                    categoryName = lowestPriceCat?.category_name || 'Cat3';
+                    price = parseFloat(lowestPriceCat?.price || 0);
                 }
                 
                 // Ensure we have ticket categories

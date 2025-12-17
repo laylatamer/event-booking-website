@@ -25,6 +25,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const minTickets = eventData.minTickets || 1;
     const maxTickets = eventData.maxTickets || 10;
 
+    console.log('Booking Page Initialized');
+    console.log('Venue Seating Type:', venueSeatingType);
+    console.log('Ticket Categories:', ticketCategories);
+
     // Fixed fee per ticket
     const fixedFeePerTicket = 5.99;
 
@@ -277,7 +281,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
                 }, 200);
-            } else if (venueSeatingType === 'theatre' || venueSeatingType === 'standing') {
+            } else if (venueSeatingType === 'standing') {
+                // Standing layout uses simple quantity selection
+                switchSeatingLayout('standing');
+                initializeStandingLayout();
+            } else if (venueSeatingType === 'theatre') {
                 // First switch the layout to show theatre
                 switchSeatingLayout('theatre');
                 
@@ -359,28 +367,27 @@ document.addEventListener('DOMContentLoaded', () => {
         // Toggle Visibility
         const theatreLayout = document.getElementById('layout-theatre');
         const stadiumLayout = document.getElementById('layout-stadium');
+        const standingLayout = document.getElementById('layout-standing');
         
         console.log('Theatre layout element:', theatreLayout);
         console.log('Stadium layout element:', stadiumLayout);
+        console.log('Standing layout element:', standingLayout);
         
-        if (newLayout === 'theatre') {
-            if (theatreLayout) {
-                theatreLayout.classList.remove('hidden');
-                console.log('Theatre layout shown');
-            }
-            if (stadiumLayout) {
-                stadiumLayout.classList.add('hidden');
-                console.log('Stadium layout hidden');
-            }
-        } else if (newLayout === 'stadium') {
-            if (theatreLayout) {
-                theatreLayout.classList.add('hidden');
-                console.log('Theatre layout hidden');
-            }
-            if (stadiumLayout) {
-                stadiumLayout.classList.remove('hidden');
-                console.log('Stadium layout shown');
-            }
+        // Hide all layouts first
+        if (theatreLayout) theatreLayout.classList.add('hidden');
+        if (stadiumLayout) stadiumLayout.classList.add('hidden');
+        if (standingLayout) standingLayout.classList.add('hidden');
+        
+        // Show the selected layout
+        if (newLayout === 'theatre' && theatreLayout) {
+            theatreLayout.classList.remove('hidden');
+            console.log('Theatre layout shown');
+        } else if (newLayout === 'stadium' && stadiumLayout) {
+            stadiumLayout.classList.remove('hidden');
+            console.log('Stadium layout shown');
+        } else if (newLayout === 'standing' && standingLayout) {
+            standingLayout.classList.remove('hidden');
+            console.log('Standing layout shown');
         }
         
         // Update Button Styles
@@ -394,6 +401,92 @@ document.addEventListener('DOMContentLoaded', () => {
                 btn.classList.add('text-gray-400', 'hover:bg-gray-700', 'hover:text-white');
             }
         });
+    }
+
+    // --------------------------------------------------------
+    // STANDING LAYOUT: Quantity Selection
+    // --------------------------------------------------------
+    function initializeStandingLayout() {
+        const standingSummary = document.getElementById('standing-summary');
+        const standingTotal = document.getElementById('standing-total');
+        
+        // Handle quantity buttons
+        document.querySelectorAll('.standing-qty-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const categoryName = btn.getAttribute('data-category');
+                const action = btn.getAttribute('data-action');
+                const input = document.querySelector(`.standing-qty-input[data-category="${categoryName}"]`);
+                
+                if (!input) return;
+                
+                let currentQty = parseInt(input.value) || 0;
+                const maxQty = parseInt(input.getAttribute('max')) || 10;
+                
+                if (action === 'increase' && currentQty < maxQty) {
+                    currentQty++;
+                } else if (action === 'decrease' && currentQty > 0) {
+                    currentQty--;
+                }
+                
+                input.value = currentQty;
+                
+                // Update selectedTickets
+                selectedTickets[categoryName] = currentQty;
+                
+                // Update checkout total (global function)
+                updateCheckoutTotal();
+                
+                // Update standing summary
+                updateStandingSummary();
+            });
+        });
+        
+        // Handle direct input changes
+        document.querySelectorAll('.standing-qty-input').forEach(input => {
+            input.addEventListener('input', () => {
+                const categoryName = input.getAttribute('data-category');
+                let qty = parseInt(input.value) || 0;
+                const maxQty = parseInt(input.getAttribute('max')) || 10;
+                
+                // Enforce limits
+                if (qty < 0) qty = 0;
+                if (qty > maxQty) qty = maxQty;
+                
+                input.value = qty;
+                selectedTickets[categoryName] = qty;
+                
+                updateCheckoutTotal();
+                updateStandingSummary();
+            });
+        });
+        
+        function updateStandingSummary() {
+            let summaryHTML = '';
+            let total = 0;
+            let hasTickets = false;
+            
+            ticketCategories.forEach(category => {
+                const qty = selectedTickets[category.category_name] || 0;
+                if (qty > 0) {
+                    hasTickets = true;
+                    const subtotal = qty * parseFloat(category.price);
+                    total += subtotal;
+                    summaryHTML += `
+                        <div class="flex justify-between text-sm">
+                            <span>${qty}x ${category.category_name}</span>
+                            <span>$${subtotal.toFixed(2)}</span>
+                        </div>
+                    `;
+                }
+            });
+            
+            if (!hasTickets) {
+                summaryHTML = '<p class="text-center text-gray-500">No tickets selected yet</p>';
+            }
+            
+            if (standingSummary) standingSummary.innerHTML = summaryHTML;
+            if (standingTotal) standingTotal.textContent = `$${total.toFixed(2)}`;
+        }
     }
 
     // Handle category selection in seating modal

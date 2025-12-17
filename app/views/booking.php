@@ -30,6 +30,11 @@ try {
         while ($row = $ticketCategoriesStmt->fetch(PDO::FETCH_ASSOC)) {
             $ticketCategories[] = $row;
         }
+        
+        // Sort ticket categories by price (ascending - lowest first)
+        usort($ticketCategories, function($a, $b) {
+            return floatval($a['price']) <=> floatval($b['price']);
+        });
     } catch (Exception $e) {
         error_log("Error fetching ticket categories: " . $e->getMessage());
         $ticketCategories = [];
@@ -460,7 +465,7 @@ include 'partials/header.php';
             <div class="p-0">
                 <div id="seating-map-views">
 
-                    <div id="layout-theatre" class="seating-layout-view <?php echo ($venueSeatingType === 'theatre' || $venueSeatingType === 'standing') ? '' : 'hidden'; ?>">
+                    <div id="layout-theatre" class="seating-layout-view <?php echo $venueSeatingType === 'theatre' ? '' : 'hidden'; ?>">
                         <div id="seating-builder-container" class="bg-gray-900 rounded-xl p-8 shadow-inner">
                             <div class="seating-map-area">
                                 <!-- Stage -->
@@ -513,6 +518,95 @@ include 'partials/header.php';
                             </div>
                         </div>
                     </div>
+
+                    <!-- Standing/General Admission Layout -->
+                    <div id="layout-standing" class="seating-layout-view <?php echo $venueSeatingType === 'standing' ? '' : 'hidden'; ?>">
+                        <div class="bg-gray-900 rounded-xl p-8 shadow-inner">
+                            <div class="max-w-2xl mx-auto">
+                                <div class="text-center mb-8">
+                                    <h3 class="text-2xl font-bold text-orange-400 mb-2">General Admission / Standing</h3>
+                                    <p class="text-gray-400">Select the number of tickets you want for each category</p>
+                                </div>
+
+                                <div id="standing-categories" class="space-y-6">
+                                    <?php if (!empty($ticketCategories)): ?>
+                                        <?php foreach ($ticketCategories as $index => $category): 
+                                            // Map category names to badge classes
+                                            $badgeClass = 'regular';
+                                            $bgColor = 'bg-orange-300';
+                                            if (in_array($category['category_name'], ['Gold', 'VIP', 'Golden Circle'])) {
+                                                $badgeClass = 'vip';
+                                                $bgColor = 'bg-orange-500';
+                                            } elseif (in_array($category['category_name'], ['Premium', 'Fanpit'])) {
+                                                $badgeClass = 'premium';
+                                                $bgColor = 'bg-orange-400';
+                                            }
+                                        ?>
+                                        <div class="standing-category-card bg-gray-800 rounded-lg p-6 border-2 border-gray-700 hover:border-orange-500 transition-all">
+                                            <div class="flex items-center justify-between mb-4">
+                                                <div class="flex items-center space-x-3">
+                                                    <div class="legend-badge <?php echo $badgeClass; ?> w-4 h-4"></div>
+                                                    <div>
+                                                        <h4 class="text-xl font-bold text-white"><?php echo htmlspecialchars($category['category_name']); ?></h4>
+                                                        <p class="text-sm text-gray-400"><?php echo $category['available_tickets']; ?> tickets available</p>
+                                                    </div>
+                                                </div>
+                                                <div class="text-right">
+                                                    <p class="text-2xl font-bold text-orange-400">$<?php echo number_format($category['price'], 2); ?></p>
+                                                    <p class="text-xs text-gray-400">per ticket</p>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="flex items-center justify-between bg-gray-900 rounded-lg p-4">
+                                                <label class="text-sm font-medium text-gray-300">Number of Tickets:</label>
+                                                <div class="flex items-center space-x-4">
+                                                    <button type="button" 
+                                                            class="standing-qty-btn decrease w-10 h-10 rounded-full bg-gray-700 hover:bg-orange-600 text-white font-bold transition-colors"
+                                                            data-category="<?php echo htmlspecialchars($category['category_name']); ?>"
+                                                            data-action="decrease">
+                                                        −
+                                                    </button>
+                                                    <input type="number" 
+                                                           class="standing-qty-input w-20 text-center bg-gray-800 border-2 border-gray-600 rounded-lg text-white font-bold text-lg py-2"
+                                                           data-category="<?php echo htmlspecialchars($category['category_name']); ?>"
+                                                           data-price="<?php echo $category['price']; ?>"
+                                                           data-max="<?php echo $category['available_tickets']; ?>"
+                                                           value="0"
+                                                           min="0"
+                                                           max="<?php echo min($category['available_tickets'], $event['max_tickets_per_booking'] ?? 10); ?>"
+                                                           readonly>
+                                                    <button type="button" 
+                                                            class="standing-qty-btn increase w-10 h-10 rounded-full bg-gray-700 hover:bg-orange-600 text-white font-bold transition-colors"
+                                                            data-category="<?php echo htmlspecialchars($category['category_name']); ?>"
+                                                            data-action="increase">
+                                                        +
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <div class="text-center text-gray-400 py-12">
+                                            <p>No ticket categories available for this event.</p>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+
+                                <!-- Summary for Standing -->
+                                <div class="mt-8 p-6 bg-gray-800 rounded-lg border-2 border-orange-500">
+                                    <h4 class="text-lg font-bold text-white mb-4">Your Selection</h4>
+                                    <div id="standing-summary" class="space-y-2 text-gray-300">
+                                        <p class="text-center text-gray-500">No tickets selected yet</p>
+                                    </div>
+                                    <div class="mt-4 pt-4 border-t border-gray-700 flex justify-between items-center">
+                                        <span class="text-lg font-semibold">Total:</span>
+                                        <span id="standing-total" class="text-2xl font-bold text-orange-400">$0.00</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div id="layout-stadium" class="seating-layout-view <?php echo $venueSeatingType === 'stadium' ? '' : 'hidden'; ?>">
                         <div id="stadium-builder-container" class="bg-gray-900 rounded-xl p-8 shadow-inner">
                             <div class="seating-map-area">
