@@ -243,7 +243,7 @@ include 'partials/header.php';
         });
     </script>
     
-    <script type="module" src="../../public/js/entertainment.js"></script>
+    <script type="module" src="../../public/js/entertainment.js?v=2"></script>
     <?php
     include 'partials/footer.php';
     ?>

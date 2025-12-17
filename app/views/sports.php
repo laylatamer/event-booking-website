@@ -248,7 +248,7 @@ include 'includes/header.php';
         });
     </script>
     
-    <script type="module" src="../../public/js/sports.js"></script>
+    <script type="module" src="../../public/js/sports.js?v=2"></script>
     <?php
     include 'partials/footer.php';
     ?>

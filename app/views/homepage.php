@@ -229,7 +229,7 @@ require_once __DIR__ . '/../../database/session_init.php';
     include 'partials/footer.php';
     ?>
     
-    <script src="../../public/js/homepage.js"></script>
+    <script src="../../public/js/homepage.js?v=2"></script>
     <script src="../../public/js/navbar.js"></script>
     
     <!-- viewCategory function is now in homepage.js -->
