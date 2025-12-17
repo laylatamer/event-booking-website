@@ -100,6 +100,45 @@ class TicketReservation {
         $stmt->bindParam(":session_id", $sessionId);
         return $stmt->execute();
     }
+
+    /**
+     * Extend expiration time for reservations that are in the checkout flow
+     * This prevents reservations from expiring while user is actively checking out
+     */
+    public function extendExpirationForReservations($reservationIds, $additionalMinutes = 30) {
+        if (empty($reservationIds)) {
+            return false;
+        }
+        
+        // Convert to array if string
+        if (is_string($reservationIds)) {
+            $reservationIds = explode(',', $reservationIds);
+            $reservationIds = array_map('trim', $reservationIds);
+            $reservationIds = array_filter($reservationIds);
+            $reservationIds = array_map('intval', $reservationIds);
+        }
+        
+        if (empty($reservationIds)) {
+            return false;
+        }
+        
+        $placeholders = str_repeat('?,', count($reservationIds) - 1) . '?';
+        $newExpiresAt = date('Y-m-d H:i:s', strtotime("+$additionalMinutes minutes"));
+        
+        // Reactivate expired reservations and extend expiration
+        $query = "UPDATE " . $this->table_name . "
+                SET status = 'reserved',
+                    expires_at = ?
+                WHERE id IN ($placeholders)
+                AND (status = 'reserved' OR status = 'expired')";
+        
+        $stmt = $this->conn->prepare($query);
+        
+        // Execute with parameters: expires_at first, then reservation IDs
+        $params = array_merge([$newExpiresAt], $reservationIds);
+        
+        return $stmt->execute($params);
+    }
 }
 ?>
 

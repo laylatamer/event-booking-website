@@ -108,6 +108,25 @@ try {
         
         $response = ['success' => true, 'reservations' => $reservations];
     }
+    elseif ($method === 'GET' && $action === 'getReservation') {
+        // Get a single reservation by ID
+        $reservationId = $_GET['id'] ?? 0;
+        
+        if ($reservationId) {
+            $query = "SELECT * FROM ticket_reservations WHERE id = ?";
+            $stmt = $pdo->prepare($query);
+            $stmt->execute([$reservationId]);
+            $reservationData = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($reservationData) {
+                $response = ['success' => true, 'reservation' => $reservationData];
+            } else {
+                $response = ['success' => false, 'message' => 'Reservation not found'];
+            }
+        } else {
+            $response = ['success' => false, 'message' => 'Reservation ID required'];
+        }
+    }
     elseif ($method === 'POST' && $action === 'confirm') {
         // Confirm reservation (convert to booking)
         $reservationId = $_POST['reservation_id'] ?? 0;

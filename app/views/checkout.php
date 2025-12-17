@@ -1,9 +1,22 @@
 <?php
 // Start session
 require_once __DIR__ . '/../../database/session_init.php';
+require_once __DIR__ . '/../../config/db_connect.php';
+require_once __DIR__ . '/../../app/models/TicketReservation.php';
 
 // Require login for checkout
 requireLogin();
+
+// Extend expiration for reservations in checkout flow
+$reservationIds = $_GET['reservations'] ?? $_GET['reservation_ids'] ?? null;
+if ($reservationIds) {
+    $database = new Database();
+    $db = $database->getConnection();
+    $reservation = new TicketReservation($db);
+    
+    // Extend expiration by 30 minutes when user reaches checkout
+    $reservation->extendExpirationForReservations($reservationIds, 30);
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -78,6 +91,43 @@ requireLogin();
                                 <label class="chk-floating-label">Phone Number</label>
                                 <span class="chk-form-field__error" id="phoneError"></span>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Ticket Customization Card -->
+                    <div class="chk-order-summary-card" style="background: linear-gradient(135deg, rgba(249, 115, 22, 0.1), rgba(234, 88, 12, 0.05)); border: 2px solid rgba(249, 115, 22, 0.3);">
+                        <h2 class="chk-card-header" style="color: #f97316;">
+                            🎟️ Customize Your Physical Tickets
+                        </h2>
+                        <div style="padding: 0 20px 20px;">
+                            <p style="margin-bottom: 15px; color: #9ca3af; line-height: 1.6;">
+                                Make your event tickets special! Add personalized names to your physical tickets for just <strong style="color: #f97316;">$9.99 per ticket</strong>. 
+                                Perfect for gifts or group bookings!
+                            </p>
+                            <button 
+                                id="customize-tickets-btn"
+                                onclick="goToCustomization()"
+                                style="
+                                    width: 100%;
+                                    padding: 15px;
+                                    background: linear-gradient(135deg, #f97316, #ea580c);
+                                    color: white;
+                                    border: none;
+                                    border-radius: 8px;
+                                    font-size: 1.1rem;
+                                    font-weight: 600;
+                                    cursor: pointer;
+                                    transition: all 0.3s;
+                                    box-shadow: 0 4px 15px rgba(249, 115, 22, 0.3);
+                                "
+                                onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(249, 115, 22, 0.4)'"
+                                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(249, 115, 22, 0.3)'"
+                            >
+                                ✨ Customize Your Tickets
+                            </button>
+                            <p style="margin-top: 10px; font-size: 0.85rem; color: #6b7280; text-align: center;">
+                                You can customize up to <strong id="total-tickets-available">0</strong> ticket(s)
+                            </p>
                         </div>
                     </div>
                 </div>

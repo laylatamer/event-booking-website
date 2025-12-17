@@ -6,22 +6,14 @@ let subcategories = [];
 let isInitialized = false;
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded, checking for categories section...');
-    console.log('API Base URL:', API_BASE_URL);
-    
     const categoriesSection = document.getElementById('categories-section');
     if (categoriesSection) {
-        console.log('Categories section found, initializing...');
         initializeCategories();
-    } else {
-        console.log('Categories section not found on this page');
     }
 });
 
 function initializeCategories() {
     if (isInitialized) return;
-    
-    console.log('Initializing categories...');
     
     // Setup modal handling
     setupModalHandling();
@@ -39,8 +31,6 @@ function initializeCategories() {
 }
 
 function setupModalHandling() {
-    console.log('Setting up modal handling...');
-    
     // Close modal when clicking X or cancel button
     document.addEventListener('click', function(e) {
         // Handle close buttons
@@ -48,7 +38,6 @@ function setupModalHandling() {
             const btn = e.target.closest('.close-modal');
             const modalName = btn.getAttribute('data-modal');
             if (modalName) {
-                console.log('Closing modal:', modalName);
                 closeModal(`${modalName}-modal`);
             }
         }
@@ -58,29 +47,24 @@ function setupModalHandling() {
             const btn = e.target.closest('.secondary-btn[data-modal]');
             const modalName = btn.getAttribute('data-modal');
             if (modalName) {
-                console.log('Closing modal via cancel:', modalName);
                 closeModal(`${modalName}-modal`);
             }
         }
         
         // Close modal when clicking outside
         if (e.target.classList.contains('modal')) {
-            console.log('Closing modal by clicking outside');
             e.target.classList.add('hidden');
         }
     });
 }
 
 function setupEventListeners() {
-    console.log('Setting up event listeners...');
-    
     // Use event delegation for dynamic content
     document.addEventListener('click', function(e) {
         // Add subcategory buttons
         if (e.target.closest('.add-subcategory-btn')) {
             e.preventDefault();
             const btn = e.target.closest('.add-subcategory-btn');
-            console.log('Add subcategory button clicked');
             handleAddSubcategoryClick(btn);
         }
         
@@ -89,7 +73,6 @@ function setupEventListeners() {
             e.preventDefault();
             const btn = e.target.closest('.edit-subcategory');
             const subcategoryId = parseInt(btn.getAttribute('data-id'));
-            console.log('Edit subcategory clicked:', subcategoryId);
             editSubcategory(subcategoryId);
         }
         
@@ -98,7 +81,6 @@ function setupEventListeners() {
             e.preventDefault();
             const btn = e.target.closest('.delete-subcategory');
             const subcategoryId = parseInt(btn.getAttribute('data-id'));
-            console.log('Delete subcategory clicked:', subcategoryId);
             deleteSubcategory(subcategoryId);
         }
     });
@@ -108,7 +90,6 @@ function setupEventListeners() {
     if (addSubcategoryForm) {
         addSubcategoryForm.addEventListener('submit', function(e) {
             e.preventDefault();
-            console.log('Add subcategory form submitted');
             handleAddSubcategorySubmit(e);
         });
     } else {
@@ -920,52 +901,3 @@ function showConfirmation(message, callback) {
         }
     }
 }
-
-// Debug function to check modals
-function debugModals() {
-    console.log('=== DEBUG: Available Modals ===');
-    const modals = document.querySelectorAll('.modal');
-    modals.forEach(modal => {
-        console.log(`Modal ID: ${modal.id}, Hidden: ${modal.classList.contains('hidden')}`);
-    });
-    console.log('===============================');
-}
-
-// Path testing function from old code
-async function testApiConnection() {
-    console.log('Testing API connection...');
-    
-    // Try different paths
-    const testPaths = [
-        'api/categories_API.php',
-        './api/categories_API.php',
-        '../api/categories_API.php',
-        '/event-booking-website/public/api/categories_API.php'
-    ];
-    
-    for (const path of testPaths) {
-        try {
-            console.log(`Trying path: ${path}`);
-            const response = await fetch(`${path}?action=getAll`);
-            console.log(`Path ${path}: Status ${response.status}, OK: ${response.ok}`);
-            
-            if (response.ok) {
-                const text = await response.text();
-                console.log(`Path ${path}: Response (first 200 chars):`, text.substring(0, 200));
-                return path;
-            }
-        } catch (error) {
-            console.log(`Path ${path}: Error:`, error.message);
-        }
-    }
-    
-    console.error('No API path worked!');
-    return null;
-}
-
-// Make functions available globally if needed
-window.debugModals = debugModals;
-window.testApiConnection = testApiConnection;
-
-// Optional: Expose subcategories for debugging
-window.subcategories = subcategories;

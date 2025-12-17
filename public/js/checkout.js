@@ -11,51 +11,103 @@ VANTA.NET({
 // Initialize feather icons
 feather.replace();
 
-// IMPORTANT: Event data MUST match your event_data.php
-// In a real app, fetch this from the server. For now, copy it.
-const events = [
-    { id: 1, title: "Summer Music Festival 2023", description: "...", price: 89.99, date: "2023-08-15T18:00:00", location: "Central Park, NYC" },
-    { id: 2, title: "Tech Conference 2023", description: "...", price: 199.99, date: "2023-09-22T09:00:00", location: "Convention Center, SF" },
-    // === ADD EVENT 3 HERE ===
-    { id: 3, title: "Your Event Title for ID 3", description: "Event 3 description", price: 50.00, date: "2023-11-10T20:00:00", location: "Some Venue" },
-    // === ADD ANY OTHER EVENTS HERE ===
-];
-
 // Read 'eventId' and 'quantity' parameters from the current page's URL
 const urlParams = new URLSearchParams(window.location.search);
-const urlEventId = parseInt(urlParams.get('eventId')); // Get 'eventId'
-const urlQuantity = parseInt(urlParams.get('quantity')); // Get 'quantity'
-
-// Find the event details in the 'events' array using the ID from the URL
-const currentEvent = events.find(e => e.id === urlEventId);
+// Support both 'eventId' and 'event_id' formats
+const urlEventId = parseInt(urlParams.get('eventId') || urlParams.get('event_id'));
+// Support both 'quantity' and 'reservations' formats
+const reservationsParam = urlParams.get('reservations');
 
 // Initialize orderItems as an empty array
 let orderItems = [];
+let events = []; // Will be populated from API
 // Initialize default date/time variables (will be updated if event found)
 let formattedDate = 'N/A';
 let formattedTime = 'N/A';
 
-// Check if we found a valid event AND a valid quantity from the URL
-if (currentEvent && urlQuantity > 0) {
-    // If yes, create the orderItems array with the event from the URL
-     orderItems = [
-         {
-             eventId: currentEvent.id,       // Use the ID from the URL
-             quantity: urlQuantity,          // Use the quantity from the URL
-             ticketType: "Standard Ticket"   // Set a default ticket type
-         }
-    ];
-    // Also format the date/time for the specific event found
-     const eventDate = new Date(currentEvent.date);
-     formattedDate = eventDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-     formattedTime = eventDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-
-} else {
-    // If no valid eventId or quantity was in the URL, log an error
-    console.error("Event ID or quantity missing/invalid in URL. Order cannot be created.");
-    // You could also display an error message to the user here using showNoticeModal
-    // showNoticeModal('Error', 'Could not load order details. Please return to the event page.');
+// Fetch real event data from API and initialize order
+async function initializeCheckout() {
+    try {
+        // Fetch event data from API
+        if (urlEventId) {
+            const response = await fetch(`../../public/api/events_API.php?action=getEvent&id=${urlEventId}`);
+            const data = await response.json();
+            
+            if (data.success && data.event) {
+                const currentEvent = data.event;
+                const ticketCategories = data.event.ticket_categories || [];
+                
+                // Get average or base price from ticket categories
+                let basePrice = 0;
+                if (ticketCategories.length > 0) {
+                    // Use the average price of all categories
+                    const totalPrice = ticketCategories.reduce((sum, cat) => sum + parseFloat(cat.price), 0);
+                    basePrice = totalPrice / ticketCategories.length;
+                } else {
+                    basePrice = 50.00; // Fallback price
+                }
+                
+                // Add price to event object
+                currentEvent.price = basePrice;
+                currentEvent.location = currentEvent.location || currentEvent.venue || 'TBA';
+                events = [currentEvent]; // Add to events array
+                
+                // Calculate quantity from reservations
+                let urlQuantity = parseInt(urlParams.get('quantity'));
+                if (!urlQuantity && reservationsParam) {
+                    // Fetch actual quantities from each reservation
+                    const reservationIds = reservationsParam.split(',').filter(id => id.trim());
+                    urlQuantity = 0;
+                    
+                    for (const resId of reservationIds) {
+                        const resResponse = await fetch(`../../public/api/ticket_reservations.php?action=getReservation&id=${resId}`);
+                        if (resResponse.ok) {
+                            const resData = await resResponse.json();
+                            if (resData.success && resData.reservation) {
+                                urlQuantity += parseInt(resData.reservation.quantity) || 0;
+                            }
+                        }
+                    }
+                }
+                
+                if (urlQuantity > 0) {
+                    // Create order items
+                    orderItems = [{
+                        eventId: currentEvent.id,
+                        quantity: urlQuantity,
+                        ticketType: "Standard Ticket"
+                    }];
+                    
+                    // Format date/time
+                    const eventDate = new Date(currentEvent.date);
+                    formattedDate = eventDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                    formattedTime = eventDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                    
+                    // Render the page
+                    renderOrderItems();
+                    calculateTotals();
+                    setupEventListeners();
+                    setupInputHighlights();
+                    
+                    // Update ticket customization count
+                    setTimeout(updateTicketsAvailable, 100);
+                    setTimeout(updateTicketsAvailable, 500);
+                } else {
+                    console.error("No valid quantity found for reservations");
+                }
+            } else {
+                console.error("Failed to load event data");
+            }
+        } else {
+            console.error("No event ID in URL");
+        }
+    } catch (error) {
+        console.error("Error initializing checkout:", error);
+    }
 }
+
+// Call initialization
+initializeCheckout();
 
 
 // --- Helper functions for validation ---
@@ -85,13 +137,7 @@ function clearErrors() {
     });
 }
 
-// --- Initialize the page ---
-document.addEventListener('DOMContentLoaded', function() {
-    renderOrderItems();
-    calculateTotals();
-    setupEventListeners();
-    setupInputHighlights();
-});
+// --- Page initialization is now handled by initializeCheckout() function above ---
 
 // Set up input highlight effects
 function setupInputHighlights() {
@@ -178,6 +224,11 @@ function renderOrderItems() {
             decreaseQuantity(eventId);
         });
     });
+    
+    // Update ticket customization count after rendering
+    if (typeof updateTicketsAvailable === 'function') {
+        updateTicketsAvailable();
+    }
 }
 
 
@@ -230,6 +281,10 @@ function increaseQuantity(eventId) {
         // Re-run the functions to update the display and totals
         renderOrderItems();
         calculateTotals();
+        // Update ticket customization count
+        if (typeof updateTicketsAvailable === 'function') {
+            updateTicketsAvailable();
+        }
     }
 }
 
@@ -244,6 +299,10 @@ function decreaseQuantity(eventId) {
         // Re-run the functions to update the display and totals
         renderOrderItems();
         calculateTotals();
+        // Update ticket customization count
+        if (typeof updateTicketsAvailable === 'function') {
+            updateTicketsAvailable();
+        }
     }
     // Optional: Add logic here if you want to remove item if quantity becomes 0
     // else if (item && item.quantity === 1) { /* Remove item logic */ }
@@ -741,4 +800,127 @@ function showConfetti() {
         // Remove the element after animation finishes
         animation.onfinish = () => confetti.remove();
     }
+}
+
+// ============================================
+// Ticket Customization Function
+// ============================================
+window.goToCustomization = function() {
+    // Get event ID from multiple sources
+    let eventId = null;
+    
+    // Try URL parameters first
+    const urlParams = new URLSearchParams(window.location.search);
+    eventId = parseInt(urlParams.get('eventId') || urlParams.get('event_id'));
+    
+    // Fallback to other sources
+    if (!eventId) {
+        eventId = window.reservationData?.eventId || 
+                  sessionStorage.getItem('eventId') ||
+                  (typeof urlEventId !== 'undefined' ? urlEventId : null);
+    }
+    
+    // Get total tickets
+    const totalTickets = getTotalTicketsCount();
+    
+    // Get reservation IDs from URL (comma-separated)
+    const reservationIds = urlParams.get('reservations') || 
+                          urlParams.get('reservation_ids') ||
+                          sessionStorage.getItem('temp_reservation_ids') ||
+                          null;
+    
+    // Get single reservation ID if no multiple IDs
+    const reservationId = urlParams.get('reservation_id') ||
+                         window.reservationData?.reservationId || 
+                         sessionStorage.getItem('temp_reservation_id') ||
+                         null;
+    
+    if (!eventId || totalTickets === 0) {
+        alert('⚠️ No tickets found. Please add tickets to your cart first.\n\nEvent ID: ' + (eventId || 'missing') + '\nTickets: ' + totalTickets);
+        return;
+    }
+    
+    // Store data in session for customize page
+    sessionStorage.setItem('temp_event_id', eventId);
+    sessionStorage.setItem('temp_tickets', totalTickets);
+    if (reservationIds) {
+        sessionStorage.setItem('temp_reservation_ids', reservationIds);
+    } else if (reservationId) {
+        sessionStorage.setItem('temp_reservation_id', reservationId);
+    }
+    
+    // Build URL with reservation IDs
+    let redirectUrl = `customize_tickets.php?event_id=${eventId}&tickets=${totalTickets}`;
+    if (reservationIds) {
+        redirectUrl += `&reservation_ids=${encodeURIComponent(reservationIds)}`;
+    } else if (reservationId) {
+        redirectUrl += `&reservation_id=${reservationId}`;
+    }
+    
+    // Redirect to customization page
+    window.location.href = redirectUrl;
+}
+
+// Helper function to get total tickets count
+function getTotalTicketsCount() {
+    let total = 0;
+    
+    // Method 1: Get from orderItems array (most reliable)
+    if (typeof orderItems !== 'undefined' && Array.isArray(orderItems)) {
+        orderItems.forEach(item => {
+            total += item.quantity || 0;
+        });
+        if (total > 0) return total;
+    }
+    
+    // Method 2: Get from DOM (after page renders - most reliable for reservation mode)
+    const orderItemElements = document.querySelectorAll('.chk-quantity-control__display');
+    if (orderItemElements.length > 0) {
+        orderItemElements.forEach(item => {
+            const text = item.textContent || '';
+            const qty = parseInt(text.replace(/[^0-9]/g, '')) || 0;
+            total += qty;
+        });
+        if (total > 0) return total;
+    }
+    
+    // Method 3: Get from URL parameters (fallback for direct links)
+    const urlParams = new URLSearchParams(window.location.search);
+    let urlQuantity = parseInt(urlParams.get('quantity'));
+    
+    if (urlQuantity && urlQuantity > 0) {
+        return urlQuantity;
+    }
+    
+    // If all else fails, return 0
+    return total;
+}
+
+// Update total tickets display
+function updateTicketsAvailable() {
+    const totalTicketsEl = document.getElementById('total-tickets-available');
+    if (totalTicketsEl) {
+        const total = getTotalTicketsCount();
+        totalTicketsEl.textContent = total;
+    }
+}
+
+// Initialize ticket count display
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        // Wait for orderItems to be rendered
+        setTimeout(updateTicketsAvailable, 500);
+        setTimeout(updateTicketsAvailable, 1500);
+        
+        // Update when cart changes
+        const observer = new MutationObserver(updateTicketsAvailable);
+        const orderItemsContainer = document.getElementById('orderItems');
+        if (orderItemsContainer) {
+            observer.observe(orderItemsContainer, { childList: true, subtree: true });
+        }
+    });
+} else {
+    // DOM already loaded
+    setTimeout(updateTicketsAvailable, 100);
+    setTimeout(updateTicketsAvailable, 1000);
 }
