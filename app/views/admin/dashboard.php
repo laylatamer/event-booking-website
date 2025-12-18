@@ -6,7 +6,7 @@
             <div class="stat-header">
                 <div>
                     <p class="stat-label">Total Users</p>
-                    <h3 class="stat-value">1,248</h3>
+                    <h3 class="stat-value"><?php echo number_format($totalUsers ?? 0); ?></h3>
                 </div>
                 <div class="stat-icon users-icon">
                     <i data-feather="users"></i>
@@ -14,7 +14,7 @@
             </div>
             <div class="stat-trend positive">
                 <i data-feather="trending-up"></i>
-                <span>12.5% from last month</span>
+                <span>Active Accounts</span>
             </div>
         </div>
 
@@ -22,7 +22,7 @@
             <div class="stat-header">
                 <div>
                     <p class="stat-label">Total Events</p>
-                    <h3 class="stat-value">84</h3>
+                    <h3 class="stat-value"><?php echo number_format($totalEvents ?? 0); ?></h3>
                 </div>
                 <div class="stat-icon events-icon">
                     <i data-feather="calendar"></i>
@@ -30,7 +30,7 @@
             </div>
             <div class="stat-trend positive">
                 <i data-feather="trending-up"></i>
-                <span>8.2% from last month</span>
+                <span>Active Events</span>
             </div>
         </div>
 
@@ -38,7 +38,7 @@
             <div class="stat-header">
                 <div>
                     <p class="stat-label">Total Bookings</p>
-                    <h3 class="stat-value">3,752</h3>
+                    <h3 class="stat-value"><?php echo number_format($totalBookings ?? 0); ?></h3>
                 </div>
                 <div class="stat-icon bookings-icon">
                     <i data-feather="ticket"></i>
@@ -46,7 +46,7 @@
             </div>
             <div class="stat-trend positive">
                 <i data-feather="trending-up"></i>
-                <span>22.3% from last month</span>
+                <span>Lifetime Bookings</span>
             </div>
         </div>
 
@@ -54,7 +54,7 @@
             <div class="stat-header">
                 <div>
                     <p class="stat-label">Revenue</p>
-                    <h3 class="stat-value">$48,920</h3>
+                    <h3 class="stat-value">$<?php echo number_format($totalRevenue ?? 0, 2); ?></h3>
                 </div>
                 <div class="stat-icon revenue-icon">
                     <i data-feather="dollar-sign"></i>
@@ -62,7 +62,7 @@
             </div>
             <div class="stat-trend positive">
                 <i data-feather="trending-up"></i>
-                <span>15.7% from last month</span>
+                <span>Total Revenue</span>
             </div>
         </div>
     </div>
@@ -87,42 +87,32 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td>#EVT-4892</td>
-                        <td>Summer Music Festival</td>
-                        <td>john.doe@example.com</td>
-                        <td>Jun 15, 2023</td>
-                        <td>2</td>
-                        <td>$120.00</td>
-                        <td><span class="status-badge completed">Completed</span></td>
-                    </tr>
-                    <tr>
-                        <td>#EVT-3567</td>
-                        <td>Tech Conference 2023</td>
-                        <td>sarah.smith@example.com</td>
-                        <td>Jun 12, 2023</td>
-                        <td>1</td>
-                        <td>$75.00</td>
-                        <td><span class="status-badge completed">Completed</span></td>
-                    </tr>
-                    <tr>
-                        <td>#EVT-2781</td>
-                        <td>Art Exhibition</td>
-                        <td>mike.johnson@example.com</td>
-                        <td>Jun 10, 2023</td>
-                        <td>4</td>
-                        <td>$60.00</td>
-                        <td><span class="status-badge pending">Pending</span></td>
-                    </tr>
-                    <tr>
-                        <td>#EVT-1895</td>
-                        <td>Food Festival</td>
-                        <td>emily.wilson@example.com</td>
-                        <td>Jun 8, 2023</td>
-                        <td>3</td>
-                        <td>$45.00</td>
-                        <td><span class="status-badge cancelled">Cancelled</span></td>
-                    </tr>
+                    <?php if (!empty($recentBookings)): ?>
+                        <?php foreach ($recentBookings as $booking): ?>
+                        <tr>
+                            <td>#<?php echo htmlspecialchars($booking['booking_code'] ?? $booking['id']); ?></td>
+                            <td><?php echo htmlspecialchars($booking['event_title'] ?? 'N/A'); ?></td>
+                            <td><?php echo htmlspecialchars($booking['user_email'] ?? 'N/A'); ?></td>
+                            <td><?php echo date('M d, Y', strtotime($booking['created_at'])); ?></td>
+                            <td><?php echo $booking['ticket_quantity'] ?? 1; ?></td>
+                            <td>$<?php echo number_format($booking['final_amount'] ?? 0, 2); ?></td>
+                            <td>
+                                <?php 
+                                    $statusClass = 'pending';
+                                    if ($booking['status'] == 'confirmed') $statusClass = 'completed';
+                                    if ($booking['status'] == 'cancelled') $statusClass = 'cancelled';
+                                ?>
+                                <span class="status-badge <?php echo $statusClass; ?>">
+                                    <?php echo ucfirst($booking['status']); ?>
+                                </span>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <tr>
+                            <td colspan="7" style="text-align:center;">No recent bookings found.</td>
+                        </tr>
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>
@@ -131,17 +121,86 @@
     <!-- Charts Row -->
     <div class="charts-grid">
         <div class="content-card">
-            <h3>Bookings Overview</h3>
-            <div class="chart-placeholder">
-                <p>Chart would be displayed here</p>
+            <h3>Bookings Overview (Last 7 Days)</h3>
+            <div class="chart-container" style="position: relative; height:300px; width:100%">
+                <canvas id="bookingsChart"></canvas>
             </div>
         </div>
         <div class="content-card">
             <h3>Revenue by Category</h3>
-            <div class="chart-placeholder">
-                <p>Chart would be displayed here</p>
+            <div class="chart-container" style="position: relative; height:300px; width:100%">
+                <canvas id="revenueChart"></canvas>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Chart.js Library -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Bookings Chart
+    const bookingsCtx = document.getElementById('bookingsChart').getContext('2d');
+    new Chart(bookingsCtx, {
+        type: 'line',
+        data: {
+            labels: <?php echo $chartLabels ?? '[]'; ?>,
+            datasets: [{
+                label: 'Bookings',
+                data: <?php echo $chartValues ?? '[]'; ?>,
+                borderColor: '#667eea',
+                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+
+    // Revenue Chart
+    const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+    new Chart(revenueCtx, {
+        type: 'doughnut',
+        data: {
+            labels: <?php echo $revLabels ?? '[]'; ?>,
+            datasets: [{
+                data: <?php echo $revValues ?? '[]'; ?>,
+                backgroundColor: [
+                    '#667eea',
+                    '#764ba2',
+                    '#4facfe',
+                    '#00f2fe',
+                    '#ff9a9e'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+});
+</script>
 

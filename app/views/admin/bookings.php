@@ -253,34 +253,7 @@ function buildPaginationUrl($page, $filters) {
                     </button>
                 <?php endif; ?>
                 
-                <div id="bookings-pages">
-                    <?php 
-                    // Show limited page numbers
-                    $maxPagesToShow = 5;
-                    $startPage = max(1, $currentPage - floor($maxPagesToShow / 2));
-                    $endPage = min($totalPages, $startPage + $maxPagesToShow - 1);
-                    
-                    if ($startPage > 1): ?>
-                        <a href="<?php echo buildPaginationUrl(1, $filters); ?>" class="clean-pagination-btn">1</a>
-                        <?php if ($startPage > 2): ?>
-                            <span style="padding: 0 5px; color: #888; display: flex; align-items: center;">...</span>
-                        <?php endif; ?>
-                    <?php endif; ?>
-                    
-                    <?php for ($i = $startPage; $i <= $endPage; $i++): ?>
-                        <a href="<?php echo buildPaginationUrl($i, $filters); ?>" 
-                           class="clean-pagination-btn <?php echo $i === $currentPage ? 'active' : ''; ?>">
-                            <?php echo $i; ?>
-                        </a>
-                    <?php endfor; ?>
-                    
-                    <?php if ($endPage < $totalPages): ?>
-                        <?php if ($endPage < $totalPages - 1): ?>
-                            <span style="padding: 0 5px; color: #888; display: flex; align-items: center;">...</span>
-                        <?php endif; ?>
-                        <a href="<?php echo buildPaginationUrl($totalPages, $filters); ?>" class="clean-pagination-btn"><?php echo $totalPages; ?></a>
-                    <?php endif; ?>
-                </div>
+
                 
                 <?php if ($currentPage < $totalPages): ?>
                     <a href="<?php echo buildPaginationUrl($currentPage + 1, $filters); ?>" class="clean-pagination-btn">
