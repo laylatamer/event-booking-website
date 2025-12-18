@@ -15,6 +15,7 @@ $reservationId = $_GET['reservation_id'] ?? $_SESSION['temp_reservation_id'] ?? 
 $reservationIds = $_GET['reservation_ids'] ?? $_GET['reservations'] ?? $_SESSION['temp_reservation_ids'] ?? null;
 $eventId = $_GET['event_id'] ?? $_SESSION['temp_event_id'] ?? null;
 $totalTickets = $_GET['tickets'] ?? $_SESSION['temp_tickets'] ?? 0;
+$alreadyCustomizedCount = $_GET['already_customized'] ?? 0;
 
 
 if (!$eventId || !$totalTickets) {
@@ -282,6 +283,7 @@ $costPerTicket = 9.99;
             totalTickets: <?php echo $totalTickets; ?>,
             costPerTicket: <?php echo $costPerTicket; ?>,
             reservationId: <?php echo json_encode($reservationId); ?>,
+            reservationIds: <?php echo json_encode($reservationIds ? explode(',', $reservationIds) : []); ?>,
             reservationsByCategory: <?php echo json_encode($reservationsByCategory); ?>
         };
     </script>

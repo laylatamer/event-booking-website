@@ -25,9 +25,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const minTickets = eventData.minTickets || 1;
     const maxTickets = eventData.maxTickets || 10;
 
-    console.log('Booking Page Initialized');
-    console.log('Venue Seating Type:', venueSeatingType);
-    console.log('Ticket Categories:', ticketCategories);
 
     // Fixed fee per ticket
     const fixedFeePerTicket = 5.99;
@@ -250,6 +247,28 @@ document.addEventListener('DOMContentLoaded', () => {
             // Load availability
             await loadAvailability();
             
+            // Reload booked seats to ensure they're up to date when modal opens
+            try {
+                const seatsResponse = await fetch(`../../public/api/bookings_API.php?action=getBookedSeats&event_id=${eventId}`);
+                const seatsData = await seatsResponse.json();
+                
+                if (seatsData.success && seatsData.seats) {
+                    // Update seating managers with latest booked seats
+                    if (stadiumSeatingManager) {
+                        stadiumSeatingManager.bookedSeats = new Set(seatsData.seats);
+                        stadiumSeatingManager.generateSeats();
+                        stadiumSeatingManager.renderSeating();
+                    }
+                    if (theatreSeatingManager) {
+                        theatreSeatingManager.bookedSeats = new Set(seatsData.seats);
+                        theatreSeatingManager.generateSeats();
+                        theatreSeatingManager.renderSeating();
+                    }
+                }
+            } catch (e) {
+                console.warn('Could not reload booked seats:', e);
+            }
+            
             seatingModal.classList.remove('hidden');
             document.body.classList.add('overflow-hidden');
             if (typeof feather !== 'undefined') {
@@ -268,13 +287,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 switchSeatingLayout('stadium');
                 
                 // Wait a bit for DOM to update, then initialize manager
-                setTimeout(() => {
+                setTimeout(async () => {
                     if (!stadiumSeatingManager && typeof StadiumSeatingManager !== 'undefined') {
                         try {
+                            // Load booked seats first
+                            let bookedSeatsList = [];
+                            try {
+                                const seatsResponse = await fetch(`../../public/api/bookings_API.php?action=getBookedSeats&event_id=${eventId}`);
+                                const seatsData = await seatsResponse.json();
+                                if (seatsData.success && seatsData.seats) {
+                                    bookedSeatsList = seatsData.seats;
+                                }
+                            } catch (e) {
+                                console.warn('Could not load booked seats:', e);
+                            }
+                            
                             stadiumSeatingManager = new StadiumSeatingManager(
                                 ticketCategories,
                                 selectedTickets,
-                                updateCheckoutTotal
+                                updateCheckoutTotal,
+                                bookedSeatsList
                             );
                         } catch (error) {
                             console.error('Error creating StadiumSeatingManager:', error);
@@ -290,13 +322,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 switchSeatingLayout('theatre');
                 
                 // Wait a bit for DOM to update, then initialize manager
-                setTimeout(() => {
+                setTimeout(async () => {
                     if (!theatreSeatingManager && typeof TheatreSeatingManager !== 'undefined') {
                         try {
+                            // Load booked seats first
+                            let bookedSeatsList = [];
+                            try {
+                                const seatsResponse = await fetch(`../../public/api/bookings_API.php?action=getBookedSeats&event_id=${eventId}`);
+                                const seatsData = await seatsResponse.json();
+                                if (seatsData.success && seatsData.seats) {
+                                    bookedSeatsList = seatsData.seats;
+                                }
+                            } catch (e) {
+                                console.warn('Could not load booked seats:', e);
+                            }
+                            
                             theatreSeatingManager = new TheatreSeatingManager(
                                 ticketCategories,
                                 selectedTickets,
-                                updateCheckoutTotal
+                                updateCheckoutTotal,
+                                bookedSeatsList
                             );
                         } catch (error) {
                             console.error('Error creating TheatreSeatingManager:', error);
@@ -318,6 +363,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!eventId) return;
         
         try {
+            // Load ticket availability
             const response = await fetch(`../../public/api/ticket_reservations.php?action=getAvailability&event_id=${eventId}`);
             const data = await response.json();
             
@@ -332,6 +378,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Update UI to show availability
                 updateSeatingAvailability();
+            }
+            
+            // Load booked seats
+            const seatsResponse = await fetch(`../../public/api/bookings_API.php?action=getBookedSeats&event_id=${eventId}`);
+            const seatsData = await seatsResponse.json();
+            
+            if (seatsData.success && seatsData.seats && seatsData.seats.length > 0) {
+                console.log('Loaded booked seats:', seatsData.seats);
+                
+                // Update seating managers with booked seats
+                if (stadiumSeatingManager) {
+                    stadiumSeatingManager.bookedSeats = new Set(seatsData.seats);
+                    stadiumSeatingManager.generateSeats();
+                    stadiumSeatingManager.renderSeating();
+                }
+                if (theatreSeatingManager) {
+                    theatreSeatingManager.bookedSeats = new Set(seatsData.seats);
+                    theatreSeatingManager.generateSeats();
+                    theatreSeatingManager.renderSeating();
+                }
+            } else {
             }
         } catch (error) {
             console.error('Error loading availability:', error);
@@ -354,11 +421,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function switchSeatingLayout(newLayout) {
-        console.log('switchSeatingLayout called with:', newLayout, 'current:', currentSeatingLayout);
         
         // Always update if different (or if null/undefined)
         if (newLayout === currentSeatingLayout && currentSeatingLayout !== null) {
-            console.log('Layout already set, skipping');
             return;
         }
         
@@ -594,6 +659,19 @@ document.addEventListener('DOMContentLoaded', () => {
             // Ensure tickets are reserved
             const reserved = await reserveTickets();
             if (reserved) {
+                // Get selected seats from seating managers
+                let selectedSeats = [];
+                if (venueSeatingType === 'stadium' && stadiumSeatingManager) {
+                    selectedSeats = stadiumSeatingManager.getSelectedSeats();
+                } else if (venueSeatingType === 'theatre' && theatreSeatingManager) {
+                    selectedSeats = theatreSeatingManager.getSelectedSeats();
+                }
+                
+                // Store selected seats in sessionStorage
+                if (selectedSeats.length > 0) {
+                    sessionStorage.setItem('selected_seats', JSON.stringify(selectedSeats));
+                }
+                
                 // Redirect to checkout with reservation data
                 const params = new URLSearchParams({
                     event_id: eventId,

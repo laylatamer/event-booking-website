@@ -1,10 +1,11 @@
 // Stadium Seating Management - Adapted for booking.php
 class StadiumSeatingManager {
-    constructor(ticketCategories, selectedTickets, updateCheckoutCallback) {
+    constructor(ticketCategories, selectedTickets, updateCheckoutCallback, bookedSeats = []) {
         this.ticketCategories = ticketCategories || [];
         this.selectedTickets = selectedTickets || {};
         this.updateCheckoutCallback = updateCheckoutCallback;
         this.seats = [];
+        this.bookedSeats = new Set(bookedSeats);
         this.init();
     }
 
@@ -20,7 +21,7 @@ class StadiumSeatingManager {
 
     generateSeats() {
         const sections = ['North', 'South', 'East', 'West'];
-        const bookedSeats = new Set(); // Will be populated from API if needed
+        const bookedSeats = this.bookedSeats; // Use provided booked seats
 
         sections.forEach(section => {
             const rows = (section === 'North' || section === 'South') ? 8 : 12;
@@ -191,6 +192,15 @@ class StadiumSeatingManager {
 
         const seat = this.seats.find(s => s.id === seatId);
         button.className = `seat-btn compact ${seat.status} ${seat.category}`;
+    }
+
+    getSelectedSeats() {
+        return this.seats
+            .filter(seat => seat.status === 'selected')
+            .map(seat => ({
+                seat_id: seat.id,
+                category_name: seat.categoryName
+            }));
     }
 
     clearSelection() {

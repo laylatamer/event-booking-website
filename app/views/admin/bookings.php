@@ -59,10 +59,17 @@ function generateShortId($id) {
 
 // Get payment method display
 function getPaymentMethodDisplay($paymentMethod, $paymentStatus) {
-    if ($paymentStatus === 'paid') {
+    // Always show the actual payment method, not inferred from status
+    if ($paymentMethod === 'cash') {
+        return 'Cash';
+    } elseif ($paymentMethod === 'card' || $paymentMethod === 'credit' || $paymentMethod === 'debit') {
         return 'Credit/Debit';
     } elseif ($paymentStatus === 'pending') {
+        // If payment method is not set but status is pending, assume cash
         return 'Cash';
+    } elseif ($paymentStatus === 'paid' && empty($paymentMethod)) {
+        // If payment method is not set but status is paid, assume card
+        return 'Credit/Debit';
     }
     return $paymentMethod ?: 'Cash';
 }
@@ -144,6 +151,7 @@ function buildPaginationUrl($page, $filters) {
                         <th>Amount</th>
                         <th>Status</th>
                         <th>Payment</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -181,6 +189,7 @@ function buildPaginationUrl($page, $filters) {
                             
                             // Payment method
                             $paymentMethod = getPaymentMethodDisplay($booking['payment_method'] ?? '', $paymentStatus);
+                            $actualPaymentMethod = $booking['payment_method'] ?? 'cash'; // Get actual payment method, not display
                             ?>
                             <tr>
                                 <td>
@@ -227,6 +236,23 @@ function buildPaginationUrl($page, $filters) {
                                     </span>
                                     <div class="payment-method-badge">
                                         <?php echo $paymentMethod; ?>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="action-buttons" style="display: flex; gap: 8px; align-items: center;">
+                                        <button class="action-btn view-btn" onclick="viewBooking(<?php echo $bookingId; ?>)" title="View Details">
+                                            <i data-feather="eye"></i>
+                                        </button>
+                                        <?php if ($status !== 'cancelled'): ?>
+                                            <button class="action-btn cancel-btn" onclick="cancelBooking(<?php echo $bookingId; ?>)" title="Cancel Booking">
+                                                <i data-feather="x-circle"></i>
+                                            </button>
+                                        <?php endif; ?>
+                                        <?php if ($actualPaymentMethod === 'cash' && $paymentStatus === 'pending'): ?>
+                                            <button class="action-btn approve-btn" onclick="approveCashPayment(<?php echo $bookingId; ?>)" title="Approve Cash Payment">
+                                                <i data-feather="check-circle"></i>
+                                            </button>
+                                        <?php endif; ?>
                                     </div>
                                 </td>
                             </tr>
@@ -522,10 +548,17 @@ function renderBookingDetails(booking) {
 }
 
 function getPaymentMethodDisplay(paymentMethod, paymentStatus) {
-    if (paymentStatus === 'paid') {
+    // Always show the actual payment method, not inferred from status
+    if (paymentMethod === 'cash') {
+        return 'Cash';
+    } else if (paymentMethod === 'card' || paymentMethod === 'credit' || paymentMethod === 'debit') {
         return 'Credit/Debit';
     } else if (paymentStatus === 'pending') {
+        // If payment method is not set but status is pending, assume cash
         return 'Cash';
+    } else if (paymentStatus === 'paid' && !paymentMethod) {
+        // If payment method is not set but status is paid, assume card
+        return 'Credit/Debit';
     }
     return paymentMethod || 'Cash';
 }
@@ -778,5 +811,63 @@ function formatDateTime(dateString) {
         hour: '2-digit',
         minute: '2-digit'
     });
+}
+
+// Cancel booking function
+async function cancelBooking(bookingId) {
+    if (!confirm('Are you sure you want to cancel this booking? This will return the tickets and seats to available inventory.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/event-booking-website/public/api/bookings_API.php?action=cancel', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ id: bookingId })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('✅ ' + result.message);
+            location.reload(); // Reload to show updated status
+        } else {
+            alert('❌ Error: ' + (result.message || 'Failed to cancel booking'));
+        }
+    } catch (error) {
+        console.error('Error cancelling booking:', error);
+        alert('❌ Error cancelling booking. Please try again.');
+    }
+}
+
+// Approve cash payment function
+async function approveCashPayment(bookingId) {
+    if (!confirm('Are you sure the customer has paid in cash? This will mark the payment as paid and confirm the booking.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/event-booking-website/public/api/bookings_API.php?action=approveCashPayment', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ id: bookingId })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('✅ ' + result.message);
+            location.reload(); // Reload to show updated status
+        } else {
+            alert('❌ Error: ' + (result.message || 'Failed to approve payment'));
+        }
+    } catch (error) {
+        console.error('Error approving payment:', error);
+        alert('❌ Error approving payment. Please try again.');
+    }
 }
 </script>

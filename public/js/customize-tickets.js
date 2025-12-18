@@ -2,19 +2,70 @@
 let selectedByCategory = {}; // { "Fanpit": 2, "Golden Circle": 1, "Regular": 1 }
 let guestNames = {}; // { "1": "JOHN DOE", "2": "JANE SMITH" }
 let ticketCounter = 0; // Global counter for ticket numbering
+let alreadyCustomized = null; // Track already customized tickets
+let alreadyCustomizedCount = 0; // Total count of already customized tickets
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize selectedByCategory with zeros
+    // Check for already customized tickets from sessionStorage
+    const sessionCustomization = sessionStorage.getItem('ticket_customization');
+    if (sessionCustomization) {
+        try {
+            const customData = JSON.parse(sessionCustomization);
+            // Only use if it's for the same event
+            if (customData.event_id == eventData.id) {
+                alreadyCustomized = customData;
+                alreadyCustomizedCount = customData.customized_count || 0;
+            } else {
+                alreadyCustomized = null;
+                alreadyCustomizedCount = 0;
+            }
+        } catch (e) {
+            console.warn("Failed to parse already customized data:", e);
+            alreadyCustomized = null;
+            alreadyCustomizedCount = 0;
+        }
+    }
+    
+    // Also check URL parameter (but only if not already set from sessionStorage)
+    if (alreadyCustomizedCount === 0) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlAlreadyCustomized = parseInt(urlParams.get('already_customized') || 0);
+        if (urlAlreadyCustomized > 0) {
+            alreadyCustomizedCount = urlAlreadyCustomized;
+        }
+    }
+    
+    // Validate: alreadyCustomizedCount should not exceed totalTickets
+    if (alreadyCustomizedCount > eventData.totalTickets) {
+        console.warn('Invalid alreadyCustomizedCount:', alreadyCustomizedCount, 'exceeds totalTickets:', eventData.totalTickets);
+        alreadyCustomizedCount = 0;
+        alreadyCustomized = null;
+    }
+    
+    // Initialize selectedByCategory with zeros (NEVER restore from alreadyCustomized - those are already done)
     if (eventData.reservationsByCategory) {
         Object.keys(eventData.reservationsByCategory).forEach(category => {
             selectedByCategory[category] = 0;
+            // IMPORTANT: Don't restore from alreadyCustomized - those tickets are already customized
+            // We only want to track NEW selections, not already customized ones
         });
     }
+    
+    // Restore guest names if available (for display only)
+    if (alreadyCustomized && alreadyCustomized.guest_names) {
+        guestNames = { ...alreadyCustomized.guest_names };
+    }
+    
     
     // Attach event listeners to category buttons
     attachCategoryListeners();
     updateDisplay();
+    
+    // Render already customized tickets if any
+    if (alreadyCustomizedCount > 0 && alreadyCustomized && alreadyCustomized.guest_names) {
+        renderAlreadyCustomizedTickets();
+    }
 });
 
 // Attach listeners to category increase/decrease buttons
@@ -40,12 +91,32 @@ function increaseCategoryQuantity(category) {
     if (!categoryData) return;
     
     const current = selectedByCategory[category] || 0;
-    const max = categoryData.total;
+    const alreadyCustomizedInCategory = (alreadyCustomized && alreadyCustomized.tickets_by_category && alreadyCustomized.tickets_by_category[category]) ? alreadyCustomized.tickets_by_category[category] : 0;
+    
+    // Max is total minus already customized in this category
+    const max = categoryData.total - alreadyCustomizedInCategory;
+    
+    // Also check total customized count
+    const totalSelected = getTotalSelected();
+    const totalAvailable = Math.max(0, eventData.totalTickets - alreadyCustomizedCount);
+    
+    // Validate: ensure we don't exceed total available
+    if (totalAvailable <= 0) {
+        alert(`All ${eventData.totalTickets} ticket(s) have already been customized.`);
+        return;
+    }
+    
+    if (totalSelected >= totalAvailable) {
+        alert(`You can only customize ${totalAvailable} more ticket(s). ${alreadyCustomizedCount} ticket(s) are already customized.`);
+        return;
+    }
     
     if (current < max) {
         selectedByCategory[category] = current + 1;
         updateCategoryDisplay(category);
         updateDisplay();
+    } else {
+        alert(`Maximum ${max} ticket(s) available to customize in this category. ${alreadyCustomizedInCategory} ticket(s) are already customized.`);
     }
 }
 
@@ -70,13 +141,23 @@ function updateCategoryDisplay(category) {
     const categoryData = eventData.reservationsByCategory[category];
     if (categoryData) {
         const current = selectedByCategory[category] || 0;
-        const max = categoryData.total;
+        const alreadyCustomizedInCategory = (alreadyCustomized && alreadyCustomized.tickets_by_category && alreadyCustomized.tickets_by_category[category]) ? alreadyCustomized.tickets_by_category[category] : 0;
+        const max = categoryData.total - alreadyCustomizedInCategory;
+        
+        // Also check total available across all categories
+        const totalSelected = getTotalSelected();
+        const totalAvailable = Math.max(0, eventData.totalTickets - alreadyCustomizedCount);
         
         const increaseBtn = document.querySelector(`.category-increase[data-category="${category}"]`);
         const decreaseBtn = document.querySelector(`.category-decrease[data-category="${category}"]`);
         
-        if (increaseBtn) increaseBtn.disabled = current >= max;
-        if (decreaseBtn) decreaseBtn.disabled = current <= 0;
+        // Disable increase if: at max for category OR total selected >= total available OR total available is 0
+        if (increaseBtn) {
+            increaseBtn.disabled = current >= max || totalSelected >= totalAvailable || totalAvailable <= 0;
+        }
+        if (decreaseBtn) {
+            decreaseBtn.disabled = current <= 0;
+        }
     }
 }
 
@@ -88,10 +169,44 @@ function getTotalSelected() {
 // Update overall display
 function updateDisplay() {
     const totalSelected = getTotalSelected();
-    document.getElementById('customize-count').textContent = totalSelected;
+    const totalAvailable = eventData.totalTickets - alreadyCustomizedCount;
+    
+    // Show remaining tickets available to customize
+    const customizeCountEl = document.getElementById('customize-count');
+    if (customizeCountEl) {
+        customizeCountEl.textContent = totalSelected;
+    }
+    
+    // Update info text to show remaining tickets
+    const infoText = document.querySelector('.selection-card p');
+    if (infoText) {
+        if (alreadyCustomizedCount > 0) {
+            infoText.textContent = `Each customized ticket costs $${eventData.costPerTicket.toFixed(2)} extra. ${alreadyCustomizedCount} ticket(s) already customized. ${totalAvailable} ticket(s) remaining.`;
+        } else {
+            infoText.textContent = `Each customized ticket costs $${eventData.costPerTicket.toFixed(2)} extra. You can customize up to ${eventData.totalTickets} ticket(s).`;
+        }
+    }
+    
+    // Update remaining tickets info
+    const remainingTicketsEl = document.getElementById('remaining-tickets-count');
+    if (remainingTicketsEl) {
+        const remaining = Math.max(0, totalAvailable); // Don't show negative
+        remainingTicketsEl.textContent = remaining;
+        if (totalAvailable < 0) {
+            remainingTicketsEl.style.color = '#ef4444'; // Red if negative (error state)
+            console.error('Invalid remaining tickets calculation:', totalAvailable, 'totalTickets:', eventData.totalTickets, 'alreadyCustomizedCount:', alreadyCustomizedCount);
+        } else if (totalAvailable === 0) {
+            remainingTicketsEl.style.color = '#f59e0b'; // Orange if none remaining
+        } else {
+            remainingTicketsEl.style.color = '#22c55e'; // Green
+        }
+    }
     
     const totalCost = (totalSelected * eventData.costPerTicket).toFixed(2);
-    document.getElementById('total-cost').textContent = totalCost;
+    const totalCostEl = document.getElementById('total-cost');
+    if (totalCostEl) {
+        totalCostEl.textContent = totalCost;
+    }
     
     // Update generate button
     const generateBtn = document.getElementById('generate-btn');
@@ -324,15 +439,36 @@ async function saveCustomization() {
     
     const totalSelected = getTotalSelected();
     
+    // Merge with existing customization if any
+    let finalGuestNames = { ...guestNames };
+    let finalTicketsByCategory = { ...selectedByCategory };
+    let finalCustomizedCount = totalSelected;
+    
+    if (alreadyCustomized) {
+        // Merge guest names (new ones override old ones if same ticket number)
+        finalGuestNames = { ...alreadyCustomized.guest_names, ...guestNames };
+        
+        // Merge tickets by category (add new selections to existing)
+        Object.keys(alreadyCustomized.tickets_by_category || {}).forEach(cat => {
+            if (!finalTicketsByCategory[cat]) {
+                finalTicketsByCategory[cat] = 0;
+            }
+            finalTicketsByCategory[cat] += alreadyCustomized.tickets_by_category[cat];
+        });
+        
+        // Add already customized count
+        finalCustomizedCount += alreadyCustomized.customized_count;
+    }
+    
     // Prepare data to save
     const customizationData = {
         event_id: eventData.id,
         reservation_id: eventData.reservationId,
         total_tickets: eventData.totalTickets,
-        customized_count: totalSelected,
-        customization_cost: (totalSelected * eventData.costPerTicket).toFixed(2),
-        guest_names: guestNames,
-        tickets_by_category: selectedByCategory,
+        customized_count: finalCustomizedCount,
+        customization_cost: (finalCustomizedCount * eventData.costPerTicket).toFixed(2),
+        guest_names: finalGuestNames,
+        tickets_by_category: finalTicketsByCategory,
         event_details: {
             title: eventData.title,
             date: eventData.date,
@@ -363,9 +499,33 @@ async function saveCustomization() {
             // Store in session for checkout
             sessionStorage.setItem('ticket_customization', JSON.stringify(customizationData));
             
-            // Redirect back to checkout with customization data
+            // Store customization cost in sessionStorage for checkout
+            sessionStorage.setItem('customization_fee', customizationData.customization_cost);
+            
+            // Get reservation IDs from eventData or build from reservationsByCategory
+            let reservationIds = [];
+            if (eventData.reservationIds && Array.isArray(eventData.reservationIds)) {
+                reservationIds = eventData.reservationIds;
+            } else if (eventData.reservationId) {
+                reservationIds = [eventData.reservationId];
+            } else if (eventData.reservationsByCategory) {
+                // Build reservation IDs from all categories
+                Object.values(eventData.reservationsByCategory).forEach(catData => {
+                    if (catData.reservation_ids && Array.isArray(catData.reservation_ids)) {
+                        reservationIds.push(...catData.reservation_ids);
+                    }
+                });
+            }
+            
+            // Redirect back to checkout with reservation IDs to preserve order
+            let redirectUrl = `checkout.php?event_id=${eventData.id}`;
+            if (reservationIds.length > 0) {
+                redirectUrl += `&reservations=${reservationIds.join(',')}`;
+            }
+            redirectUrl += `&customized=true`;
+            
             alert('✅ Tickets customized successfully!');
-            window.location.href = `checkout.php?event_id=${eventData.id}&customized=true`;
+            window.location.href = redirectUrl;
         } else {
             throw new Error(result.message || 'Failed to save customization');
         }
@@ -377,4 +537,43 @@ async function saveCustomization() {
         event.target.textContent = originalText;
         event.target.disabled = false;
     }
+}
+
+// Render already customized tickets
+function renderAlreadyCustomizedTickets() {
+    if (!alreadyCustomized || !alreadyCustomized.guest_names) return;
+    
+    const container = document.getElementById('tickets-container');
+    if (!container) return;
+    
+    // Create a section for already customized tickets
+    const existingSection = document.getElementById('already-customized-section');
+    if (existingSection) {
+        existingSection.remove();
+    }
+    
+    const section = document.createElement('div');
+    section.id = 'already-customized-section';
+    section.style.cssText = 'margin-bottom: 30px; padding: 20px; background: rgba(34, 197, 94, 0.1); border: 2px solid rgba(34, 197, 94, 0.3); border-radius: 12px;';
+    
+    const title = document.createElement('h3');
+    title.textContent = `✅ ${alreadyCustomizedCount} Ticket(s) Already Customized`;
+    title.style.cssText = 'color: #22c55e; margin-bottom: 15px; font-size: 18px;';
+    section.appendChild(title);
+    
+    const info = document.createElement('p');
+    info.textContent = `You can customize ${eventData.totalTickets - alreadyCustomizedCount} more ticket(s).`;
+    info.style.cssText = 'color: #9ca3af; margin-bottom: 15px;';
+    section.appendChild(info);
+    
+    // List customized tickets
+    Object.keys(alreadyCustomized.guest_names).forEach(ticketNum => {
+        const guestName = alreadyCustomized.guest_names[ticketNum];
+        const ticketDiv = document.createElement('div');
+        ticketDiv.style.cssText = 'padding: 10px; margin: 5px 0; background: rgba(34, 197, 94, 0.05); border-radius: 6px;';
+        ticketDiv.textContent = `Ticket #${ticketNum}: ${guestName}`;
+        section.appendChild(ticketDiv);
+    });
+    
+    container.insertBefore(section, container.firstChild);
 }

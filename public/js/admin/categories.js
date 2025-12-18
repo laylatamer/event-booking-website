@@ -101,7 +101,6 @@ function setupEventListeners() {
     if (editSubcategoryForm) {
         editSubcategoryForm.addEventListener('submit', function(e) {
             e.preventDefault();
-            console.log('Edit subcategory form submitted');
             handleEditSubcategorySubmit(e);
         });
     } else {
@@ -110,7 +109,6 @@ function setupEventListeners() {
 }
 
 function setupFileUploads() {
-    console.log('Setting up file uploads...');
     
     // Subcategory image upload
     const subcategoryImageInput = document.getElementById('subcategory-image');
@@ -226,7 +224,6 @@ async function uploadImage(file, type = 'subcategories') {
     formData.append('image', file);
     
     try {
-        console.log('Uploading image...', file.name, 'Type:', type);
         const response = await fetch(UPLOAD_API_URL, {
             method: 'POST',
             body: formData
@@ -237,7 +234,6 @@ async function uploadImage(file, type = 'subcategories') {
         }
         
         const data = await response.json();
-        console.log('Upload response:', data);
         return data;
     } catch (error) {
         console.error('Upload error:', error);
@@ -250,7 +246,6 @@ function handleAddSubcategoryClick(btn) {
     const mainCategoryName = btn.closest('.category-section').querySelector('h3').textContent
         .replace(/[^a-zA-Z\s]/g, '').trim();
     
-    console.log('Main Category ID:', mainCategoryId, 'Name:', mainCategoryName);
     
     const mainCategoryIdInput = document.getElementById('subcategory-main-category-id');
     const categoryNameSpan = document.getElementById('subcategory-main-category-name');
@@ -313,18 +308,13 @@ function handleAddSubcategoryClick(btn) {
         openModal('add-subcategory-modal');
     } else {
         console.error('Modal elements not found!');
-        console.log('mainCategoryIdInput:', mainCategoryIdInput);
-        console.log('categoryNameSpan:', categoryNameSpan);
-        console.log('categoryIconSpan:', categoryIconSpan);
     }
 }
 
 // Modal functions
 function openModal(modalId) {
-    console.log('Attempting to open modal:', modalId);
     const modal = document.getElementById(modalId);
     if (modal) {
-        console.log('Modal found, removing hidden class');
         modal.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
         
@@ -336,7 +326,6 @@ function openModal(modalId) {
         console.error('Modal not found:', modalId);
         // List all available modals for debugging
         const allModals = document.querySelectorAll('.modal');
-        console.log('Available modals:', Array.from(allModals).map(m => m.id));
     }
 }
 
@@ -367,7 +356,6 @@ function clearModalDisplays() {
 
 
 function closeModal(modalId) {
-    console.log('Closing modal:', modalId);
     const modal = document.getElementById(modalId);
     if (modal) {
         modal.classList.add('hidden');

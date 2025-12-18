@@ -743,7 +743,6 @@ async function handleAddEvent(e) {
             }
         });
         
-        console.log('Collected ticket categories:', ticketCategoriesObj);
         
         // Check if ticket categories section is visible and has data
         const ticketSection = document.getElementById('ticket-categories-section');
@@ -806,7 +805,6 @@ async function handleAddEvent(e) {
                 price: parseFloat(category.price || 0)
             }));
             formData.set('ticket_categories_json', JSON.stringify(ticketCategoriesArray));
-            console.log('Added ticket categories as JSON:', ticketCategoriesArray);
         }
         
         // Convert JSON fields
@@ -1271,7 +1269,6 @@ async function uploadImage(file, type = 'events') {
     formData.append('image', file);
     
     try {
-        console.log('Uploading image...', file.name, 'Type:', type);
         const response = await fetch(UPLOAD_API_URL, {
             method: 'POST',
             body: formData
@@ -1282,7 +1279,6 @@ async function uploadImage(file, type = 'events') {
         }
         
         const data = await response.json();
-        console.log('Upload response:', data);
         return data;
     } catch (error) {
         console.error('Upload error:', error);

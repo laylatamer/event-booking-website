@@ -1,11 +1,12 @@
 // Theatre Seating Management - Adapted for booking.php
 class TheatreSeatingManager {
-    constructor(ticketCategories, selectedTickets, updateCheckoutCallback) {
+    constructor(ticketCategories, selectedTickets, updateCheckoutCallback, bookedSeats = []) {
         this.ticketCategories = ticketCategories || [];
         this.selectedTickets = selectedTickets || {};
         this.updateCheckoutCallback = updateCheckoutCallback;
         this.seats = [];
         this.container = null;
+        this.bookedSeats = new Set(bookedSeats);
         this.init();
     }
 
@@ -29,8 +30,8 @@ class TheatreSeatingManager {
         const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
         const seatsPerRow = 12;
         
-        // Get booked seats from reservations (if any)
-        const bookedSeats = new Set(); // Will be populated from API if needed
+        // Get booked seats from constructor parameter
+        const bookedSeats = this.bookedSeats; // Use provided booked seats
 
         // Map ticket categories to seat categories
         const categoryMap = {};
@@ -199,6 +200,15 @@ class TheatreSeatingManager {
 
         const seat = this.seats.find(s => s.id === seatId);
         button.className = `seat-btn ${seat.status} ${seat.category}`;
+    }
+
+    getSelectedSeats() {
+        return this.seats
+            .filter(seat => seat.status === 'selected')
+            .map(seat => ({
+                seat_id: seat.id,
+                category_name: seat.categoryName
+            }));
     }
 
     clearSelection() {
