@@ -1,5 +1,5 @@
 <?php
-// public/api/chatbot.php - Event Ticketing Chatbot with PDO Database
+// public/api/chatbot.php - AI-Powered Event Ticketing Chatbot
 
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
@@ -8,6 +8,13 @@ ini_set('display_errors', 1);
 $project_root = dirname(dirname(dirname(__FILE__))); // Gets: C:\xampp\htdocs\event-booking-website
 require_once $project_root . '/database/session_init.php';
 require_once $project_root . '/config/db_connect.php';
+
+// Load AI service if available
+$aiServicePath = $project_root . '/app/services/AIChatbotService.php';
+$aiEnabled = file_exists($aiServicePath);
+if ($aiEnabled) {
+    require_once $aiServicePath;
+}
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -52,37 +59,59 @@ class EventChatbotPDO {
         // Log user message
         $this->logMessage('user', $user_message, null, 0);
         
-        // 1. Check training data
-        $response = $this->checkTrainingData($user_message);
-        $intent = 'trained_response';
-        $confidence = 1.0;
+        // Try AI-powered response first (if AI service is available and configured)
+        $response = null;
+        $intent = null;
+        $confidence = 0;
         
-        // 2. Check for specific events query
-        if (!$response && $this->isEventQuery($user_message)) {
-            $response = $this->getEventsFromDatabase($user_message);
-            $intent = 'events_query';
-            $confidence = 0.9;
+        if (class_exists('AIChatbotService')) {
+            try {
+                $aiService = new AIChatbotService($this->pdo);
+                $response = $aiService->processMessage($user_message, $this->conversation_id);
+                if ($response && $response !== "I apologize, but I'm having trouble processing your request right now. Please try again or contact support.") {
+                    $intent = 'ai_response';
+                    $confidence = 0.95;
+                }
+            } catch (Exception $e) {
+                error_log("AI Chatbot Service Error: " . $e->getMessage());
+                // Continue to fallback
+            }
         }
         
-        // 3. Check for refund queries
-        if (!$response && $this->isRefundQuery($user_message)) {
-            $response = $this->getRefundResponse();
-            $intent = 'refund';
-            $confidence = 0.85;
-        }
-        
-        // 4. Check for booking queries
-        if (!$response && $this->isBookingQuery($user_message)) {
-            $response = $this->getBookingResponse();
-            $intent = 'booking';
-            $confidence = 0.85;
-        }
-        
-        // 5. Fallback response
+        // If AI fails or not available, fallback to rule-based system
         if (!$response) {
-            $response = $this->getFallbackResponse($user_message);
-            $intent = 'general';
-            $confidence = 0.5;
+            // 1. Check training data
+            $response = $this->checkTrainingData($user_message);
+            $intent = 'trained_response';
+            $confidence = 1.0;
+            
+            // 2. Check for specific events query
+            if (!$response && $this->isEventQuery($user_message)) {
+                $response = $this->getEventsFromDatabase($user_message);
+                $intent = 'events_query';
+                $confidence = 0.9;
+            }
+            
+            // 3. Check for refund queries
+            if (!$response && $this->isRefundQuery($user_message)) {
+                $response = $this->getRefundResponse();
+                $intent = 'refund';
+                $confidence = 0.85;
+            }
+            
+            // 4. Check for booking queries
+            if (!$response && $this->isBookingQuery($user_message)) {
+                $response = $this->getBookingResponse();
+                $intent = 'booking';
+                $confidence = 0.85;
+            }
+            
+            // 5. Final fallback response
+            if (!$response) {
+                $response = $this->getFallbackResponse($user_message);
+                $intent = 'general';
+                $confidence = 0.5;
+            }
         }
         
         // Log bot response
@@ -448,11 +477,13 @@ try {
             'user_id' => $user_id,
             'database' => 'PDO connected',
             'features' => [
-                'PDO database integration',
-                'Real event data from database',
+                'AI-powered responses (OpenAI GPT)',
+                'RAG - Retrieval Augmented Generation',
+                'Real-time event data integration',
                 'User context aware',
-                'Conversation logging',
-                'Training data support'
+                'Conversation history management',
+                'Training data fallback',
+                'PDO database integration'
             ]
         ], JSON_PRETTY_PRINT);
     }
@@ -462,8 +493,7 @@ try {
     echo json_encode([
         'success' => false,
         'error' => 'System error',
-        'message' => 'Please try again later',
-        'debug' => $e->getMessage()
+        'message' => 'Please try again later'
     ]);
 }
 ?>
