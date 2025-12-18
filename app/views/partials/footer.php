@@ -70,6 +70,7 @@
             </div>
         </footer>
 
-    
+    <!-- Chatbot script (fixed path) -->
+    <script src="../../public/js/chatbot-widget.js"></script>
 </body>
 </html>
