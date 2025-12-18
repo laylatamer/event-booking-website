@@ -1,21 +1,37 @@
 <?php
 // public/api/chatbot.php - AI-Powered Event Ticketing Chatbot
 
+// Suppress error display and use output buffering
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
 
-// CORRECTED: Include required files with proper absolute path
-$project_root = dirname(dirname(dirname(__FILE__))); // Gets: C:\xampp\htdocs\event-booking-website
-require_once $project_root . '/database/session_init.php';
-require_once $project_root . '/config/db_connect.php';
-
-// Load AI service if available
-$aiServicePath = $project_root . '/app/services/AIChatbotService.php';
-$aiEnabled = file_exists($aiServicePath);
-if ($aiEnabled) {
-    require_once $aiServicePath;
+// Start output buffering early to catch any errors
+if (!ob_get_level()) {
+    ob_start();
 }
 
+// Catch fatal errors and return JSON
+register_shutdown_function(function() {
+    $error = error_get_last();
+    if ($error !== NULL && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        // Only handle if we haven't already sent output
+        if (!headers_sent()) {
+            ob_clean();
+            http_response_code(500);
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => false,
+                'error' => 'System error',
+                'message' => 'Please try again later',
+                'error_details' => $error['message'] . ' in ' . $error['file'] . ' on line ' . $error['line']
+            ]);
+        }
+        exit();
+    }
+});
+
+// Set headers early
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
@@ -27,6 +43,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
+// CORRECTED: Include required files with proper absolute path
+$project_root = dirname(dirname(dirname(__FILE__))); // Gets: C:\xampp\htdocs\event-booking-website
+
+try {
+    require_once $project_root . '/database/session_init.php';
+    require_once $project_root . '/config/db_connect.php';
+    
+    // Load AI service if available
+    $aiServicePath = $project_root . '/app/services/AIChatbotService.php';
+    $aiEnabled = file_exists($aiServicePath);
+    if ($aiEnabled) {
+        require_once $aiServicePath;
+    }
+} catch (Exception $e) {
+    ob_clean();
+    http_response_code(500);
+    echo json_encode([
+        'success' => false,
+        'error' => 'System initialization error',
+        'message' => 'Please try again later'
+    ]);
+    exit();
+}
+
 class EventChatbotPDO {
     private $pdo;
     private $user_id;
@@ -35,15 +75,27 @@ class EventChatbotPDO {
     
     public function __construct($pdo_connection) {
         $this->pdo = $pdo_connection;
-        $this->session_id = session_id();
-        $this->user_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
+        
+        try {
+            $this->session_id = session_id();
+        } catch (Exception $e) {
+            error_log("Chatbot session error: " . $e->getMessage());
+            $this->session_id = 'guest_' . uniqid();
+        }
         
         if (empty($this->session_id)) {
             $this->session_id = 'guest_' . uniqid();
         }
         
-        // Start or resume conversation
-        $this->conversation_id = $this->getOrCreateConversation();
+        $this->user_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
+        
+        // Start or resume conversation (may return null if tables don't exist)
+        try {
+            $this->conversation_id = $this->getOrCreateConversation();
+        } catch (Exception $e) {
+            error_log("Chatbot conversation init error: " . $e->getMessage());
+            $this->conversation_id = null; // Continue without conversation tracking
+        }
     }
     
     public function processMessage($user_message) {
@@ -122,10 +174,17 @@ class EventChatbotPDO {
     
     private function getOrCreateConversation() {
         try {
+            // Check if table exists first
+            $tableCheck = $this->pdo->query("SHOW TABLES LIKE 'chatbot_conversations'");
+            if ($tableCheck->rowCount() === 0) {
+                error_log("Chatbot: chatbot_conversations table does not exist");
+                return null; // Return null if table doesn't exist
+            }
+            
             // Check if conversation exists
             $stmt = $this->pdo->prepare("
                 SELECT id FROM chatbot_conversations 
-                WHERE session_id = ? AND status = 'active' 
+                WHERE session_id = ? AND (status = 'active' OR status IS NULL)
                 ORDER BY created_at DESC LIMIT 1
             ");
             $stmt->execute([$this->session_id]);
@@ -149,7 +208,7 @@ class EventChatbotPDO {
             
         } catch (PDOException $e) {
             error_log("Chatbot conversation error: " . $e->getMessage());
-            return null;
+            return null; // Return null on error, chatbot will still work
         }
     }
     
@@ -157,6 +216,12 @@ class EventChatbotPDO {
         if (!$this->conversation_id) return false;
         
         try {
+            // Check if table exists first
+            $tableCheck = $this->pdo->query("SHOW TABLES LIKE 'chatbot_messages'");
+            if ($tableCheck->rowCount() === 0) {
+                return false; // Silently fail if table doesn't exist
+            }
+            
             $stmt = $this->pdo->prepare("
                 INSERT INTO chatbot_messages (conversation_id, message_type, message_text, intent, confidence) 
                 VALUES (?, ?, ?, ?, ?)
@@ -165,12 +230,18 @@ class EventChatbotPDO {
             
         } catch (PDOException $e) {
             error_log("Chatbot message log error: " . $e->getMessage());
-            return false;
+            return false; // Silently fail, don't break chatbot
         }
     }
     
     private function checkTrainingData($message) {
         try {
+            // Check if table exists first
+            $tableCheck = $this->pdo->query("SHOW TABLES LIKE 'chatbot_training'");
+            if ($tableCheck->rowCount() === 0) {
+                return false; // Table doesn't exist, skip training data
+            }
+            
             $message_lower = strtolower($message);
             $words = explode(' ', preg_replace('/[^a-z0-9\s]/', '', $message_lower));
             
@@ -204,20 +275,24 @@ class EventChatbotPDO {
             $row = $stmt->fetch();
             
             if ($row) {
-                // Update use count
-                $update_stmt = $this->pdo->prepare("
-                    UPDATE chatbot_training 
-                    SET use_count = use_count + 1 
-                    WHERE id = (
-                        SELECT id FROM (
-                            SELECT id FROM chatbot_training 
-                            WHERE is_active = 1 AND ($where_clause)
-                            ORDER BY use_count DESC, LENGTH(user_input) ASC 
-                            LIMIT 1
-                        ) AS temp
-                    )
-                ");
-                $update_stmt->execute($params);
+                // Update use count (optional, don't fail if it doesn't work)
+                try {
+                    $update_stmt = $this->pdo->prepare("
+                        UPDATE chatbot_training 
+                        SET use_count = use_count + 1 
+                        WHERE id = (
+                            SELECT id FROM (
+                                SELECT id FROM chatbot_training 
+                                WHERE is_active = 1 AND ($where_clause)
+                                ORDER BY use_count DESC, LENGTH(user_input) ASC 
+                                LIMIT 1
+                            ) AS temp
+                        )
+                    ");
+                    $update_stmt->execute($params);
+                } catch (PDOException $e) {
+                    // Ignore update errors
+                }
                 
                 return $row['correct_response'];
             }
@@ -423,27 +498,53 @@ class EventChatbotPDO {
     }
     
     private function createResponse($message) {
-        return json_encode([
+        return [
             'success' => true,
             'response' => $message,
             'user_id' => $this->user_id,
             'session_id' => $this->session_id,
             'conversation_id' => $this->conversation_id,
             'timestamp' => date('Y-m-d H:i:s')
-        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        ];
     }
 }
 
 // Handle requests
 try {
-    // Get PDO connection from your existing code
+    // Get database connection - use global $pdo created by db_connect.php
     global $pdo;
     
     if (!isset($pdo) || !$pdo) {
-        throw new Exception("PDO database connection failed");
+        // Fallback: try Database class
+        if (class_exists('Database')) {
+            $database = new Database();
+            $pdo = $database->getConnection();
+        }
+        
+        if (!$pdo) {
+            throw new Exception("Database connection failed");
+        }
     }
     
-    $chatbot = new EventChatbotPDO($pdo);
+    // Instantiate chatbot with error handling
+    try {
+        $chatbot = new EventChatbotPDO($pdo);
+    } catch (Exception $e) {
+        ob_clean();
+        error_log("Chatbot instantiation error: " . $e->getMessage());
+        error_log("Chatbot instantiation trace: " . $e->getTraceAsString());
+        if (!headers_sent()) {
+            http_response_code(500);
+            header('Content-Type: application/json');
+        }
+        echo json_encode([
+            'success' => false,
+            'error' => 'Chatbot initialization failed',
+            'message' => 'Please try again later',
+            'error_details' => $e->getMessage()
+        ]);
+        exit();
+    }
     
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $input = file_get_contents('php://input');
@@ -456,6 +557,7 @@ try {
         $message = isset($data['message']) ? trim($data['message']) : '';
         
         if (empty($message)) {
+            ob_clean();
             echo json_encode([
                 'success' => false,
                 'error' => 'Please type a question'
@@ -463,12 +565,15 @@ try {
             exit;
         }
         
-        echo $chatbot->processMessage($message);
+        $response = $chatbot->processMessage($message);
+        ob_clean(); // Clear any output before sending JSON
+        echo json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         
     } elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {
         // Return API info
         $user_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
         
+        ob_clean(); // Clear any output before sending JSON
         echo json_encode([
             'success' => true,
             'name' => 'Event Booking Chatbot (PDO)',
@@ -489,7 +594,10 @@ try {
     }
     
 } catch (Exception $e) {
+    ob_clean();
     error_log("Chatbot Error: " . $e->getMessage());
+    error_log("Chatbot Error Trace: " . $e->getTraceAsString());
+    http_response_code(500);
     echo json_encode([
         'success' => false,
         'error' => 'System error',

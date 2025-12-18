@@ -173,7 +173,6 @@
             this.isLoading = false;
             this.apiTested = false;
             this.apiWorking = false;
-            console.log('Chatbot initialized with API URL:', config.apiUrl);
             this.init();
         }
 
@@ -224,25 +223,18 @@
 
         async testApiConnection() {
             try {
-                console.log('Testing API connection at:', config.apiUrl);
                 const testResponse = await fetch(config.apiUrl, {
                     method: 'GET',
                     headers: { 'Accept': 'application/json' }
                 });
-
-                console.log('API response status:', testResponse.status);
                 const text = await testResponse.text();
-                console.log('API raw response:', text.substring(0, 200));
 
                 // Try to parse as JSON
                 try {
                     const data = JSON.parse(text);
                     this.apiWorking = data.success !== false;
-                    console.log('API test result:', this.apiWorking ? 'SUCCESS' : 'FAILED');
                 } catch (e) {
                     this.apiWorking = false;
-                    console.warn('API returned non-JSON response:', e.message);
-
                     // Test alternative URLs
                     await this.testAlternativeUrls();
                 }
@@ -254,7 +246,6 @@
                 }
 
             } catch (error) {
-                console.error('API test failed:', error);
                 this.apiTested = true;
                 this.apiWorking = false;
                 this.addSystemMessage('⚠️ Chatbot is in offline mode. Basic responses only.');
@@ -262,7 +253,6 @@
         }
 
         async testAlternativeUrls() {
-            console.log('Testing alternative URLs...');
 
             // Get script URL again for fallback calculations
             const scripts = document.getElementsByTagName('script');
@@ -287,24 +277,20 @@
 
             for (const url of urls) {
                 try {
-                    console.log('Testing URL:', url);
                     const response = await fetch(url, {
                         method: 'GET',
                         headers: { 'Accept': 'application/json' }
                     });
                     if (response.ok) {
                         const text = await response.text();
-                        console.log('Response from', url, ':', text.substring(0, 100));
                         if (text.includes('success') || text.includes('API') || text.includes('json')) {
                             config.apiUrl = url;
                             this.apiWorking = true;
-                            console.log('Found working API URL:', url);
                             this.addSystemMessage('✅ Chatbot API connection restored!');
                             break;
                         }
                     }
                 } catch (e) {
-                    console.log('Failed to test', url, ':', e.message);
                     continue;
                 }
             }
@@ -357,8 +343,6 @@
             this.showTyping();
 
             try {
-                // Send with user context
-                console.log('Sending message to API:', config.apiUrl);
                 const response = await fetch(config.apiUrl, {
                     method: 'POST',
                     headers: {
@@ -369,26 +353,30 @@
                     body: JSON.stringify({ message: message })
                 });
 
-                console.log('API response status:', response.status);
-
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    let errorText = '';
+                    try {
+                        errorText = await response.text();
+                    } catch (e) {
+                        errorText = `HTTP ${response.status}`;
+                    }
+                    throw new Error(`HTTP error! status: ${response.status}. Response: ${errorText.substring(0, 200)}`);
                 }
 
-                const data = await response.json();
-                console.log('API response data:', data);
+                const responseText = await response.text();
+                
+                let data;
+                try {
+                    data = JSON.parse(responseText);
+                } catch (jsonError) {
+                    console.error('Chatbot JSON parse error:', jsonError);
+                    throw new Error(`Invalid JSON response from API. Response: ${responseText.substring(0, 200)}`);
+                }
 
                 if (data.success) {
                     setTimeout(() => {
                         this.hideTyping();
                         this.addMessage(data.response, 'bot');
-
-                        // Show debug info in console
-                        console.log('Chatbot response:', {
-                            user_id: data.user_id,
-                            conversation_id: data.conversation_id,
-                            session_id: data.session_id
-                        });
                     }, 800);
                 } else {
                     throw new Error(data.error || 'Failed to get response');

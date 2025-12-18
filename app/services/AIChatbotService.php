@@ -587,7 +587,11 @@ class AIChatbotService {
             $prompt .= "- User ID: " . ($context['user']['id'] ?? 'Guest') . "\n";
             $prompt .= "- Status: " . ($context['user']['logged_in'] ? 'Logged in' : 'Guest user') . "\n";
             if (!empty($context['user']['bookings'])) {
-                $prompt .= "- Active Bookings: " . count($context['user']['bookings']) . "\n";
+                // bookings is already a count (integer), not an array
+                $bookingsCount = is_array($context['user']['bookings']) 
+                    ? count($context['user']['bookings']) 
+                    : $context['user']['bookings'];
+                $prompt .= "- Active Bookings: " . $bookingsCount . "\n";
             }
             $prompt .= "\n";
         }
