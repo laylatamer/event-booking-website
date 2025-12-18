@@ -1,331 +1,430 @@
 <?php
-// tickets.php - Admin Tickets View
-// Initialize database connection
 require_once __DIR__ . '/../../../config/db_connect.php';
 $database = new Database();
 $db = $database->getConnection();
 
-// Get events for dropdown
-$events = [];
-try {
-    $eventsQuery = "SELECT id, title FROM events ORDER BY date DESC";
-    $eventsStmt = $db->prepare($eventsQuery);
-    $eventsStmt->execute();
-    $events = $eventsStmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (Exception $e) {
-    $events = [];
-}
-
-// Get tickets from database
-$tickets = [];
-$totalTickets = 0;
-$activeTickets = 0;
-$soldOutTickets = 0;
-$availableTickets = 0;
-$averagePrice = 0;
+$seatingTypes = ['standing', 'stadium', 'theatre'];
+$eventsBySeatingType = [];
+$statistics = [
+    'total_tickets' => 0,
+    'active' => 0,
+    'sold_out' => 0,
+    'available_tickets' => 0,
+    'average_price' => 0
+];
 
 try {
-    // Get statistics
-    $statsQuery = "SELECT 
-        COUNT(*) as total_tickets,
-        SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_tickets,
-        SUM(CASE WHEN status = 'sold_out' THEN 1 ELSE 0 END) as sold_out_tickets,
-        SUM(quantity_available) as available_tickets,
-        AVG(price) as average_price
-    FROM tickets";
+    foreach ($seatingTypes as $seatingType) {
+        $query = "SELECT 
+                    e.id,
+                    e.title,
+                    e.date,
+                    e.end_date,
+                    e.status as event_status,
+                    v.seating_type,
+                    v.name as venue_name
+                  FROM events e
+                  JOIN venues v ON e.venue_id = v.id
+                  WHERE v.seating_type = :seating_type
+                  AND e.status = 'active'
+                  ORDER BY e.date ASC";
+        
+        $stmt = $db->prepare($query);
+        $stmt->bindParam(':seating_type', $seatingType);
+        $stmt->execute();
+        $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        foreach ($events as &$event) {
+            $categoriesQuery = "SELECT 
+                                  category_name,
+                                  price,
+                                  total_tickets,
+                                  available_tickets
+                                FROM event_ticket_categories
+                                WHERE event_id = :event_id
+                                ORDER BY price ASC";
+            
+            $catStmt = $db->prepare($categoriesQuery);
+            $catStmt->bindParam(':event_id', $event['id']);
+            $catStmt->execute();
+            $event['categories'] = $catStmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            $event['status'] = (strtotime($event['date']) < time()) ? 'expired' : 'active';
+            
+            foreach ($event['categories'] as $category) {
+                $statistics['total_tickets'] += $category['total_tickets'];
+                $statistics['available_tickets'] += $category['available_tickets'];
+                
+                if ($category['available_tickets'] == 0 && $category['total_tickets'] > 0) {
+                    $statistics['sold_out']++;
+                }
+            }
+            
+            if ($event['status'] === 'active') {
+                $statistics['active'] += count($event['categories']);
+            }
+        }
+        
+        $eventsBySeatingType[$seatingType] = $events;
+    }
     
-    $statsStmt = $db->prepare($statsQuery);
-    $statsStmt->execute();
-    $stats = $statsStmt->fetch(PDO::FETCH_ASSOC);
+    $totalPrice = 0;
+    $priceCount = 0;
+    foreach ($eventsBySeatingType as $events) {
+        foreach ($events as $event) {
+            foreach ($event['categories'] as $category) {
+                $totalPrice += $category['price'];
+                $priceCount++;
+            }
+        }
+    }
     
-    $totalTickets = $stats['total_tickets'] ?? 0;
-    $activeTickets = $stats['active_tickets'] ?? 0;
-    $soldOutTickets = $stats['sold_out_tickets'] ?? 0;
-    $availableTickets = $stats['available_tickets'] ?? 0;
-    $averagePrice = number_format($stats['average_price'] ?? 0, 2);
-    
-    // Get tickets with event info
-    $ticketsQuery = "SELECT 
-        t.*,
-        e.title as event_title,
-        e.date as event_date
-    FROM tickets t
-    LEFT JOIN events e ON t.event_id = e.id
-    ORDER BY t.created_at DESC";
-    
-    $ticketsStmt = $db->prepare($ticketsQuery);
-    $ticketsStmt->execute();
-    $tickets = $ticketsStmt->fetchAll(PDO::FETCH_ASSOC);
+    $statistics['average_price'] = $priceCount > 0 ? number_format($totalPrice / $priceCount, 2) : '0.00';
     
 } catch (Exception $e) {
-    // Handle error silently
     error_log("Tickets page error: " . $e->getMessage());
 }
 ?>
 
 <div id="tickets-section" class="section-content">
-    
     <div class="content-card">
         <div class="stats-grid small">
             <div class="stat-card small">
                 <p class="stat-label">Total Tickets</p>
-                <h3 class="stat-value" id="stat-total-tickets"><?php echo $totalTickets; ?></h3>
+                <h3 class="stat-value" id="stat-total-tickets"><?php echo $statistics['total_tickets']; ?></h3>
             </div>
             <div class="stat-card small">
                 <p class="stat-label">Active</p>
-                <h3 class="stat-value" id="stat-active-tickets"><?php echo $activeTickets; ?></h3>
+                <h3 class="stat-value" id="stat-active-tickets"><?php echo $statistics['active']; ?></h3>
             </div>
             <div class="stat-card small">
                 <p class="stat-label">Sold Out</p>
-                <h3 class="stat-value" id="stat-sold-out-tickets"><?php echo $soldOutTickets; ?></h3>
+                <h3 class="stat-value" id="stat-sold-out-tickets"><?php echo $statistics['sold_out']; ?></h3>
             </div>
             <div class="stat-card small">
                 <p class="stat-label">Available Tickets</p>
-                <h3 class="stat-value" id="stat-available-tickets"><?php echo $availableTickets; ?></h3>
+                <h3 class="stat-value" id="stat-available-tickets"><?php echo $statistics['available_tickets']; ?></h3>
             </div>
             <div class="stat-card small">
                 <p class="stat-label">Average Price</p>
-                <h3 class="stat-value" id="stat-average-price">$<?php echo $averagePrice; ?></h3>
+                <h3 class="stat-value" id="stat-average-price">$<?php echo $statistics['average_price']; ?></h3>
             </div>
         </div>
     </div>
 
-    <div class="content-card">
-        <div class="table-controls">
-            <div class="controls-left">
-                <div class="search-container">
-                    <input type="text" id="ticket-search" placeholder="Search tickets..." class="search-input">
-                    <i data-feather="search" class="search-icon"></i>
-                </div>
-                <select id="ticket-status-filter" class="filter-select">
-                    <option value="">All Status</option>
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                    <option value="sold_out">Sold Out</option>
-                </select>
-                <select id="ticket-event-filter" class="filter-select">
-                    <option value="">All Events</option>
-                    <?php foreach ($events as $event): ?>
-                    <option value="<?php echo $event['id']; ?>"><?php echo htmlspecialchars($event['title']); ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-            <div class="controls-right">
-                <button class="icon-btn" id="refresh-tickets-btn">
-                    <i data-feather="refresh-cw"></i>
-                </button>
-            </div>
+    <?php foreach ($seatingTypes as $seatingType): 
+        $events = $eventsBySeatingType[$seatingType] ?? [];
+        if (empty($events)) continue;
+    ?>
+    <div class="content-card seating-type-container" data-seating-type="<?php echo $seatingType; ?>">
+        <div class="seating-type-header">
+            <h2 class="seating-type-title"><?php echo ucfirst($seatingType); ?> Events</h2>
+            <span class="event-count-badge"><?php echo count($events); ?> event(s)</span>
         </div>
 
-        <div class="table-container">
-            <table class="data-table" id="tickets-table">
-                <thead>
-                    <tr>
-                        <th>Ticket Name</th>
-                        <th>Event</th>
-                        <th>Price</th>
-                        <th>Quantity</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="tickets-table-body">
-                    <?php if (empty($tickets)): ?>
-                    <tr>
-                        <td colspan="6" class="empty-state">
-                            <i data-feather="ticket"></i>
-                            <p>No tickets found</p>
-                        </td>
-                    </tr>
-                    <?php else: ?>
-                        <?php foreach ($tickets as $ticket): 
-                            // Calculate availability percentage
-                            $availabilityPercentage = ($ticket['quantity_total'] > 0) ? 
-                                ($ticket['quantity_available'] / $ticket['quantity_total']) * 100 : 0;
-                            
-                            $availabilityClass = 'success';
-                            if ($availabilityPercentage < 20) {
-                                $availabilityClass = 'danger';
-                            } else if ($availabilityPercentage < 50) {
-                                $availabilityClass = 'warning';
-                            }
-                            
-                            // Format price
-                            $price = number_format($ticket['price'], 2);
-                            
-                            // Format date
-                            $eventDate = $ticket['event_date'] ? date('M d, Y', strtotime($ticket['event_date'])) : 'N/A';
-                        ?>
+        <?php foreach ($events as $event): ?>
+        <div class="event-container">
+            <div class="event-header">
+                <h3 class="event-name"><?php echo htmlspecialchars($event['title']); ?></h3>
+                <span class="event-status-badge <?php echo $event['status']; ?>">
+                    <?php echo ucfirst($event['status']); ?>
+                </span>
+            </div>
+
+            <div class="event-categories-table">
+                <table class="categories-table">
+                    <thead>
                         <tr>
-                            <td>
-                                <strong><?php echo htmlspecialchars($ticket['name']); ?></strong>
-                                <br><small class="text-muted"><?php echo htmlspecialchars($ticket['type']); ?></small>
-                            </td>
-                            <td>
-                                <div class="event-info">
-                                    <strong><?php echo htmlspecialchars($ticket['event_title'] ?? 'Unknown Event'); ?></strong>
-                                    <small><?php echo $eventDate; ?></small>
+                            <th class="event-column">Event</th>
+                            <?php 
+                            $categoryCount = count($event['categories']);
+                            for ($i = 0; $i < 3; $i++): 
+                                $category = $event['categories'][$i] ?? null;
+                            ?>
+                            <th class="category-column">
+                                <div class="category-header">
+                                    <span class="category-name">
+                                        <?php echo $category ? htmlspecialchars($category['category_name']) : '-'; ?>
+                                    </span>
                                 </div>
+                            </th>
+                            <?php endfor; ?>
+                            <th class="status-column">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="event-name-cell">
+                                <strong><?php echo htmlspecialchars($event['title']); ?></strong>
+                                <br>
+                                <small class="text-muted"><?php echo htmlspecialchars($event['venue_name']); ?></small>
+                                <br>
+                                <small class="text-muted"><?php echo date('M d, Y', strtotime($event['date'])); ?></small>
                             </td>
-                            <td>
-                                <strong>$<?php echo $price; ?></strong>
-                            </td>
-                            <td>
-                                <div class="quantity-info">
-                                    <div class="quantity-bar">
-                                        <div class="quantity-fill" style="width: <?php echo $availabilityPercentage; ?>%"></div>
-                                    </div>
-                                    <div class="quantity-numbers">
-                                        <span class="text-<?php echo $availabilityClass; ?>"><?php echo $ticket['quantity_available']; ?></span>
-                                        <span class="text-muted">/ <?php echo $ticket['quantity_total']; ?></span>
-                                        <small class="text-muted">(<?php echo $ticket['quantity_sold']; ?> sold)</small>
+                            <?php 
+                            for ($i = 0; $i < 3; $i++): 
+                                $category = $event['categories'][$i] ?? null;
+                            ?>
+                            <td class="category-data-cell">
+                                <?php if ($category): ?>
+                                <div class="category-info">
+                                    <div class="category-label"><?php echo htmlspecialchars($category['category_name']); ?></div>
+                                    <div class="category-price">$<?php echo number_format($category['price'], 2); ?></div>
+                                    <div class="category-quantity">
+                                        <span class="quantity-available"><?php echo $category['available_tickets']; ?></span>
+                                        <span class="quantity-total">/ <?php echo $category['total_tickets']; ?></span>
                                     </div>
                                 </div>
+                                <?php else: ?>
+                                <div class="category-info empty">
+                                    <span class="text-muted">-</span>
+                                </div>
+                                <?php endif; ?>
                             </td>
-                            <td>
-                                <span class="status-badge <?php echo $ticket['status']; ?>">
-                                    <?php echo ucfirst($ticket['status']); ?>
+                            <?php endfor; ?>
+                            <td class="status-cell">
+                                <span class="status-badge <?php echo $event['status']; ?>">
+                                    <?php echo ucfirst($event['status']); ?>
                                 </span>
                             </td>
-                            <td>
-                                <div class="action-buttons">
-                                    <button class="action-btn update-status-btn" data-id="<?php echo $ticket['id']; ?>" data-name="<?php echo htmlspecialchars($ticket['name']); ?>" title="Update Status">
-                                        <i data-feather="toggle-right"></i>
-                                    </button>
-                                    <button class="action-btn delete delete-ticket" data-id="<?php echo $ticket['id']; ?>" data-name="<?php echo htmlspecialchars($ticket['name']); ?>" title="Delete Ticket">
-                                        <i data-feather="trash-2"></i>
-                                    </button>
-                                </div>
-                            </td>
                         </tr>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
-
-        <div class="table-footer">
-            <div class="table-info">
-                Showing <span id="tickets-total"><?php echo count($tickets); ?></span> entries
+                    </tbody>
+                </table>
             </div>
         </div>
+        <?php endforeach; ?>
     </div>
+    <?php endforeach; ?>
+
+    <?php if (empty(array_filter($eventsBySeatingType))): ?>
+    <div class="content-card">
+        <div class="empty-state">
+            <i data-feather="ticket"></i>
+            <p>No tickets found</p>
+        </div>
+    </div>
+    <?php endif; ?>
 </div>
 
-<!-- Quick Update Modal -->
-<div id="quick-update-modal" class="modal hidden">
-    <div class="modal-content small">
-        <div class="modal-header">
-            <h3 id="quick-update-title">Update Ticket Status</h3>
-            <button class="close-modal" data-modal="quick-update">
-                <i data-feather="x"></i>
-            </button>
-        </div>
-        <div class="confirmation-content">
-            <p id="quick-update-message"></p>
-            <div class="form-group" id="quick-update-field">
-                <!-- Dynamic field will be inserted here -->
-            </div>
-        </div>
-        <div class="modal-actions">
-            <button type="button" class="secondary-btn" data-modal="quick-update">Cancel</button>
-            <button type="button" id="confirm-quick-update-btn" class="primary-btn">Update</button>
-        </div>
-    </div>
-</div>
+<style>
+.seating-type-container {
+    margin-bottom: 2rem;
+    border: 2px solid #1f2937;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #000000;
+}
 
-<!-- Confirmation Modal -->
-<div id="confirmation-modal" class="modal hidden">
-    <div class="modal-content small">
-        <div class="modal-header">
-            <h3>Confirm Action</h3>
-            <button class="close-modal" data-modal="confirmation">
-                <i data-feather="x"></i>
-            </button>
-        </div>
-        <div class="confirmation-content">
-            <p id="confirmation-message">Are you sure you want to perform this action?</p>
-        </div>
-        <div class="modal-actions">
-            <button type="button" class="secondary-btn" data-modal="confirmation">Cancel</button>
-            <button type="button" id="confirm-action-btn" class="danger-btn">Confirm</button>
-        </div>
-    </div>
-</div>
+.seating-type-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    background: #1f2937;
+    border-bottom: 2px solid #374151;
+}
+
+.seating-type-title {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #ffffff;
+    text-transform: capitalize;
+}
+
+.event-count-badge {
+    background: var(--primary-orange, #f97316);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.event-container {
+    margin: 1.5rem;
+    padding: 1.5rem;
+    background: #111827;
+    border: 1px solid #374151;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.event-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #374151;
+}
+
+.event-name {
+    margin: 0;
+    font-size: 1.25rem;
+    color: #ffffff;
+}
+
+.event-status-badge {
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.event-status-badge.active {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.event-status-badge.expired {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.event-categories-table {
+    overflow-x: auto;
+}
+
+.categories-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.categories-table thead {
+    background: #1f2937;
+}
+
+.categories-table th {
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+    color: #ffffff;
+    border-bottom: 2px solid #374151;
+}
+
+.category-column {
+    min-width: 150px;
+}
+
+.category-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.category-name {
+    font-weight: 600;
+    color: var(--primary-orange, #f97316);
+    margin-bottom: 0.25rem;
+}
+
+.categories-table td {
+    padding: 1rem;
+    border-bottom: 1px solid #374151;
+    vertical-align: middle;
+    color: #ffffff;
+}
+
+.event-name-cell {
+    min-width: 200px;
+    color: #ffffff;
+}
+
+.event-name-cell .text-muted {
+    color: #9ca3af;
+}
+
+.category-data-cell {
+    text-align: center;
+    vertical-align: top;
+}
+
+.category-info {
+    padding: 0.5rem;
+}
+
+.category-info.empty {
+    color: #9ca3af;
+    font-style: italic;
+}
+
+.category-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #f97316;
+    margin-bottom: 0.5rem;
+    text-transform: capitalize;
+}
+
+.category-price {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 0.5rem;
+}
+
+.category-quantity {
+    font-size: 0.875rem;
+    color: #9ca3af;
+}
+
+.quantity-available {
+    font-weight: 600;
+    color: #059669;
+}
+
+.quantity-total {
+    color: #9ca3af;
+}
+
+.status-badge {
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: capitalize;
+    display: inline-block;
+}
+
+.status-badge.active {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.status-badge.expired {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: #6b7280;
+}
+
+.empty-state i {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 1rem;
+    color: #9ca3af;
+}
+
+@media (max-width: 768px) {
+    .event-categories-table {
+        overflow-x: scroll;
+    }
+    
+    .category-column {
+        min-width: 120px;
+    }
+}
+</style>
 
 <script>
-// Simple JavaScript for basic functionality
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize feather icons
     if (typeof feather !== 'undefined') {
         feather.replace();
-    }
-    
-    // Refresh button
-    document.getElementById('refresh-tickets-btn')?.addEventListener('click', function() {
-        window.location.reload();
-    });
-    
-    // Search functionality
-    const searchInput = document.getElementById('ticket-search');
-    if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase();
-            const rows = document.querySelectorAll('#tickets-table-body tr');
-            
-            rows.forEach(row => {
-                const text = row.textContent.toLowerCase();
-                row.style.display = text.includes(searchTerm) ? '' : 'none';
-            });
-        });
-    }
-    
-    // Status filter
-    const statusFilter = document.getElementById('ticket-status-filter');
-    if (statusFilter) {
-        statusFilter.addEventListener('change', function() {
-            const filterValue = this.value;
-            const rows = document.querySelectorAll('#tickets-table-body tr');
-            
-            rows.forEach(row => {
-                if (!filterValue) {
-                    row.style.display = '';
-                    return;
-                }
-                
-                const statusCell = row.querySelector('.status-badge');
-                if (statusCell && statusCell.classList.contains(filterValue)) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-        });
-    }
-    
-    // Event filter
-    const eventFilter = document.getElementById('ticket-event-filter');
-    if (eventFilter) {
-        eventFilter.addEventListener('change', function() {
-            const filterValue = this.value;
-            const rows = document.querySelectorAll('#tickets-table-body tr');
-            
-            rows.forEach(row => {
-                if (!filterValue || filterValue === '') {
-                    row.style.display = '';
-                    return;
-                }
-                
-                const eventName = row.querySelector('.event-info strong')?.textContent || '';
-                const eventOption = eventFilter.querySelector(`option[value="${filterValue}"]`)?.textContent || '';
-                
-                if (eventName.includes(eventOption.split(' - ')[0])) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-        });
     }
 });
 </script>
