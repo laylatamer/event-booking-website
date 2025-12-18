@@ -17,6 +17,12 @@ if ($reservationIds) {
     // Extend expiration by 30 minutes when user reaches checkout
     $reservation->extendExpirationForReservations($reservationIds, 30);
 }
+
+// Get customization data from session if returning from customization page
+$customizationData = null;
+if (isset($_SESSION['ticket_customization'])) {
+    $customizationData = $_SESSION['ticket_customization'];
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -60,6 +66,10 @@ if ($reservationIds) {
                             <div class="chk-totals-summary__row">
                                 <span class="chk-totals-summary__label">Processing Fee</span>
                                 <span class="chk-totals-summary__value" id="processing-fee">$0.00</span>
+                            </div>
+                            <div class="chk-totals-summary__row" id="customization-fee-row" style="display: none;">
+                                <span class="chk-totals-summary__label">Customization Fee</span>
+                                <span class="chk-totals-summary__value" id="customization-fee">$0.00</span>
                             </div>
                             <div class="chk-totals-summary__row chk-totals-summary__row--total">
                                 <span>Total</span>
@@ -284,6 +294,10 @@ if ($reservationIds) {
         </div>
     </div>
 
+    <script>
+        // Pass customization data to JavaScript if available
+        window.customizationData = <?php echo json_encode($customizationData ?? null); ?>;
+    </script>
     <script type = "module" src="../../public/js/checkout.js" ></script>
     
 </body>

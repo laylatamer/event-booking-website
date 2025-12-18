@@ -1,12 +1,35 @@
-// Initialize Vanta.js background
-VANTA.NET({
-    el: "#vanta-bg",
-    color: 0xf97316,
-    backgroundColor: 0x1a1a1a,
-    points: 12,
-    maxDistance: 20,
-    spacing: 15
-});
+// Initialize Vanta.js background (only if element exists and VANTA is available)
+// Wait for DOM to be ready and VANTA to be fully loaded
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initVanta);
+} else {
+    // DOM already loaded, wait a bit for VANTA to be available
+    setTimeout(initVanta, 100);
+}
+
+function initVanta() {
+    if (typeof VANTA === 'undefined') {
+        // VANTA not loaded yet, try again
+        setTimeout(initVanta, 200);
+        return;
+    }
+    
+    const vantaElement = document.getElementById('vanta-bg');
+    if (vantaElement) {
+        try {
+            VANTA.NET({
+                el: "#vanta-bg",
+                color: 0xf97316,
+                backgroundColor: 0x1a1a1a,
+                points: 12,
+                maxDistance: 20,
+                spacing: 15
+            });
+        } catch (error) {
+            console.warn('VANTA.js initialization failed:', error);
+        }
+    }
+}
 
 // Initialize feather icons
 feather.replace();
@@ -24,10 +47,46 @@ let events = []; // Will be populated from API
 // Initialize default date/time variables (will be updated if event found)
 let formattedDate = 'N/A';
 let formattedTime = 'N/A';
+// Store max tickets limit from event
+let maxTicketsPerBooking = null;
 
 // Fetch real event data from API and initialize order
 async function initializeCheckout() {
     try {
+        // Always fetch fresh data from reservations if available in URL
+        // Don't restore from sessionStorage if we have reservation IDs in URL
+        const shouldRestoreFromStorage = !reservationsParam && urlEventId;
+        
+        if (shouldRestoreFromStorage) {
+            // Check if we're returning from customization - try to restore orderItems from sessionStorage
+            const savedOrderItems = sessionStorage.getItem('checkout_orderItems');
+            const savedEvents = sessionStorage.getItem('checkout_events');
+            
+            if (savedOrderItems && savedEvents) {
+                try {
+                    orderItems = JSON.parse(savedOrderItems);
+                    events = JSON.parse(savedEvents);
+                    
+                    // Verify the event ID matches
+                    if (events.length > 0 && events[0].id === urlEventId) {
+                        // Restore successful - render immediately
+                        const eventDate = new Date(events[0].date);
+                        formattedDate = eventDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                        formattedTime = eventDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                        
+                        renderOrderItems();
+                        calculateTotals();
+                        setupEventListeners();
+                        setupInputHighlights();
+                        setTimeout(updateTicketsAvailable, 100);
+                        return; // Exit early - we've restored from sessionStorage
+                    }
+                } catch (e) {
+                    console.warn("Failed to restore from sessionStorage, will reload:", e);
+                }
+            }
+        }
+        
         // Fetch event data from API
         if (urlEventId) {
             const response = await fetch(`../../public/api/events_API.php?action=getEvent&id=${urlEventId}`);
@@ -37,46 +96,108 @@ async function initializeCheckout() {
                 const currentEvent = data.event;
                 const ticketCategories = data.event.ticket_categories || [];
                 
-                // Get average or base price from ticket categories
-                let basePrice = 0;
-                if (ticketCategories.length > 0) {
-                    // Use the average price of all categories
-                    const totalPrice = ticketCategories.reduce((sum, cat) => sum + parseFloat(cat.price), 0);
-                    basePrice = totalPrice / ticketCategories.length;
-                } else {
-                    basePrice = 50.00; // Fallback price
-                }
+                // Store max tickets limit
+                maxTicketsPerBooking = currentEvent.max_tickets_per_booking || null;
                 
-                // Add price to event object
-                currentEvent.price = basePrice;
                 currentEvent.location = currentEvent.location || currentEvent.venue || 'TBA';
                 events = [currentEvent]; // Add to events array
                 
-                // Calculate quantity from reservations
-                let urlQuantity = parseInt(urlParams.get('quantity'));
-                if (!urlQuantity && reservationsParam) {
-                    // Fetch actual quantities from each reservation
+                // Build orderItems dynamically from reservations with correct category prices
+                orderItems = [];
+                
+                if (reservationsParam) {
+                    // Fetch actual reservations with category details
                     const reservationIds = reservationsParam.split(',').filter(id => id.trim());
-                    urlQuantity = 0;
+                    
+                    // Group reservations by category
+                    const categoryMap = {};
                     
                     for (const resId of reservationIds) {
-                        const resResponse = await fetch(`../../public/api/ticket_reservations.php?action=getReservation&id=${resId}`);
-                        if (resResponse.ok) {
-                            const resData = await resResponse.json();
-                            if (resData.success && resData.reservation) {
-                                urlQuantity += parseInt(resData.reservation.quantity) || 0;
+                        try {
+                            const resResponse = await fetch(`../../public/api/ticket_reservations.php?action=getReservation&id=${resId}`);
+                            if (resResponse.ok) {
+                                const resData = await resResponse.json();
+                                if (resData.success && resData.reservation) {
+                                    const reservation = resData.reservation;
+                                    const categoryName = reservation.category_name;
+                                    const quantity = parseInt(reservation.quantity) || 0;
+                                    
+                                    if (!categoryName || quantity <= 0) {
+                                        console.warn(`Invalid reservation data for ID ${resId}:`, reservation);
+                                        continue;
+                                    }
+                                    
+                                    // Find the price for this category
+                                    const category = ticketCategories.find(cat => cat.category_name === categoryName);
+                                    const categoryPrice = category ? parseFloat(category.price) : 0;
+                                    
+                                    if (!categoryMap[categoryName]) {
+                                        categoryMap[categoryName] = {
+                                            categoryName: categoryName,
+                                            quantity: 0,
+                                            price: categoryPrice
+                                        };
+                                    }
+                                    categoryMap[categoryName].quantity += quantity;
+                                } else {
+                                    console.warn(`Failed to get reservation ${resId}:`, resData);
+                                }
+                            } else {
+                                console.warn(`HTTP error fetching reservation ${resId}:`, resResponse.status);
                             }
+                        } catch (e) {
+                            console.error("Error fetching reservation:", e);
                         }
+                    }
+                    
+                    // Convert categoryMap to orderItems
+                    Object.keys(categoryMap).forEach(categoryName => {
+                        const catData = categoryMap[categoryName];
+                        if (catData.quantity > 0) {
+                            orderItems.push({
+                                eventId: currentEvent.id,
+                                quantity: catData.quantity,
+                                categoryName: categoryName,
+                                price: catData.price,
+                                ticketType: categoryName
+                            });
+                        }
+                    });
+                    
+                    // Debug: Log what we found
+                    
+                    // Verify we got all reservations
+                    if (Object.keys(categoryMap).length === 0 && reservationIds.length > 0) {
+                        console.error('WARNING: No categories found despite having reservation IDs!');
+                        console.error('This might indicate reservations are missing category_name or are expired.');
+                    }
+                } else {
+                    // Fallback: use quantity parameter if no reservations
+                    const urlQuantity = parseInt(urlParams.get('quantity')) || 0;
+                    if (urlQuantity > 0) {
+                        // Use average price if no specific category
+                        let basePrice = 0;
+                        if (ticketCategories.length > 0) {
+                            const totalPrice = ticketCategories.reduce((sum, cat) => sum + parseFloat(cat.price), 0);
+                            basePrice = totalPrice / ticketCategories.length;
+                        } else {
+                            basePrice = 50.00;
+                        }
+                        
+                        orderItems = [{
+                            eventId: currentEvent.id,
+                            quantity: urlQuantity,
+                            categoryName: ticketCategories.length > 0 ? ticketCategories[0].category_name : 'General',
+                            price: basePrice,
+                            ticketType: "Standard Ticket"
+                        }];
                     }
                 }
                 
-                if (urlQuantity > 0) {
-                    // Create order items
-                    orderItems = [{
-                        eventId: currentEvent.id,
-                        quantity: urlQuantity,
-                        ticketType: "Standard Ticket"
-                    }];
+                if (orderItems.length > 0) {
+                    // Save to sessionStorage for restoration
+                    sessionStorage.setItem('checkout_orderItems', JSON.stringify(orderItems));
+                    sessionStorage.setItem('checkout_events', JSON.stringify(events));
                     
                     // Format date/time
                     const eventDate = new Date(currentEvent.date);
@@ -93,7 +214,7 @@ async function initializeCheckout() {
                     setTimeout(updateTicketsAvailable, 100);
                     setTimeout(updateTicketsAvailable, 500);
                 } else {
-                    console.error("No valid quantity found for reservations");
+                    console.error("No valid order items found");
                 }
             } else {
                 console.error("Failed to load event data");
@@ -180,6 +301,10 @@ function renderOrderItems() {
             const itemFormattedDate = itemEventDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
             const itemFormattedTime = itemEventDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 
+            // Use item price if available (from category), otherwise use event price
+            const itemPrice = item.price || eventItem.price || 0;
+            const ticketType = item.ticketType || item.categoryName || 'Standard Ticket';
+
             // Create the HTML for the order item
             const itemElement = document.createElement('div');
             itemElement.className = 'chk-order-item';
@@ -189,21 +314,21 @@ function renderOrderItems() {
                 </div>
                 <div class="chk-order-item__info">
                     <h3 class="chk-order-item__title">${eventItem.title}</h3>
-                    <p class="chk-order-item__detail">${itemFormattedDate} at ${itemFormattedTime}</p> {/* Use item's date/time */}
+                    <p class="chk-order-item__detail">${itemFormattedDate} at ${itemFormattedTime}</p>
                     <p class="chk-order-item__detail">${eventItem.location}</p>
                     <div class="chk-quantity-control">
-                        <button class="chk-quantity-control__button chk-quantity-btn decrease" data-id="${eventItem.id}">
+                        <button class="chk-quantity-control__button chk-quantity-btn decrease" data-id="${eventItem.id}" data-category="${item.categoryName || ''}" ${item.quantity <= 1 ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}>
                             <i class="fas fa-minus"></i>
                         </button>
-                        <span class="chk-quantity-control__display">${item.quantity}</span> {/* Use item's quantity */}
-                        <button class="chk-quantity-control__button chk-quantity-btn increase" data-id="${eventItem.id}">
+                        <span class="chk-quantity-control__display">${item.quantity}</span>
+                        <button class="chk-quantity-control__button chk-quantity-btn increase" data-id="${eventItem.id}" disabled style="opacity: 0.5; cursor: not-allowed;" title="Cannot increase tickets in checkout">
                             <i class="fas fa-plus"></i>
                         </button>
                     </div>
                 </div>
                 <div class="chk-order-item__price-section">
-                    <p class="chk-order-item__price">$${(eventItem.price * item.quantity).toFixed(2)}</p> {/* Calculate price */}
-                    <p class="chk-order-item__ticket-type">${item.ticketType}</p>
+                    <p class="chk-order-item__price">$${(itemPrice * item.quantity).toFixed(2)}</p>
+                    <p class="chk-order-item__ticket-type">${ticketType}</p>
                 </div>
             `;
             // Add the created item HTML to the page
@@ -212,16 +337,19 @@ function renderOrderItems() {
     });
 
     // IMPORTANT: Re-attach listeners to the NEW +/- buttons after creating them
+    // NOTE: Increase button is disabled in checkout - users cannot add more tickets
     document.querySelectorAll('.chk-quantity-btn.increase').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const eventId = parseInt(this.getAttribute('data-id'));
-            increaseQuantity(eventId);
-        });
+        // Keep button disabled - no click handler needed
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+        btn.style.cursor = 'not-allowed';
+        btn.title = 'Cannot increase tickets in checkout';
     });
     document.querySelectorAll('.chk-quantity-btn.decrease').forEach(btn => {
         btn.addEventListener('click', function() {
             const eventId = parseInt(this.getAttribute('data-id'));
-            decreaseQuantity(eventId);
+            const categoryName = this.getAttribute('data-category') || null;
+            decreaseQuantity(eventId, categoryName);
         });
     });
     
@@ -235,34 +363,81 @@ function renderOrderItems() {
 // Calculate order totals
 function calculateTotals() {
     let subtotal = 0;
+    
+    // Calculate subtotal from orderItems using actual item prices
     orderItems.forEach(item => {
-        const eventItem = events.find(e => e.id === item.eventId);
-        if (eventItem) {
-            subtotal += eventItem.price * item.quantity;
-        }
+        // Use item.price if available (from category), otherwise fallback to event price
+        const itemPrice = item.price || 0;
+        subtotal += itemPrice * item.quantity;
     });
 
+    // Get customization fee from multiple sources - ONLY if tickets were actually customized
+    let customizationFee = 0;
+    let customizedCount = 0;
+    
+    // Try sessionStorage first (from customize-tickets.js)
+    const sessionCustomization = sessionStorage.getItem('ticket_customization');
+    if (sessionCustomization) {
+        try {
+            const customData = JSON.parse(sessionCustomization);
+            customizedCount = parseInt(customData.customized_count || 0);
+            // Only add fee if tickets were actually customized AND it's for the current event
+            const customEventId = parseInt(customData.event_id || 0);
+            if (customizedCount > 0 && customEventId === urlEventId && urlEventId > 0) {
+                customizationFee = parseFloat(customData.customization_cost || 0);
+            } else if (customEventId !== urlEventId && urlEventId > 0) {
+                // Clear old customization data for different event
+                sessionStorage.removeItem('ticket_customization');
+                sessionStorage.removeItem('customization_fee');
+            } else if (customizedCount === 0) {
+                // Clear if no tickets were actually customized
+                sessionStorage.removeItem('ticket_customization');
+                sessionStorage.removeItem('customization_fee');
+            }
+        } catch (e) {
+            console.warn("Failed to parse sessionStorage customization:", e);
+            // Clear invalid data
+            sessionStorage.removeItem('ticket_customization');
+            sessionStorage.removeItem('customization_fee');
+        }
+    }
+    
+    // Try window.customizationData (from PHP session)
+    if (customizedCount === 0 && window.customizationData) {
+        customizedCount = parseInt(window.customizationData.customized_count || 0);
+        // Only use if it's for the current event and tickets were actually customized
+        const phpEventId = parseInt(window.customizationData.event_id || 0);
+        if (customizedCount > 0 && phpEventId === urlEventId && urlEventId > 0) {
+            customizationFee = parseFloat(window.customizationData.customization_cost || 0);
+        }
+    }
+    
     // Calculate fees
     const serviceFee = orderItems.length * 5.99;
     const processingFee = subtotal * 0.03;
-    const total = subtotal + serviceFee + processingFee;
+    const total = subtotal + serviceFee + processingFee + customizationFee;
 
     // Use querySelector for safer element finding, fallback to '0.00'
     const subtotalEl = document.getElementById('subtotal');
     const serviceFeeEl = document.getElementById('service-fee');
     const processingFeeEl = document.getElementById('processing-fee');
+    const customizationFeeEl = document.getElementById('customization-fee');
+    const customizationFeeRow = document.getElementById('customization-fee-row');
     const totalEl = document.getElementById('total');
     const placeOrderBtn = document.getElementById('placeOrderBtn');
 
     if (subtotalEl) subtotalEl.textContent = `$${subtotal.toFixed(2)}`;
     if (serviceFeeEl) serviceFeeEl.textContent = `$${serviceFee.toFixed(2)}`;
     if (processingFeeEl) processingFeeEl.textContent = `$${processingFee.toFixed(2)}`;
+    if (customizationFeeEl) customizationFeeEl.textContent = `$${customizationFee.toFixed(2)}`;
+    if (customizationFeeRow) {
+        customizationFeeRow.style.display = customizationFee > 0 ? 'flex' : 'none';
+    }
     if (totalEl) totalEl.textContent = `$${total.toFixed(2)}`;
-
 
     // Update place order button with total
     if(placeOrderBtn){
-        const isCash = document.getElementById('cashOption')?.classList.contains('chk-payment-method--active'); // Added safe navigation
+        const isCash = document.getElementById('cashOption')?.classList.contains('chk-payment-method--active');
         if (isCash) {
             placeOrderBtn.innerHTML = `<span>Reserve Tickets ($${total.toFixed(2)})</span><i class="fas fa-arrow-right chk-button__icon"></i>`;
         } else {
@@ -276,8 +451,19 @@ function increaseQuantity(eventId) {
     // Find the item in our global orderItems array
     const item = orderItems.find(i => i.eventId === eventId);
     if (item) {
+        // Calculate total tickets across all items
+        const totalTickets = orderItems.reduce((sum, i) => sum + i.quantity, 0);
+        
+        // Check max tickets limit if set
+        if (maxTicketsPerBooking !== null && totalTickets >= maxTicketsPerBooking) {
+            alert(`Maximum ${maxTicketsPerBooking} tickets per booking. You cannot add more tickets.`);
+            return;
+        }
+        
         // Increase its quantity
         item.quantity++;
+        // Save to sessionStorage
+        sessionStorage.setItem('checkout_orderItems', JSON.stringify(orderItems));
         // Re-run the functions to update the display and totals
         renderOrderItems();
         calculateTotals();
@@ -289,13 +475,22 @@ function increaseQuantity(eventId) {
 }
 
 // Decrease item quantity (Modify global array and re-render)
-function decreaseQuantity(eventId) {
-    // Find the item in our global orderItems array
-    const item = orderItems.find(i => i.eventId === eventId);
+function decreaseQuantity(eventId, categoryName) {
+    // Find the item - if categoryName is provided, match by both eventId and categoryName
+    let item;
+    if (categoryName) {
+        item = orderItems.find(i => i.eventId === eventId && i.categoryName === categoryName);
+    } else {
+        // Fallback: find first item with matching eventId
+        item = orderItems.find(i => i.eventId === eventId);
+    }
+    
     // Only decrease if quantity is more than 1
     if (item && item.quantity > 1) {
         // Decrease its quantity
         item.quantity--;
+        // Save to sessionStorage
+        sessionStorage.setItem('checkout_orderItems', JSON.stringify(orderItems));
         // Re-run the functions to update the display and totals
         renderOrderItems();
         calculateTotals();
@@ -303,9 +498,10 @@ function decreaseQuantity(eventId) {
         if (typeof updateTicketsAvailable === 'function') {
             updateTicketsAvailable();
         }
+    } else if (item && item.quantity === 1) {
+        // Remove item if quantity becomes 0 (but we don't allow going below 1)
+        // Just keep it at 1
     }
-    // Optional: Add logic here if you want to remove item if quantity becomes 0
-    // else if (item && item.quantity === 1) { /* Remove item logic */ }
 }
 
 
@@ -595,28 +791,262 @@ function resetForms() {
     clearErrors();
 }
 
-function showPaymentSuccess() {
+async function showPaymentSuccess() {
     const paymentSection = document.getElementById('paymentSection');
-    if(paymentSection) paymentSection.classList.add('chk-animate-pulse'); // Check existence
+    if(paymentSection) paymentSection.classList.add('chk-animate-pulse');
 
+    // Create booking
+    const bookingResult = await createBooking('card');
+    
     setTimeout(() => {
         if(paymentSection) paymentSection.classList.remove('chk-animate-pulse');
         showConfetti();
-        showNoticeModal('Payment Successful', 'Your payment has been processed! Your tickets will be emailed to you shortly.');
-        resetForms(); // Reset all forms
+        if (bookingResult.success) {
+            showNoticeModal('Payment Successful', `Your payment has been processed! Booking Code: ${bookingResult.booking_code}. Your tickets will be emailed to you shortly.`, () => {
+                // Redirect to homepage after modal is closed
+                window.location.href = '../../app/views/homepage.php';
+            });
+        } else {
+            showNoticeModal('Payment Processed', 'Your payment has been processed! However, there was an issue saving your booking. Please contact support with your payment details.');
+        }
+        resetForms();
     }, 1000);
 }
 
-function showReservationSuccess() {
+async function showReservationSuccess() {
     const paymentSection = document.getElementById('paymentSection');
-     if(paymentSection) paymentSection.classList.add('chk-animate-pulse'); // Check existence
+    if(paymentSection) paymentSection.classList.add('chk-animate-pulse');
 
+    // Create booking
+    const bookingResult = await createBooking('cash');
+    
     setTimeout(() => {
         if(paymentSection) paymentSection.classList.remove('chk-animate-pulse');
         showConfetti();
-        showNoticeModal('Reservation Confirmed', 'Your reservation is confirmed! Please bring your ID to the venue.');
-        resetForms(); // Reset all forms
+        if (bookingResult.success) {
+            showNoticeModal('Reservation Confirmed', `Your reservation is confirmed! Booking Code: ${bookingResult.booking_code}. Please bring your ID to the venue.`, () => {
+                // Redirect to homepage after modal is closed
+                window.location.href = '../../app/views/homepage.php';
+            });
+        } else {
+            showNoticeModal('Reservation Error', 'There was an issue saving your reservation. Please contact support.');
+        }
+        resetForms();
     }, 1000);
+}
+
+async function createBooking(paymentMethod) {
+    try {
+        // Get user info
+        const firstName = document.getElementById('firstName')?.value || '';
+        const lastName = document.getElementById('lastName')?.value || '';
+        const email = document.getElementById('email')?.value || '';
+        const phone = document.getElementById('phone')?.value || '';
+        
+        // Get totals
+        const subtotal = parseFloat(document.getElementById('subtotal')?.textContent.replace('$', '') || 0);
+        const serviceFee = parseFloat(document.getElementById('service-fee')?.textContent.replace('$', '') || 0);
+        const processingFee = parseFloat(document.getElementById('processing-fee')?.textContent.replace('$', '') || 0);
+        const customizationFeeEl = document.getElementById('customization-fee');
+        const customizationFee = customizationFeeEl && customizationFeeEl.style.display !== 'none' 
+            ? parseFloat(customizationFeeEl.textContent.replace('$', '') || 0) 
+            : 0;
+        
+        // Get ticket categories from orderItems
+        const ticketCategories = [];
+        const bookedSeats = [];
+        let totalTicketCount = 0;
+        
+        // Get selected seats from sessionStorage (from booking page)
+        let selectedSeatsFromStorage = [];
+        const selectedSeatsStr = sessionStorage.getItem('selected_seats');
+        if (selectedSeatsStr) {
+            try {
+                selectedSeatsFromStorage = JSON.parse(selectedSeatsStr);
+            } catch (e) {
+                console.warn("Failed to parse selected seats:", e);
+            }
+        }
+        
+        // Group seats by category
+        const seatsByCategory = {};
+        selectedSeatsFromStorage.forEach(seat => {
+            if (!seatsByCategory[seat.category_name]) {
+                seatsByCategory[seat.category_name] = [];
+            }
+            seatsByCategory[seat.category_name].push(seat.seat_id);
+        });
+        
+        orderItems.forEach(item => {
+            const categoryName = item.categoryName || item.ticketType;
+            ticketCategories.push({
+                category_name: categoryName,
+                quantity: item.quantity,
+                price: item.price || 0
+            });
+            totalTicketCount += item.quantity;
+            
+            // Add seats for this category if available
+            if (seatsByCategory[categoryName] && seatsByCategory[categoryName].length > 0) {
+                seatsByCategory[categoryName].forEach(seatId => {
+                    bookedSeats.push({
+                        seat_id: seatId,
+                        category_name: categoryName
+                    });
+                });
+            }
+        });
+        
+        // Get reservation IDs from URL or sessionStorage
+        const urlParams = new URLSearchParams(window.location.search);
+        const reservationIds = urlParams.get('reservations') || 
+                              urlParams.get('reservation_ids') ||
+                              sessionStorage.getItem('temp_reservation_ids') ||
+                              null;
+        
+        // Get event ID
+        let eventId = parseInt(urlParams.get('event_id') || urlParams.get('eventId') || 0);
+        if (!eventId && events.length > 0) {
+            eventId = events[0].id;
+        }
+        
+        // Validate event ID
+        if (!eventId || eventId === 0) {
+            console.error('Missing event ID!', { urlParams: urlParams.toString(), events: events });
+            throw new Error('Event ID is required for booking');
+        }
+        
+        // Get customization data if available
+        const customizationData = sessionStorage.getItem('ticket_customization');
+        let ticketDetails = {};
+        if (customizationData) {
+            try {
+                const customData = JSON.parse(customizationData);
+                ticketDetails = {
+                    customized: customData.customized_count > 0,
+                    customized_count: customData.customized_count || 0,
+                    guest_names: customData.guest_names || {},
+                    tickets_by_category: customData.tickets_by_category || {}
+                };
+            } catch (e) {
+                console.warn("Failed to parse customization data:", e);
+            }
+        }
+        
+        // Validate required data
+        if (!firstName || !lastName || !email) {
+            throw new Error('Please fill in all required customer information (First Name, Last Name, Email)');
+        }
+        
+        if (totalTicketCount === 0) {
+            throw new Error('No tickets selected for booking');
+        }
+        
+        if (ticketCategories.length === 0) {
+            throw new Error('No ticket categories found');
+        }
+        
+        // Prepare booking data
+        const bookingData = {
+            user_id: null, // Will be set by backend from session
+            event_id: eventId,
+            ticket_count: totalTicketCount,
+            subtotal: subtotal,
+            service_fee: serviceFee,
+            processing_fee: processingFee,
+            customization_fee: customizationFee,
+            payment_method: paymentMethod,
+            customer_first_name: firstName,
+            customer_last_name: lastName,
+            customer_email: email,
+            customer_phone: phone,
+            ticket_categories: ticketCategories,
+            booked_seats: bookedSeats,
+            reservation_ids: reservationIds,
+            ticket_details: ticketDetails
+        };
+        
+        
+        // Call API
+        const response = await fetch('../../public/api/bookings_API.php?action=create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(bookingData)
+        });
+        
+        // Get response text first
+        const responseText = await response.text();
+        
+        // Check if response is OK
+        if (!response.ok) {
+            console.error('API Error Response (HTTP ' + response.status + '):', responseText);
+            
+            // Try to parse as JSON for better error message
+            let errorData;
+            try {
+                errorData = JSON.parse(responseText);
+                throw new Error(`HTTP ${response.status}: ${errorData.message || errorData.error || 'Unknown error'}${errorData.error_type ? ' (' + errorData.error_type + ')' : ''}`);
+            } catch (parseError) {
+                // Not JSON, show raw text
+                throw new Error(`HTTP ${response.status}: ${responseText.substring(0, 500)}`);
+            }
+        }
+        
+        // Try to parse JSON
+        let result;
+        try {
+            result = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('JSON Parse Error. Response was:', responseText);
+            throw new Error('Invalid JSON response from server. Response: ' + responseText.substring(0, 500));
+        }
+        
+        
+        if (result.success) {
+            // Clear session storage
+            sessionStorage.removeItem('checkout_orderItems');
+            sessionStorage.removeItem('checkout_events');
+            sessionStorage.removeItem('ticket_customization');
+            sessionStorage.removeItem('customization_fee');
+            sessionStorage.removeItem('temp_reservation_ids');
+            sessionStorage.removeItem('temp_reservation_id');
+            sessionStorage.removeItem('temp_event_id');
+            sessionStorage.removeItem('temp_tickets');
+            sessionStorage.removeItem('selected_seats');
+            
+            return {
+                success: true,
+                booking_id: result.booking_id,
+                booking_code: result.booking_code
+            };
+        } else {
+            console.error('Booking failed:', result);
+            throw new Error(result.message || 'Failed to create booking');
+        }
+        
+    } catch (error) {
+        console.error('Error creating booking:', error);
+        console.error('Error stack:', error.stack);
+        
+        // Only log bookingData if it was defined
+        if (typeof bookingData !== 'undefined') {
+            console.error('Booking data that failed:', {
+                event_id: bookingData?.event_id,
+                ticket_count: bookingData?.ticket_count,
+                categories: bookingData?.ticket_categories?.length,
+                customer_email: bookingData?.customer_email
+            });
+        } else {
+            console.error('Booking data was not created before error occurred');
+        }
+        
+        return {
+            success: false,
+            message: error.message || 'Failed to create booking'
+        };
+    }
 }
 
 
@@ -760,15 +1190,50 @@ function hideCVVTooltip() {
       }
 }
 
-function showNoticeModal(title, message) {
+function showNoticeModal(title, message, onClose = null) {
     const noticeModalHeader = document.getElementById('noticeModalHeader');
     const noticeModalText = document.getElementById('noticeModalText');
     const noticeModal = document.getElementById('noticeModal');
+    const noticeModalCloseBtn = document.getElementById('noticeModalCloseBtn');
+    const noticeModalOkBtn = document.getElementById('noticeModalOkBtn');
 
     if (noticeModalHeader && noticeModalText && noticeModal) { // Check if elements exist
       noticeModalHeader.textContent = title;
       noticeModalText.textContent = message;
       noticeModal.classList.remove('chk-hidden');
+      
+      // If callback provided, set up close handlers
+      if (onClose) {
+          const handleClose = () => {
+              noticeModal.classList.add('chk-hidden');
+              onClose();
+          };
+          
+          // Handle close button
+          if (noticeModalCloseBtn) {
+              // Remove existing listeners by cloning
+              const newCloseBtn = noticeModalCloseBtn.cloneNode(true);
+              noticeModalCloseBtn.parentNode.replaceChild(newCloseBtn, noticeModalCloseBtn);
+              newCloseBtn.addEventListener('click', handleClose);
+          }
+          
+          // Handle OK button
+          if (noticeModalOkBtn) {
+              const newOkBtn = noticeModalOkBtn.cloneNode(true);
+              noticeModalOkBtn.parentNode.replaceChild(newOkBtn, noticeModalOkBtn);
+              newOkBtn.addEventListener('click', handleClose);
+          }
+          
+          // Close on backdrop click
+          const backdropHandler = (e) => {
+              if (e.target === noticeModal) {
+                  noticeModal.classList.add('chk-hidden');
+                  noticeModal.removeEventListener('click', backdropHandler);
+                  onClose();
+              }
+          };
+          noticeModal.addEventListener('click', backdropHandler);
+      }
     }
 }
 
@@ -840,24 +1305,56 @@ window.goToCustomization = function() {
         return;
     }
     
+    // Get already customized tickets info
+    let alreadyCustomized = null;
+    const sessionCustomization = sessionStorage.getItem('ticket_customization');
+    if (sessionCustomization) {
+        try {
+            const customData = JSON.parse(sessionCustomization);
+            // Only pass if it's for the same event
+            if (customData.event_id == eventId) {
+                alreadyCustomized = {
+                    customized_count: customData.customized_count || 0,
+                    guest_names: customData.guest_names || {},
+                    tickets_by_category: customData.tickets_by_category || {}
+                };
+            }
+        } catch (e) {
+            console.warn("Failed to parse customization data:", e);
+        }
+    }
+    
+    // Also check window.customizationData
+    if (!alreadyCustomized && window.customizationData && window.customizationData.event_id == eventId) {
+        alreadyCustomized = {
+            customized_count: window.customizationData.customized_count || 0,
+            guest_names: window.customizationData.guest_names || {},
+            tickets_by_category: window.customizationData.tickets_by_category || {}
+        };
+    }
+    
     // Store data in session for customize page
     sessionStorage.setItem('temp_event_id', eventId);
     sessionStorage.setItem('temp_tickets', totalTickets);
+    if (alreadyCustomized) {
+        sessionStorage.setItem('temp_already_customized', JSON.stringify(alreadyCustomized));
+    }
     if (reservationIds) {
         sessionStorage.setItem('temp_reservation_ids', reservationIds);
     } else if (reservationId) {
         sessionStorage.setItem('temp_reservation_id', reservationId);
     }
     
-    // Build URL with reservation IDs
+    // Redirect to customization page
     let redirectUrl = `customize_tickets.php?event_id=${eventId}&tickets=${totalTickets}`;
     if (reservationIds) {
-        redirectUrl += `&reservation_ids=${encodeURIComponent(reservationIds)}`;
+        redirectUrl += `&reservations=${reservationIds}`;
     } else if (reservationId) {
         redirectUrl += `&reservation_id=${reservationId}`;
     }
-    
-    // Redirect to customization page
+    if (alreadyCustomized && alreadyCustomized.customized_count > 0) {
+        redirectUrl += `&already_customized=${alreadyCustomized.customized_count}`;
+    }
     window.location.href = redirectUrl;
 }
 
