@@ -50,6 +50,8 @@ if ($isLoggedIn && !empty($userImage) && $userImage !== null) {
     <link rel="apple-touch-icon" href="<?= htmlspecialchars($faviconPath) ?>">
     <link rel="stylesheet" href="../../public/css/header.css">
     <link rel="stylesheet" href="../../public/css/navbar.css">
+    <!-- Chatbot styles (fixed path and filename) -->
+    <link rel="stylesheet" href="../../public/css/chatbot-widget.css">
     <script src="../../public/js/header.js"></script>
         </head>
 <body>
