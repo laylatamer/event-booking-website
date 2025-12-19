@@ -48,9 +48,7 @@
             </div>
             <div class="pagination">
                 <button class="pagination-btn" id="users-prev">Previous</button>
-                <button class="pagination-btn active">1</button>
-                <button class="pagination-btn">2</button>
-                <button class="pagination-btn">3</button>
+
                 <button class="pagination-btn" id="users-next">Next</button>
             </div>
         </div>

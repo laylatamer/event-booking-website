@@ -253,5 +253,12 @@ class Event {
         
         return $stmt->execute();
     }
+
+    public function count() {
+        $query = "SELECT COUNT(*) FROM " . $this->table_name;
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        return (int) $stmt->fetchColumn();
+    }
 }
 ?>
