@@ -182,12 +182,8 @@
             // Test API connection
             this.testApiConnection();
 
-            // Auto-open on help pages
-            if (window.location.pathname.includes('booking') ||
-                window.location.pathname.includes('checkout') ||
-                window.location.pathname.includes('customize')) {
-                setTimeout(() => this.openChat(), 2000);
-            }
+            // Auto-open removed as per user request
+
         }
 
         bindEvents() {
