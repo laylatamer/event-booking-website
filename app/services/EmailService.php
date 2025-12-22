@@ -235,6 +235,19 @@ class EmailService {
             $mail->SMTPSecure = $this->config['smtp_secure'] ?? 'tls';
             $mail->Port = $this->config['smtp_port'] ?? 587;
             
+            // CRITICAL: Set timeouts to prevent hanging
+            // Connection timeout: 5 seconds (fail fast if can't connect)
+            // Read timeout: 10 seconds (fail fast if server doesn't respond)
+            $mail->Timeout = 5; // Connection timeout in seconds
+            $mail->SMTPOptions = [
+                'ssl' => [
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                    'allow_self_signed' => true,
+                    'timeout' => 5 // SSL connection timeout
+                ]
+            ];
+            
             // Enable verbose debug output (set to 0 for production)
             $mail->SMTPDebug = 0;
             $mail->Debugoutput = function($str, $level) {

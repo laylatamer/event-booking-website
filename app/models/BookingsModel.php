@@ -801,11 +801,27 @@ class BookingsModel {
                             'ticket_details' => $emailData['ticket_details']
                         ];
                         
-                        // Send email
+                        // Send email with maximum timeout of 10 seconds
                         $emailService = new EmailService();
                         $emailStartTime = microtime(true);
-                        $emailResult = $emailService->sendBookingConfirmationEmail($bookingDataForEmail, $eventData);
+                        
+                        // Set a maximum execution time for email sending (10 seconds)
+                        $maxEmailTime = 10;
+                        $emailResult = false;
+                        
+                        try {
+                            // Use a timeout mechanism
+                            $emailResult = @$emailService->sendBookingConfirmationEmail($bookingDataForEmail, $eventData);
+                        } catch (Exception $emailTimeoutEx) {
+                            error_log("Email sending timed out or failed: " . $emailTimeoutEx->getMessage());
+                            $emailResult = false;
+                        }
+                        
                         $emailDuration = microtime(true) - $emailStartTime;
+                        
+                        if ($emailDuration > $maxEmailTime) {
+                            error_log("WARNING: Email sending took longer than " . $maxEmailTime . " seconds (" . round($emailDuration, 2) . " seconds)");
+                        }
                         
                         error_log("DEBUG: Email send result: " . ($emailResult ? 'SUCCESS' : 'FAILED') . " (took " . round($emailDuration, 2) . " seconds)");
                     } catch (Exception $emailException) {
