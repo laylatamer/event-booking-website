@@ -686,6 +686,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Clean up on page unload - but ONLY if we're not going to checkout
+    // If we're going to checkout, we need to keep the reservations!
+    // Use a flag to track if we're navigating to checkout
+    // Declare this BEFORE the checkout button handler so it's available there
+    let navigatingToCheckout = false;
+
     // --------------------------------------------------------
     // CHECKOUT BUTTON
     // --------------------------------------------------------
@@ -705,6 +711,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert(`Maximum ${maxTickets} tickets per booking`);
                 return;
             }
+
+            // Set flag early to prevent any cleanup
+            navigatingToCheckout = true;
 
             // Ensure tickets are reserved
             const reserved = await reserveTickets();
@@ -735,9 +744,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.log('Removed beforeunload handler to preserve reservations');
                 }
                 
-                // Set flag to prevent any cleanup
-                navigatingToCheckout = true;
-                
                 // Log for debugging
                 console.log('Navigating to checkout with reservations:', activeReservations);
                 
@@ -748,6 +754,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 window.location.href = `checkout.php?${params.toString()}`;
             } else {
+                // Reset flag if reservation failed
+                navigatingToCheckout = false;
                 alert('Failed to reserve tickets. Please try again.');
             }
         });
@@ -755,11 +763,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize
     updateCheckoutTotal();
-    
-    // Clean up on page unload - but ONLY if we're not going to checkout
-    // If we're going to checkout, we need to keep the reservations!
-    // Use a flag to track if we're navigating to checkout
-    let navigatingToCheckout = false;
     
     // Create a named function so we can remove it later
     const beforeUnloadHandler = (e) => {
