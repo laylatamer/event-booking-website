@@ -48,16 +48,19 @@ try {
         $event = null;
         $venueSeatingType = null;
     } else {
+        // Safely access venue data
+        $venue = $eventData['venue'] ?? [];
+        
         // Build full location from venue data
-        $fullLocation = $eventData['venue']['name'];
-        if (!empty($eventData['venue']['address'])) {
-            $fullLocation .= ', ' . $eventData['venue']['address'];
+        $fullLocation = $venue['name'] ?? 'Venue TBD';
+        if (!empty($venue['address'])) {
+            $fullLocation .= ', ' . $venue['address'];
         }
-        if (!empty($eventData['venue']['city'])) {
-            $fullLocation .= ', ' . $eventData['venue']['city'];
+        if (!empty($venue['city'])) {
+            $fullLocation .= ', ' . $venue['city'];
         }
-        if (!empty($eventData['venue']['country'])) {
-            $fullLocation .= ', ' . $eventData['venue']['country'];
+        if (!empty($venue['country'])) {
+            $fullLocation .= ', ' . $venue['country'];
         }
         
         // Gallery images are already decoded by EventController
@@ -66,38 +69,44 @@ try {
         // Map database event data to booking page format
         $event = [
             'id' => (int)$eventData['id'],
-            'title' => $eventData['title'],
+            'title' => $eventData['title'] ?? 'Event',
             'description' => $eventData['description'] ?? '',
-            'date' => $eventData['date'],
-            'location' => $eventData['venue']['name'],
+            'date' => $eventData['date'] ?? date('Y-m-d'),
+            'location' => $venue['name'] ?? 'Venue TBD',
             'fullLocation' => $fullLocation,
-            'category' => $eventData['main_category'] ?? $eventData['subcategory'],
-            'subcategory' => $eventData['subcategory'],
-            'price' => (float)$eventData['price'],
-            'discounted_price' => $eventData['discounted_price'] ? (float)$eventData['discounted_price'] : null,
-            'image' => $eventData['image'] ?: 'https://placehold.co/1200x630/1f2937/f1f1f1?text=Event',
+            'category' => $eventData['main_category'] ?? $eventData['subcategory'] ?? 'Event',
+            'subcategory' => $eventData['subcategory'] ?? 'Event',
+            'price' => (float)($eventData['price'] ?? 0),
+            'discounted_price' => !empty($eventData['discounted_price']) ? (float)$eventData['discounted_price'] : null,
+            'image' => $eventData['image'] ?? $eventData['image_url'] ?? 'https://placehold.co/1200x630/1f2937/f1f1f1?text=Event',
             'gallery' => $galleryImages,
-            'organizer' => $eventData['venue']['name'],
-            'available_tickets' => (int)$eventData['available_tickets'],
-            'total_tickets' => (int)$eventData['total_tickets'],
-            'min_tickets_per_booking' => (int)$eventData['min_tickets_per_booking'],
-            'max_tickets_per_booking' => (int)$eventData['max_tickets_per_booking'],
+            'organizer' => $venue['name'] ?? 'Organizer',
+            'available_tickets' => (int)($eventData['available_tickets'] ?? 0),
+            'total_tickets' => (int)($eventData['total_tickets'] ?? 0),
+            'min_tickets_per_booking' => (int)($eventData['min_tickets_per_booking'] ?? 1),
+            'max_tickets_per_booking' => (int)($eventData['max_tickets_per_booking'] ?? 10),
             'terms_conditions' => $eventData['terms_conditions'] ?? '',
             'additional_info' => $eventData['additional_info'] ?? [],
-            'venue' => $eventData['venue'],
+            'venue' => $venue,
             'ticket_categories' => $ticketCategories
         ];
         
         // Get venue seating type
-        $venueSeatingType = $eventData['venue']['seating_type'] ?? null;
+        $venueSeatingType = $venue['seating_type'] ?? null;
         
         // Fetch venue seating type if not in event data
-        if (!$venueSeatingType) {
-            require_once __DIR__ . '/../../app/models/Venue.php';
-            $venueModel = new Venue($db);
-            $venueModel->id = $eventData['venue']['id'];
-            if ($venueModel->readOne()) {
-                $venueSeatingType = $venueModel->seating_type;
+        if (!$venueSeatingType && !empty($venue['id'])) {
+            try {
+                require_once __DIR__ . '/../../app/models/Venue.php';
+                $venueModel = new Venue($db);
+                $venueModel->id = $venue['id'];
+                $venueData = $venueModel->readOne();
+                if ($venueData) {
+                    $venueSeatingType = $venueData['seating_type'] ?? null;
+                }
+            } catch (Exception $e) {
+                error_log("Error fetching venue seating type: " . $e->getMessage());
+                $venueSeatingType = null;
             }
         }
     }
