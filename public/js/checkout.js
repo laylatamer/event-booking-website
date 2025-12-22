@@ -163,12 +163,15 @@ async function initializeCheckout() {
                             const reservation = result.reservation;
                             
                             // Check if reservation is expired
+                            // Give a 5 second grace period to account for timing issues
                             const expiresAt = reservation.expires_at ? new Date(reservation.expires_at) : null;
-                            const isExpired = reservation.is_expired || (expiresAt && expiresAt < new Date());
+                            const now = new Date();
+                            const gracePeriod = 5000; // 5 seconds
+                            const isExpired = reservation.is_expired || (expiresAt && (expiresAt.getTime() + gracePeriod) < now.getTime());
                             
                             if (isExpired) {
                                 expiredReservations++;
-                                console.warn(`Reservation ${result.id} has expired (expires_at: ${reservation.expires_at})`);
+                                console.warn(`Reservation ${result.id} has expired (expires_at: ${reservation.expires_at}, now: ${now.toISOString()})`);
                                 continue;
                             }
                             
