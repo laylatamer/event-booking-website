@@ -23,56 +23,96 @@ if (!$ALLOW_IMPORT) {
 
 // Try to load database connection with error handling
 try {
-    // Determine project root
-    // The script file is at: /app/public/import_database.php
-    // But __DIR__ might resolve differently on Railway
+    // On Railway, the working directory is /app which contains public folder contents
+    // But the actual project root with config/ might be one level up
+    // OR the config folder needs to be copied to public, OR we need to go up from /app
     
-    $scriptFile = __FILE__;  // Full path to this script file
-    $scriptDir = __DIR__;    // Directory of this script
-    $currentDir = getcwd();  // Current working directory
+    $scriptFile = __FILE__;
+    $scriptDir = __DIR__;
+    $currentDir = getcwd();
     
-    // The script is definitely in public folder, so project root is parent
-    // Try multiple methods to find it
+    // Since /app contains public folder files, try going up one level
+    $possibleRoots = [
+        '/app/..',           // Parent of /app
+        dirname($currentDir), // Parent of current working dir
+        '/app',              // Current location
+        $currentDir . '/..',  // Explicit parent
+    ];
     
-    $possibleRoots = [];
+    // Also check if config is in a different location
+    $possibleConfigPaths = [
+        '/app/../config/db_connect.php',
+        dirname($currentDir) . '/config/db_connect.php',
+        '/app/config/db_connect.php',
+        $currentDir . '/../config/db_connect.php',
+    ];
     
-    // Method 1: If script file path contains /public, go up one level
-    if (strpos($scriptFile, '/public/') !== false) {
-        $possibleRoots[] = dirname(dirname($scriptFile));
-    }
-    
-    // Method 2: If script dir is /app/public, root is /app
-    if ($scriptDir === '/app/public' || strpos($scriptDir, '/public') !== false) {
-        $possibleRoots[] = dirname($scriptDir);
-    }
-    
-    // Method 3: If current dir is /app, that's the root
-    if ($currentDir === '/app') {
-        $possibleRoots[] = '/app';
-    }
-    
-    // Method 4: Always try /app (Railway standard)
-    $possibleRoots[] = '/app';
-    
-    // Remove duplicates and empty values
-    $possibleRoots = array_unique(array_filter($possibleRoots));
-    
-    // Find which root has the config file
-    $projectRoot = null;
-    foreach ($possibleRoots as $root) {
-        $testPath = rtrim($root, '/') . '/config/db_connect.php';
-        if (file_exists($testPath)) {
-            $projectRoot = $root;
+    // Try to find config file directly
+    $dbConfigPath = null;
+    foreach ($possibleConfigPaths as $path) {
+        $realPath = realpath($path);
+        if ($realPath && file_exists($realPath)) {
+            $dbConfigPath = $realPath;
+            break;
+        }
+        // Also try without realpath
+        if (file_exists($path)) {
+            $dbConfigPath = $path;
             break;
         }
     }
     
-    // If still not found, use /app as default
-    if ($projectRoot === null) {
-        $projectRoot = '/app';
+    // If still not found, try finding project root first
+    if ($dbConfigPath === null) {
+        foreach ($possibleRoots as $root) {
+            $root = rtrim($root, '/');
+            $testPath = $root . '/config/db_connect.php';
+            if (file_exists($testPath)) {
+                $dbConfigPath = $testPath;
+                break;
+            }
+        }
     }
     
-    $dbConfigPath = rtrim($projectRoot, '/') . '/config/db_connect.php';
+    // Last resort: check if config folder exists anywhere
+    if ($dbConfigPath === null) {
+        // Search for config folder
+        $searchDirs = ['/app', '/app/..', dirname($currentDir), $currentDir];
+        foreach ($searchDirs as $dir) {
+            if (is_dir($dir)) {
+                $files = scandir($dir);
+                if (in_array('config', $files) && is_dir($dir . '/config')) {
+                    $testPath = $dir . '/config/db_connect.php';
+                    if (file_exists($testPath)) {
+                        $dbConfigPath = $testPath;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    
+    // If still not found, show detailed error
+    if ($dbConfigPath === null || !file_exists($dbConfigPath)) {
+        $debugInfo = [
+            "Script file: " . $scriptFile,
+            "Script dir: " . $scriptDir,
+            "Current dir: " . $currentDir,
+            "Tried config paths: " . implode(', ', $possibleConfigPaths),
+            "Tried roots: " . implode(', ', $possibleRoots),
+        ];
+        
+        // List directories
+        $dirs = [];
+        foreach (['/app', '/app/..', dirname($currentDir)] as $d) {
+            if (is_dir($d)) {
+                $dirs[] = "$d: " . implode(', ', array_slice(scandir($d), 0, 15));
+            }
+        }
+        $debugInfo[] = "Directory contents:\n" . implode("\n", $dirs);
+        
+        throw new Exception("Database config file not found!\n\n" . implode("\n", $debugInfo));
+    }
     
     // Debug: list what we're checking
     $debugInfo = [
