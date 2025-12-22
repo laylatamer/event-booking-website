@@ -689,9 +689,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // --------------------------------------------------------
     // CHECKOUT BUTTON
     // --------------------------------------------------------
-    const checkoutBtn = document.getElementById('checkout-btn');
-    if (checkoutBtn) {
-        checkoutBtn.addEventListener('click', async () => {
+    // Note: checkoutBtn is already declared in updateCheckoutTotal() function (line 76)
+    // Use a different variable name here to avoid conflict
+    const checkoutButton = document.getElementById('checkout-btn');
+    if (checkoutButton) {
+        checkoutButton.addEventListener('click', async () => {
             const totalCount = Object.values(selectedTickets).reduce((sum, qty) => sum + qty, 0);
             
             if (totalCount < minTickets) {
