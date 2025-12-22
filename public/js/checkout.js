@@ -1287,14 +1287,28 @@ async function createBooking(paymentMethod) {
         };
         
         
-        // Call API
-        const response = await fetch('/api/bookings_API.php?action=create', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(bookingData)
-        });
+        // Call API with timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+        
+        let response;
+        try {
+            response = await fetch('/api/bookings_API.php?action=create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(bookingData),
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+        } catch (fetchError) {
+            clearTimeout(timeoutId);
+            if (fetchError.name === 'AbortError') {
+                throw new Error('Request timed out. Please check your connection and try again.');
+            }
+            throw new Error('Network error: ' + fetchError.message);
+        }
         
         // Get response text first
         const responseText = await response.text();
