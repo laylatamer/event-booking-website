@@ -9,14 +9,17 @@ if (!isLoggedIn()) {
     // Set message in session for display on login page
     $_SESSION['auth_message'] = ['text' => 'You should be logged in to send a message', 'type' => 'error'];
     // Redirect to login page
-    header('Location: ../app/views/auth.php');
+    header('Location: /auth.php');
     exit;
 }
+
+require_once __DIR__ . '/../app/controllers/ContactController.php';
+require_once __DIR__ . '/../app/models/ContactMessage.php';
 
 $controller = new ContactController(new ContactMessage($pdo));
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: ../app/views/contact_form.php');
+    header('Location: /contact_form.php');
     exit;
 }
 
@@ -28,7 +31,7 @@ if ($result['ok']) {
     $_SESSION['contact_status'] = ['type' => 'error', 'message' => $result['message']];
 }
 
-header('Location: ../app/views/contact_form.php');
+header('Location: /contact_form.php');
 exit;
 
 
