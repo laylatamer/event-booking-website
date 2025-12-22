@@ -147,7 +147,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const failed = results.find(r => !r.success);
             
             if (failed) {
-                alert('Reservation failed: ' + failed.message);
+                console.error('Reservation failed:', failed);
+                alert('Reservation failed: ' + (failed.message || 'Unknown error'));
+                return false;
+            }
+            
+            // Check if any results are missing reservation_id
+            if (results.length === 0 || results.some(r => !r.reservation_id)) {
+                console.error('Reservation results incomplete:', results);
+                alert('Reservation incomplete. Please try again.');
                 return false;
             }
 
@@ -367,17 +375,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(`/api/ticket_reservations.php?action=getAvailability&event_id=${eventId}`);
             const data = await response.json();
             
-            if (data.success) {
+            if (data.success && data.categories) {
                 // Update ticket categories with current availability
                 data.categories.forEach(cat => {
                     const index = ticketCategories.findIndex(tc => tc.category_name === cat.category_name);
                     if (index !== -1) {
                         ticketCategories[index].available_tickets = cat.actually_available;
+                        ticketCategories[index].reserved_tickets = cat.reserved_tickets || 0;
+                        // Update the display count
+                        updateTicketCountDisplay(cat.category_name, cat.actually_available);
                     }
                 });
                 
                 // Update UI to show availability
                 updateSeatingAvailability();
+            } else {
+                console.error('Failed to load availability:', data);
             }
             
             // Load booked seats
