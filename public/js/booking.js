@@ -471,13 +471,26 @@ document.addEventListener('DOMContentLoaded', () => {
     // --------------------------------------------------------
     // STANDING LAYOUT: Quantity Selection
     // --------------------------------------------------------
+    // Use a flag to track if event listeners are already attached
+    let standingLayoutInitialized = false;
+    
     function initializeStandingLayout() {
         const standingSummary = document.getElementById('standing-summary');
         const standingTotal = document.getElementById('standing-total');
+        const standingLayout = document.getElementById('layout-standing');
         
-        // Handle quantity buttons
-        document.querySelectorAll('.standing-qty-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
+        // Only attach event listeners once using event delegation
+        // This prevents multiple listeners from being attached when function is called multiple times
+        if (!standingLayoutInitialized && standingLayout) {
+            standingLayoutInitialized = true;
+            
+            // Use event delegation on the standing layout container
+            // This handles clicks on all quantity buttons, even if they're added later
+            standingLayout.addEventListener('click', (e) => {
+                // Check if clicked element is a quantity button
+                const btn = e.target.closest('.standing-qty-btn');
+                if (!btn) return;
+                
                 const categoryName = btn.getAttribute('data-category');
                 const action = btn.getAttribute('data-action');
                 const input = document.querySelector(`.standing-qty-input[data-category="${categoryName}"]`);
@@ -504,11 +517,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Update standing summary
                 updateStandingSummary();
             });
-        });
-        
-        // Handle direct input changes
-        document.querySelectorAll('.standing-qty-input').forEach(input => {
-            input.addEventListener('input', () => {
+            
+            // Handle direct input changes using event delegation
+            standingLayout.addEventListener('input', (e) => {
+                const input = e.target;
+                if (!input.classList.contains('standing-qty-input')) return;
+                
                 const categoryName = input.getAttribute('data-category');
                 let qty = parseInt(input.value) || 0;
                 const maxQty = parseInt(input.getAttribute('max')) || 10;
@@ -523,8 +537,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateCheckoutTotal();
                 updateStandingSummary();
             });
-        });
+        }
         
+        // Always update the summary when layout is initialized/shown
         function updateStandingSummary() {
             let summaryHTML = '';
             let total = 0;
@@ -552,6 +567,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (standingSummary) standingSummary.innerHTML = summaryHTML;
             if (standingTotal) standingTotal.textContent = `$${total.toFixed(2)}`;
         }
+        
+        // Update summary immediately
+        updateStandingSummary();
     }
 
     // Handle category selection in seating modal
