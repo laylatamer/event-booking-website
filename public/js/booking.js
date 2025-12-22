@@ -382,8 +382,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (index !== -1) {
                         ticketCategories[index].available_tickets = cat.actually_available;
                         ticketCategories[index].reserved_tickets = cat.reserved_tickets || 0;
-                        // Update the display count
-                        updateTicketCountDisplay(cat.category_name, cat.actually_available);
                     }
                 });
                 
