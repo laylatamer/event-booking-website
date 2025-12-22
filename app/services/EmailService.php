@@ -236,17 +236,41 @@ class EmailService {
             $mail->Port = $this->config['smtp_port'] ?? 587;
             
             // CRITICAL: Set timeouts to prevent hanging
-            // Connection timeout: 5 seconds (fail fast if can't connect)
-            // Read timeout: 10 seconds (fail fast if server doesn't respond)
-            $mail->Timeout = 5; // Connection timeout in seconds
+            // Connection timeout: 3 seconds (fail fast if can't connect)
+            // Read timeout: 5 seconds (fail fast if server doesn't respond)
+            $mail->Timeout = 3; // Connection timeout in seconds (reduced from 5)
+            $mail->SMTPKeepAlive = false; // Don't keep connection alive
+            
+            // Set socket timeout options
             $mail->SMTPOptions = [
                 'ssl' => [
                     'verify_peer' => false,
                     'verify_peer_name' => false,
                     'allow_self_signed' => true,
-                    'timeout' => 5 // SSL connection timeout
+                    'timeout' => 3 // SSL connection timeout (reduced from 5)
+                ],
+                'tls' => [
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                    'allow_self_signed' => true,
+                    'timeout' => 3 // TLS connection timeout
                 ]
             ];
+            
+            // Set socket stream context options for faster timeout
+            $context = stream_context_create([
+                'socket' => [
+                    'bindto' => '0:0', // Bind to any available interface
+                ],
+                'ssl' => [
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                    'allow_self_signed' => true,
+                    'timeout' => 3
+                ]
+            ]);
+            
+            // Note: PHPMailer doesn't directly support stream context, but we can set it via SMTPOptions
             
             // Enable verbose debug output (set to 0 for production)
             $mail->SMTPDebug = 0;
