@@ -117,9 +117,8 @@ class EmailService {
             // Prepare email subject
             $subject = "Booking Confirmation - " . ($eventData['title'] ?? 'Event Ticket');
             
-            // Generate QR code as a URL that points to the ticket verification page
-            // This ensures QR scanners open it as a webpage showing ticket details
-            // Construct absolute URL for QR code that works on mobile devices
+            // Generate QR code URL pointing to the dynamic ticket verification page
+            // When scanned, users will see their complete ticket and user information
             
             // Check if base_url is configured in config
             $configuredBaseUrl = $this->config['base_url'] ?? '';
@@ -128,21 +127,16 @@ class EmailService {
                 // Use configured base URL
                 $baseUrl = rtrim($configuredBaseUrl, '/');
                 $ticketUrl = $baseUrl . "/app/views/ticket_verification.php?code=" . urlencode($bookingCode);
-                error_log("Using configured base URL for QR code: " . $baseUrl);
             } else {
-                // Auto-detect URL
+                // Auto-detect URL for mobile device access
                 $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? "https" : "http";
-                
-                // Get the host - use HTTP_HOST if available, otherwise try to get IP address
                 $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
                 
-                // If HTTP_HOST contains localhost, try to get the actual server IP address
-                // This is important so mobile devices can access the page over the network
+                // If localhost, try to get actual server IP for mobile device access
                 if (strpos($host, 'localhost') !== false || strpos($host, '127.0.0.1') !== false) {
-                    // Try to get the server's local IP address
                     $localIP = $this->getServerLocalIP();
                     if ($localIP) {
-                        // Get port from HTTP_HOST if it exists (e.g., localhost:8080)
+                        // Preserve port if specified (e.g., localhost:8080)
                         $port = '';
                         if (isset($_SERVER['HTTP_HOST']) && strpos($_SERVER['HTTP_HOST'], ':') !== false) {
                             $portParts = explode(':', $_SERVER['HTTP_HOST']);
@@ -151,19 +145,14 @@ class EmailService {
                             }
                         }
                         $host = $localIP . $port;
-                        error_log("Using auto-detected server IP address for QR code: " . $host);
-                    } else {
-                        error_log("WARNING: Could not determine server IP. QR code will use localhost which may not work on mobile devices.");
-                        error_log("TIP: Set 'base_url' in config/email_config.php to manually specify the URL (e.g., 'http://192.168.1.100/event-booking-website')");
                     }
                 }
                 
-                // Build the ticket verification URL
-                // Path is fixed based on project structure
+                // Build ticket verification URL
                 $ticketUrl = $protocol . "://" . $host . "/event-booking-website/app/views/ticket_verification.php?code=" . urlencode($bookingCode);
             }
             
-            // Use the URL as QR code data - when scanned, it will open the ticket verification page
+            // QR code data is the URL to the ticket verification page
             $qrData = $ticketUrl;
             
             error_log("QR Code URL generated: " . $ticketUrl);
