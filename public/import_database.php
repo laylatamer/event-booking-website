@@ -24,30 +24,55 @@ if (!$ALLOW_IMPORT) {
 // Try to load database connection with error handling
 try {
     // Determine project root
-    // On Railway: working dir is /app, but script is in /app/public/import_database.php
-    // So __DIR__ might be /app (working dir) or /app/public (actual file location)
+    // The script file is at: /app/public/import_database.php
+    // But __DIR__ might resolve differently on Railway
     
-    $scriptDir = __DIR__;
-    $currentDir = getcwd();
+    $scriptFile = __FILE__;  // Full path to this script file
+    $scriptDir = __DIR__;    // Directory of this script
+    $currentDir = getcwd();  // Current working directory
     
-    // If script is in public folder, go up one level
-    if (strpos($scriptDir, '/public') !== false || basename($scriptDir) === 'public') {
-        $projectRoot = dirname($scriptDir);
-    } elseif ($currentDir === '/app' || $scriptDir === '/app') {
-        // On Railway, if we're in /app, that's the root
-        $projectRoot = '/app';
-    } else {
-        // Try common locations
-        $projectRoot = dirname($scriptDir);
+    // The script is definitely in public folder, so project root is parent
+    // Try multiple methods to find it
+    
+    $possibleRoots = [];
+    
+    // Method 1: If script file path contains /public, go up one level
+    if (strpos($scriptFile, '/public/') !== false) {
+        $possibleRoots[] = dirname(dirname($scriptFile));
     }
     
-    // Normalize path
-    $projectRoot = rtrim($projectRoot, '/');
-    if (empty($projectRoot)) {
+    // Method 2: If script dir is /app/public, root is /app
+    if ($scriptDir === '/app/public' || strpos($scriptDir, '/public') !== false) {
+        $possibleRoots[] = dirname($scriptDir);
+    }
+    
+    // Method 3: If current dir is /app, that's the root
+    if ($currentDir === '/app') {
+        $possibleRoots[] = '/app';
+    }
+    
+    // Method 4: Always try /app (Railway standard)
+    $possibleRoots[] = '/app';
+    
+    // Remove duplicates and empty values
+    $possibleRoots = array_unique(array_filter($possibleRoots));
+    
+    // Find which root has the config file
+    $projectRoot = null;
+    foreach ($possibleRoots as $root) {
+        $testPath = rtrim($root, '/') . '/config/db_connect.php';
+        if (file_exists($testPath)) {
+            $projectRoot = $root;
+            break;
+        }
+    }
+    
+    // If still not found, use /app as default
+    if ($projectRoot === null) {
         $projectRoot = '/app';
     }
     
-    $dbConfigPath = $projectRoot . '/config/db_connect.php';
+    $dbConfigPath = rtrim($projectRoot, '/') . '/config/db_connect.php';
     
     // Debug: list what we're checking
     $debugInfo = [
