@@ -128,7 +128,14 @@ class User
     public function delete(int $id): bool
     {
         $stmt = $this->db->prepare('DELETE FROM users WHERE id = :id');
-        return $stmt->execute([':id' => $id]);
+        $stmt->execute([':id' => $id]);
+        return true;
+    }
+
+    public function count(): int
+    {
+        $stmt = $this->db->query('SELECT COUNT(*) FROM users');
+        return (int) $stmt->fetchColumn();
     }
 }
 

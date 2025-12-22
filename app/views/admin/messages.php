@@ -51,7 +51,7 @@
             </div>
             <div class="pagination">
                 <button class="pagination-btn" id="messages-prev">Previous</button>
-                <button class="pagination-btn active">1</button>
+
                 <button class="pagination-btn" id="messages-next">Next</button>
             </div>
         </div>

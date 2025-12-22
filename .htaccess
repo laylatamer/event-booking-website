@@ -1,18 +1,17 @@
-Options -Indexes
+# Main .htaccess for event-booking-website
+# This file should be in the root directory
 
-# Disable PHP error display
+# Enable error handling
 php_flag display_errors Off
 php_flag display_startup_errors Off
+php_value error_reporting E_ALL
 
-# Custom error documents for app/views directory
+# Custom error documents
 ErrorDocument 404 /event-booking-website/app/views/error.php?code=404
 ErrorDocument 500 /event-booking-website/app/views/error.php?code=500
 ErrorDocument 403 /event-booking-website/app/views/error.php?code=403
 ErrorDocument 401 /event-booking-website/app/views/error.php?code=401
 
-# Prevent direct access to certain files if needed
-<FilesMatch "\.(htaccess|htpasswd|ini|log|sh|sql)$">
-    Order Allow,Deny
-    Deny from all
-</FilesMatch>
+# Security
+Options -Indexes
 

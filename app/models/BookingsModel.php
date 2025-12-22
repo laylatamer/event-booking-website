@@ -211,6 +211,57 @@ class BookingsModel {
     }
     
     /**
+     * Get bookings count for the last 7 days
+     */
+    public function getBookingsLast7Days() {
+        try {
+            $query = "SELECT DATE(created_at) as date, COUNT(*) as count 
+                      FROM " . $this->table . " 
+                      WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+                      GROUP BY DATE(created_at)
+                      ORDER BY date ASC";
+            
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+            
+            $results = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+            
+            // Fill in missing days with 0
+            $data = [];
+            for ($i = 6; $i >= 0; $i--) {
+                $date = date('Y-m-d', strtotime("-$i days"));
+                $data[$date] = $results[$date] ?? 0;
+            }
+            
+            return $data;
+        } catch (Exception $e) {
+            return [];
+        }
+    }
+
+    /**
+     * Get revenue by main category
+     */
+    public function getRevenueByCategory() {
+        try {
+            $query = "SELECT mc.name, SUM(b.final_amount) as revenue
+                      FROM " . $this->table . " b
+                      JOIN events e ON b.event_id = e.id
+                      JOIN subcategories sc ON e.subcategory_id = sc.id
+                      JOIN main_categories mc ON sc.main_category_id = mc.id
+                      WHERE b.payment_status = 'paid'
+                      GROUP BY mc.id
+                      ORDER BY revenue DESC";
+            
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            return [];
+        }
+    }
+    /**
      * Create a new booking
      * @param array $data Booking data including user_id, event_id, ticket_categories, booked_seats, etc.
      * @return array Result with success status, booking_id, and booking_code

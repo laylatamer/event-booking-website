@@ -1,4 +1,7 @@
 <?php
+// Include error handler FIRST - before any other code
+require_once __DIR__ . '/../../config/error_handler.php';
+
 // Start session and require login
 require_once __DIR__ . '/../../database/session_init.php';
 requireLogin();

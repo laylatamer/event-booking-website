@@ -1,4 +1,7 @@
 <?php
+// Include error handler FIRST - before any other code
+require_once __DIR__ . '/../../../config/error_handler.php';
+
 // Start session and require admin access
 require_once __DIR__ . '/../../../database/session_init.php';
 
@@ -104,10 +107,45 @@ if (!in_array($currentSection, $validSections)) {
             <?php
             // Load the appropriate section
             $sectionFile = __DIR__ . '/' . $currentSection . '.php';
-            if (file_exists($sectionFile)) {
-                include $sectionFile;
-            } else {
+            
+            // If we are on the dashboard, fetch the data!
+            if ($currentSection === 'dashboard' || !file_exists($sectionFile)) {
+                // Initialize models
+                require_once __DIR__ . '/../../models/User.php';
+                require_once __DIR__ . '/../../models/Event.php';
+                require_once __DIR__ . '/../../models/BookingsModel.php';
+                
+                $userModel = new User($pdo);
+                $eventModel = new Event($pdo);
+                $bookingModel = new BookingsModel($pdo);
+                
+                // Fetch stats
+                $totalUsers = $userModel->count();
+                $totalEvents = $eventModel->count();
+                $bookingStats = $bookingModel->getBookingStats();
+                
+                $totalBookings = $bookingStats['total_bookings'] ?? 0;
+                $totalRevenue = $bookingStats['total_revenue'] ?? 0;
+                
+                // Fetch chart data
+                $bookingsChartData = $bookingModel->getBookingsLast7Days();
+                $revenueChartData = $bookingModel->getRevenueByCategory();
+                
+                // Prepare chart data for JS
+                $chartLabels = json_encode(array_keys($bookingsChartData));
+                $chartValues = json_encode(array_values($bookingsChartData));
+                
+                $revLabels = json_encode(array_column($revenueChartData, 'name'));
+                $revValues = json_encode(array_column($revenueChartData, 'revenue'));
+                
+                // Fetch recent bookings
+                $recentBookingsData = $bookingModel->getAllBookings(1, 5); // Page 1, Limit 5
+                $recentBookings = $recentBookingsData['bookings'] ?? [];
+                
+                // Fallback to dashboard if file not found
                 include 'dashboard.php';
+            } else {
+                include $sectionFile;
             }
             ?>
             
