@@ -29,6 +29,16 @@ if (strpos($requestPath, 'api/') === 0) {
     return false; // Let API files handle themselves
 }
 
+// Handle utility scripts in public directory (check_database.php, fix_chatbot_tables.php, etc.)
+$utilityScripts = ['check_database.php', 'fix_chatbot_tables.php', 'import_database.php', 'db_connect_railway.php'];
+if (in_array($requestPath, $utilityScripts) || in_array(basename($requestPath), $utilityScripts)) {
+    $scriptPath = __DIR__ . '/' . basename($requestPath);
+    if (file_exists($scriptPath)) {
+        require $scriptPath;
+        exit;
+    }
+}
+
 // Map routes to view files
 $routes = [
     '' => 'homepage.php',
