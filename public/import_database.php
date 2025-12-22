@@ -23,34 +23,49 @@ if (!$ALLOW_IMPORT) {
 
 // Try to load database connection with error handling
 try {
-    // Get project root - on Railway it's /app, locally it's parent of public
-    $possibleRoots = [
-        dirname(__DIR__),  // Parent of public folder
-        '/app',            // Railway standard root
-        getcwd()           // Current working directory
-    ];
+    // Determine project root
+    // On Railway: working dir is /app, but script is in /app/public/import_database.php
+    // So __DIR__ might be /app (working dir) or /app/public (actual file location)
     
-    $projectRoot = null;
-    foreach ($possibleRoots as $root) {
-        $testPath = rtrim($root, '/') . '/config/db_connect.php';
-        if (file_exists($testPath)) {
-            $projectRoot = $root;
-            break;
-        }
+    $scriptDir = __DIR__;
+    $currentDir = getcwd();
+    
+    // If script is in public folder, go up one level
+    if (strpos($scriptDir, '/public') !== false || basename($scriptDir) === 'public') {
+        $projectRoot = dirname($scriptDir);
+    } elseif ($currentDir === '/app' || $scriptDir === '/app') {
+        // On Railway, if we're in /app, that's the root
+        $projectRoot = '/app';
+    } else {
+        // Try common locations
+        $projectRoot = dirname($scriptDir);
     }
     
-    if ($projectRoot === null) {
-        // Last resort: use /app (Railway standard)
+    // Normalize path
+    $projectRoot = rtrim($projectRoot, '/');
+    if (empty($projectRoot)) {
         $projectRoot = '/app';
     }
     
-    $dbConfigPath = rtrim($projectRoot, '/') . '/config/db_connect.php';
+    $dbConfigPath = $projectRoot . '/config/db_connect.php';
+    
+    // Debug: list what we're checking
+    $debugInfo = [
+        "Script __DIR__: " . $scriptDir,
+        "Current working dir: " . $currentDir,
+        "Detected project root: " . $projectRoot,
+        "Config path: " . $dbConfigPath,
+        "Config exists: " . (file_exists($dbConfigPath) ? 'Yes' : 'No'),
+        "Project root exists: " . (is_dir($projectRoot) ? 'Yes' : 'No'),
+        "Config dir exists: " . (is_dir($projectRoot . '/config') ? 'Yes' : 'No')
+    ];
     
     if (!file_exists($dbConfigPath)) {
+        // List files in project root for debugging
+        $rootFiles = is_dir($projectRoot) ? implode(', ', array_slice(scandir($projectRoot), 0, 10)) : 'Cannot read';
         throw new Exception("Database config file not found: $dbConfigPath\n\n" .
-            "Tried roots: " . implode(', ', $possibleRoots) . "\n" .
-            "Current __DIR__: " . __DIR__ . "\n" .
-            "Selected root: " . $projectRoot);
+            implode("\n", $debugInfo) . "\n\n" .
+            "Files in project root: " . $rootFiles);
     }
     
     require_once $dbConfigPath;
@@ -63,27 +78,24 @@ try {
     die("❌ Database Connection Error: " . nl2br(htmlspecialchars($e->getMessage())));
 }
 
-// SQL file path - use same project root detection
-$possibleRoots = [
-    dirname(__DIR__),
-    '/app',
-    getcwd()
-];
+// SQL file path - use same project root as config
+$scriptDir = __DIR__;
+$currentDir = getcwd();
 
-$projectRoot = null;
-foreach ($possibleRoots as $root) {
-    $testPath = rtrim($root, '/') . '/database/event_ticketing_db.sql';
-    if (file_exists($testPath)) {
-        $projectRoot = $root;
-        break;
-    }
+if (strpos($scriptDir, '/public') !== false || basename($scriptDir) === 'public') {
+    $projectRoot = dirname($scriptDir);
+} elseif ($currentDir === '/app' || $scriptDir === '/app') {
+    $projectRoot = '/app';
+} else {
+    $projectRoot = dirname($scriptDir);
 }
 
-if ($projectRoot === null) {
-    $projectRoot = '/app'; // Railway standard
+$projectRoot = rtrim($projectRoot, '/');
+if (empty($projectRoot)) {
+    $projectRoot = '/app';
 }
 
-$sqlFile = rtrim($projectRoot, '/') . '/database/event_ticketing_db.sql';
+$sqlFile = $projectRoot . '/database/event_ticketing_db.sql';
 
 // Check if file exists
 if (!file_exists($sqlFile)) {
