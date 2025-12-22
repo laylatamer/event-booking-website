@@ -66,14 +66,8 @@ function isAdmin() {
 // Helper function to require login (redirects to auth.php if not logged in)
 function requireLogin() {
     if (!isLoggedIn()) {
-        // Determine correct path based on current file location
-        $scriptPath = $_SERVER['PHP_SELF'];
-        $authPath = 'auth.php';
-        
-        // If we're in admin directory, go up one level
-        if (strpos($scriptPath, '/admin/') !== false || strpos($scriptPath, '\\admin\\') !== false) {
-            $authPath = '../auth.php';
-        }
+        // Use absolute path for redirect
+        $authPath = '/auth.php';
         
         header('Location: ' . $authPath);
         exit;
@@ -83,13 +77,14 @@ function requireLogin() {
 // Helper function to require admin (redirects to auth.php if not admin)
 function requireAdmin() {
     if (!isAdmin()) {
-        // Determine correct path based on current file location
-        $scriptPath = $_SERVER['PHP_SELF'];
-        $authPath = 'auth.php';
+        // Use absolute path for redirect
+        $authPath = '/auth.php';
         
-        // If we're in admin directory, go up one level
-        if (strpos($scriptPath, '/admin/') !== false || strpos($scriptPath, '\\admin\\') !== false) {
-            $authPath = '../auth.php';
+        // Check if we're accessing via /admin path
+        $requestUri = $_SERVER['REQUEST_URI'] ?? '';
+        if (strpos($requestUri, '/admin') === 0) {
+            // Already using absolute path, no need to change
+            $authPath = '/auth.php';
         }
         
         header('Location: ' . $authPath);

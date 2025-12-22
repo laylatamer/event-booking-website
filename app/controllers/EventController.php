@@ -18,7 +18,46 @@ class EventController {
         $this->subcategory = new Subcategory($db);
         $this->venue = new Venue($db);
         $this->mainCategory = new MainCategory($db);
-
+        
+        // Include path helper for image URL normalization
+        if (!function_exists('imageUrl')) {
+            $pathHelperPath = __DIR__ . '/../views/path_helper.php';
+            if (file_exists($pathHelperPath)) {
+                require_once $pathHelperPath;
+            }
+        }
+    }
+    
+    /**
+     * Normalize image URL - uses global imageUrl() function if available
+     */
+    private function normalizeImageUrl($url) {
+        if (function_exists('imageUrl')) {
+            return imageUrl($url);
+        }
+        
+        // Fallback if imageUrl() is not available
+        if (empty($url)) {
+            return 'https://placehold.co/400x400/2a2a2a/f97316?text=Event';
+        }
+        
+        // If it's already an absolute URL, return as-is
+        if (preg_match('/^https?:\/\//', $url)) {
+            return $url;
+        }
+        
+        // If it starts with /, it's already an absolute path
+        if (strpos($url, '/') === 0) {
+            return $url;
+        }
+        
+        // Otherwise, treat as relative to uploads or public directory
+        if (strpos($url, 'uploads/') === 0 || strpos($url, 'uploads\\') === 0) {
+            return '/' . ltrim(str_replace('\\', '/', $url), '/');
+        }
+        
+        // Default: assume it's in public directory or relative to base
+        return '/' . ltrim(str_replace('\\', '/', $url), '/');
     }
 
     public function getAllEvents() {
@@ -188,7 +227,7 @@ class EventController {
             'formattedDiscountedPrice' => $eventData['discounted_price'] ? '$' . number_format($eventData['discounted_price'], 2) : null,
             'image' => $this->normalizeImageUrl($eventData['image_url'] ?? ''),
             'image_url' => $this->normalizeImageUrl($eventData['image_url'] ?? ''),
-            'gallery_images' => array_map([$this, 'normalizeImageUrl'], $galleryImages),
+            'gallery_images' => array_map(function($img) { return $this->normalizeImageUrl($img); }, $galleryImages),
             'total_tickets' => $eventData['total_tickets'],
             'available_tickets' => $eventData['available_tickets'],
             'min_tickets_per_booking' => $eventData['min_tickets_per_booking'],

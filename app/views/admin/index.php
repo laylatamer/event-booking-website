@@ -92,7 +92,7 @@ if (!in_array($currentSection, $validSections)) {
 <?php
     // Include path helper if not already included
     if (!defined('BASE_ASSETS_PATH')) {
-        require_once __DIR__ . '/path_helper.php';
+        require_once __DIR__ . '/../path_helper.php';
     }
 ?>
 <head>
@@ -117,9 +117,9 @@ if (!in_array($currentSection, $validSections)) {
             // If we are on the dashboard, fetch the data!
             if ($currentSection === 'dashboard' || !file_exists($sectionFile)) {
                 // Initialize models
-                require_once __DIR__ . '/../../models/User.php';
-                require_once __DIR__ . '/../../models/Event.php';
-                require_once __DIR__ . '/../../models/BookingsModel.php';
+                require_once __DIR__ . '/../../../app/models/User.php';
+                require_once __DIR__ . '/../../../app/models/Event.php';
+                require_once __DIR__ . '/../../../app/models/BookingsModel.php';
                 
                 $userModel = new User($pdo);
                 $eventModel = new Event($pdo);

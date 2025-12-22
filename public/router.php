@@ -39,8 +39,8 @@ if (in_array($requestPath, $utilityScripts) || in_array(basename($requestPath), 
     }
 }
 
-// Handle admin routes
-if (strpos($requestPath, 'admin') === 0) {
+// Handle admin routes - must check BEFORE other routes
+if (strpos($requestPath, 'admin') === 0 || $requestPath === 'admin') {
     $adminPath = preg_replace('#^admin/?#', '', $requestPath); // Remove 'admin' or 'admin/' prefix
     $adminPath = $adminPath ?: 'index.php';
     
@@ -51,19 +51,20 @@ if (strpos($requestPath, 'admin') === 0) {
     
     $adminViewPath = $projectRoot . '/app/views/admin/' . $adminPath;
     
+    // Debug: log the path being checked
+    error_log("Admin route check: requestPath='$requestPath', adminPath='$adminPath', fullPath='$adminViewPath', exists=" . (file_exists($adminViewPath) ? 'yes' : 'no'));
+    
     if (file_exists($adminViewPath)) {
         require $adminViewPath;
         exit;
     } else {
-        // Debug: show what we're looking for
         http_response_code(404);
         echo "404 - Admin page not found: " . htmlspecialchars($adminPath) . "<br>";
-        echo "Looking in: " . htmlspecialchars($adminViewPath) . "<br>";
+        echo "Looking for: " . htmlspecialchars($adminViewPath) . "<br>";
         echo "Project root: " . htmlspecialchars($projectRoot) . "<br>";
         if (is_dir($projectRoot . '/app/views/admin')) {
-            echo "Admin directory exists. Files: " . implode(', ', array_slice(scandir($projectRoot . '/app/views/admin'), 2));
-        } else {
-            echo "Admin directory does not exist!";
+            $files = array_slice(scandir($projectRoot . '/app/views/admin'), 2);
+            echo "Available files: " . implode(', ', $files);
         }
         exit;
     }
@@ -79,7 +80,6 @@ $routes = [
     'checkout.php' => 'checkout.php',
     'booking_confirmation.php' => 'booking_confirmation.php',
     'contact_form.php' => 'contact_form.php',
-    'contact.php' => 'contact_form.php',
     'faq.php' => 'faq.php',
     'profile.php' => 'profile.php',
     'auth.php' => 'auth.php',
@@ -90,13 +90,18 @@ $routes = [
     'ticket.php' => 'ticket.php',
     'ticket_verification.php' => 'ticket_verification.php',
     'terms&conditions.php' => 'terms&conditions.php',
-    'admin' => 'admin/index.php',
-    'admin/' => 'admin/index.php',
-    'admin/index.php' => 'admin/index.php',
+    'contact.php' => 'contact.php', // Handle contact.php in public directory
 ];
 
 // Get view file
 $viewFile = $routes[$requestPath] ?? basename($requestPath);
+
+// Check if it's a file in public directory (like contact.php)
+$publicFilePath = __DIR__ . '/' . basename($requestPath);
+if (file_exists($publicFilePath) && basename($requestPath) === $viewFile && $viewFile !== 'contact_form.php') {
+    require $publicFilePath;
+    exit;
+}
 
 // Check if view exists
 $viewPath = $projectRoot . '/app/views/' . $viewFile;

@@ -24,7 +24,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const ticketCategories = eventData.ticketCategories || [];
     const minTickets = eventData.minTickets || 1;
     const maxTickets = eventData.maxTickets || 10;
-
+    
+    // Load availability on page load
+    if (eventId) {
+        loadAvailability();
+    }
 
     // Fixed fee per ticket
     const fixedFeePerTicket = 5.99;
@@ -138,21 +142,44 @@ document.addEventListener('DOMContentLoaded', () => {
                         fetch('/api/ticket_reservations.php', {
                             method: 'POST',
                             body: formData
-                        }).then(res => res.json())
+                        }).then(async res => {
+                            const data = await res.json();
+                            if (!res.ok) {
+                                return { success: false, message: data.message || `HTTP ${res.status} error` };
+                            }
+                            return data;
+                        }).catch(error => {
+                            console.error('Reservation fetch error:', error);
+                            return { success: false, message: 'Network error: ' + error.message };
+                        })
                     );
                 }
             });
 
+            if (reservationPromises.length === 0) {
+                console.warn('No reservations to create');
+                return true; // No tickets selected, but that's okay
+            }
+            
             const results = await Promise.all(reservationPromises);
-            const failed = results.find(r => !r.success);
+            const failed = results.find(r => !r || !r.success);
             
             if (failed) {
-                alert('Reservation failed: ' + failed.message);
+                console.error('Reservation failed:', failed);
+                alert('Reservation failed: ' + (failed.message || 'Unknown error'));
+                return false;
+            }
+            
+            // Check if any results are missing reservation_id
+            const validResults = results.filter(r => r && r.success);
+            if (validResults.length === 0 || validResults.some(r => !r.reservation_id)) {
+                console.error('Reservation results incomplete:', results);
+                alert('Reservation incomplete. Please try again.');
                 return false;
             }
 
             // Store reservation IDs
-            activeReservations = results.filter(r => r.reservation_id).map(r => r.reservation_id);
+            activeReservations = validResults.filter(r => r.reservation_id).map(r => r.reservation_id);
             
             // Start checking reservation expiry
             startReservationCheck();
@@ -367,17 +394,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(`/api/ticket_reservations.php?action=getAvailability&event_id=${eventId}`);
             const data = await response.json();
             
-            if (data.success) {
+            if (data.success && data.categories) {
                 // Update ticket categories with current availability
                 data.categories.forEach(cat => {
                     const index = ticketCategories.findIndex(tc => tc.category_name === cat.category_name);
                     if (index !== -1) {
                         ticketCategories[index].available_tickets = cat.actually_available;
+                        ticketCategories[index].reserved_tickets = cat.reserved_tickets || 0;
                     }
                 });
                 
                 // Update UI to show availability
                 updateSeatingAvailability();
+            } else {
+                console.error('Failed to load availability:', data);
             }
             
             // Load booked seats
