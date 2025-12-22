@@ -55,16 +55,8 @@ if (strpos($requestPath, 'admin') === 0) {
         require $adminViewPath;
         exit;
     } else {
-        // Debug: show what we're looking for
         http_response_code(404);
-        echo "404 - Admin page not found: " . htmlspecialchars($adminPath) . "<br>";
-        echo "Looking in: " . htmlspecialchars($adminViewPath) . "<br>";
-        echo "Project root: " . htmlspecialchars($projectRoot) . "<br>";
-        if (is_dir($projectRoot . '/app/views/admin')) {
-            echo "Admin directory exists. Files: " . implode(', ', array_slice(scandir($projectRoot . '/app/views/admin'), 2));
-        } else {
-            echo "Admin directory does not exist!";
-        }
+        echo "404 - Admin page not found: " . htmlspecialchars($adminPath);
         exit;
     }
 }
@@ -90,9 +82,7 @@ $routes = [
     'ticket.php' => 'ticket.php',
     'ticket_verification.php' => 'ticket_verification.php',
     'terms&conditions.php' => 'terms&conditions.php',
-    'admin' => 'admin/index.php',
-    'admin/' => 'admin/index.php',
-    'admin/index.php' => 'admin/index.php',
+    'contact.php' => 'contact.php', // Handle contact.php in public directory
 ];
 
 // Get view file
