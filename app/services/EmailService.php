@@ -117,53 +117,41 @@ class EmailService {
             // Prepare email subject
             $subject = "Booking Confirmation - " . ($eventData['title'] ?? 'Event Ticket');
             
-            // Generate QR code as a URL that points to the ticket verification page
-            // This ensures QR scanners open it as a webpage showing ticket details
-            // Construct absolute URL for QR code that works on mobile devices
-            
-            // Check if base_url is configured in config
+            // Generate QR code URL pointing to the dynamic ticket page
+            // Simple and clean approach - use configured base URL or auto-detect
             $configuredBaseUrl = $this->config['base_url'] ?? '';
             
             if (!empty($configuredBaseUrl)) {
                 // Use configured base URL
                 $baseUrl = rtrim($configuredBaseUrl, '/');
-                $ticketUrl = $baseUrl . "/app/views/ticket_verification.php?code=" . urlencode($bookingCode);
-                error_log("Using configured base URL for QR code: " . $baseUrl);
             } else {
-                // Auto-detect URL
+                // Auto-detect base URL
                 $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? "https" : "http";
-                
-                // Get the host - use HTTP_HOST if available, otherwise try to get IP address
                 $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
                 
-                // If HTTP_HOST contains localhost, try to get the actual server IP address
-                // This is important so mobile devices can access the page over the network
+                // Try to get local IP if localhost (for mobile device access)
                 if (strpos($host, 'localhost') !== false || strpos($host, '127.0.0.1') !== false) {
-                    // Try to get the server's local IP address
                     $localIP = $this->getServerLocalIP();
                     if ($localIP) {
-                        // Get port from HTTP_HOST if it exists (e.g., localhost:8080)
-                        $port = '';
+                        // Preserve port if exists
                         if (isset($_SERVER['HTTP_HOST']) && strpos($_SERVER['HTTP_HOST'], ':') !== false) {
                             $portParts = explode(':', $_SERVER['HTTP_HOST']);
                             if (isset($portParts[1])) {
-                                $port = ':' . $portParts[1];
+                                $host = $localIP . ':' . $portParts[1];
+                            } else {
+                                $host = $localIP;
                             }
+                        } else {
+                            $host = $localIP;
                         }
-                        $host = $localIP . $port;
-                        error_log("Using auto-detected server IP address for QR code: " . $host);
-                    } else {
-                        error_log("WARNING: Could not determine server IP. QR code will use localhost which may not work on mobile devices.");
-                        error_log("TIP: Set 'base_url' in config/email_config.php to manually specify the URL (e.g., 'http://192.168.1.100/event-booking-website')");
                     }
                 }
                 
-                // Build the ticket verification URL
-                // Path is fixed based on project structure
-                $ticketUrl = $protocol . "://" . $host . "/event-booking-website/app/views/ticket_verification.php?code=" . urlencode($bookingCode);
+                $baseUrl = $protocol . "://" . $host . "/event-booking-website";
             }
             
-            // Use the URL as QR code data - when scanned, it will open the ticket verification page
+            // Build ticket URL - points to new dynamic ticket page
+            $ticketUrl = $baseUrl . "/app/views/ticket.php?code=" . urlencode($bookingCode);
             $qrData = $ticketUrl;
             
             error_log("QR Code URL generated: " . $ticketUrl);
