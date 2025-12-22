@@ -59,14 +59,14 @@ RUN if [ -f "composer.json" ]; then composer install --no-dev --optimize-autoloa
 # Expose port (Railway will set PORT env var)
 EXPOSE 8080
 
-# Start PHP built-in server
+# Start PHP built-in server with router
 # If files are at /app (public as root), serve from /app
-# If files are at /app/public (project root), serve from /app/public
+# If files are at /app/public (project root), serve from /app/public with router
 CMD if [ -d "/app/public" ]; then \
         echo "Serving from /app/public (project root detected)"; \
-        php -S 0.0.0.0:${PORT:-8080} -t /app/public; \
+        php -S 0.0.0.0:${PORT:-8080} -t /app/public /app/public/router.php; \
     else \
         echo "Serving from /app (public as root detected)"; \
-        php -S 0.0.0.0:${PORT:-8080} -t /app; \
+        php -S 0.0.0.0:${PORT:-8080} -t /app /app/router.php; \
     fi
 
