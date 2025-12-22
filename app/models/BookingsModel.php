@@ -145,6 +145,76 @@ class BookingsModel {
     }
     
     /**
+     * Get booking by booking code (for ticket verification)
+     */
+    public function getBookingByCode($bookingCode) {
+        try {
+            $query = "SELECT 
+                        b.*,
+                        COALESCE(b.customer_first_name, u.first_name) as first_name,
+                        COALESCE(b.customer_last_name, u.last_name) as last_name,
+                        COALESCE(CONCAT(b.customer_first_name, ' ', b.customer_last_name), CONCAT(u.first_name, ' ', u.last_name), '') as user_name,
+                        COALESCE(b.customer_email, u.email) as user_email,
+                        COALESCE(b.customer_phone, u.phone_number) as user_phone,
+                        u.address as user_address,
+                        u.city as user_city,
+                        e.title as event_title,
+                        e.description as event_description,
+                        e.price as ticket_price,
+                        e.date as event_date,
+                        v.name as venue_name,
+                        v.address as venue_address,
+                        v.city as venue_city,
+                        v.country as venue_country,
+                        sc.name as subcategory_name,
+                        mc.name as main_category_name
+                      FROM " . $this->table . " b
+                      LEFT JOIN users u ON b.user_id = u.id
+                      LEFT JOIN events e ON b.event_id = e.id
+                      LEFT JOIN venues v ON e.venue_id = v.id
+                      LEFT JOIN subcategories sc ON e.subcategory_id = sc.id
+                      LEFT JOIN main_categories mc ON sc.main_category_id = mc.id
+                      WHERE b.booking_code = :booking_code";
+            
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':booking_code', $bookingCode);
+            $stmt->execute();
+            
+            $booking = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            // If booking found, also get ticket categories and seats
+            if ($booking) {
+                // Get ticket categories from booking_tickets table if it exists
+                try {
+                    $categoriesQuery = "SELECT category_name, quantity, price FROM booking_tickets WHERE booking_id = :booking_id";
+                    $categoriesStmt = $this->db->prepare($categoriesQuery);
+                    $categoriesStmt->bindParam(':booking_id', $booking['id'], PDO::PARAM_INT);
+                    $categoriesStmt->execute();
+                    $booking['ticket_categories'] = $categoriesStmt->fetchAll(PDO::FETCH_ASSOC);
+                } catch (Exception $e) {
+                    $booking['ticket_categories'] = [];
+                }
+                
+                // Get booked seats if table exists
+                try {
+                    $seatsQuery = "SELECT seat_id, category_name FROM booked_seats WHERE booking_id = :booking_id";
+                    $seatsStmt = $this->db->prepare($seatsQuery);
+                    $seatsStmt->bindParam(':booking_id', $booking['id'], PDO::PARAM_INT);
+                    $seatsStmt->execute();
+                    $booking['booked_seats'] = $seatsStmt->fetchAll(PDO::FETCH_ASSOC);
+                } catch (Exception $e) {
+                    $booking['booked_seats'] = [];
+                }
+            }
+            
+            return $booking;
+            
+        } catch (Exception $e) {
+            throw new Exception("Error fetching booking by code: " . $e->getMessage());
+        }
+    }
+    
+    /**
      * Get booking statistics
      */
     public function getBookingStats() {
@@ -636,7 +706,10 @@ class BookingsModel {
                         'customer_last_name' => $data['customer_last_name'] ?? '',
                         'customer_email' => $data['customer_email'] ?? '',
                         'ticket_count' => $data['ticket_count'] ?? 0,
-                        'final_amount' => $finalAmount
+                        'final_amount' => $finalAmount,
+                        'ticket_categories' => $data['ticket_categories'] ?? [],
+                        'booked_seats' => $data['booked_seats'] ?? [],
+                        'ticket_details' => $data['ticket_details'] ?? []
                     ];
                     
                     error_log("DEBUG: Booking data for email: " . json_encode($bookingDataForEmail));
