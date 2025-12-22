@@ -122,12 +122,20 @@ try {
         if (empty($venue->name) || empty($venue->address) || empty($venue->city) || empty($venue->capacity)) {
             $response = ['success' => false, 'message' => 'Please fill all required fields'];
             $statusCode = 400;
-        } elseif ($venue->create()) {
-            $response = ['success' => true, 'message' => 'Venue added successfully', 'id' => $venue->id];
-            $statusCode = 201;
         } else {
-            $response = ['success' => false, 'message' => 'Failed to add venue'];
-            $statusCode = 500;
+            try {
+                if ($venue->create()) {
+                    $response = ['success' => true, 'message' => 'Venue added successfully', 'id' => $venue->id];
+                    $statusCode = 201;
+                } else {
+                    $response = ['success' => false, 'message' => 'Failed to add venue. Please check all fields are valid.'];
+                    $statusCode = 500;
+                }
+            } catch (Exception $e) {
+                error_log("Venue creation error: " . $e->getMessage());
+                $response = ['success' => false, 'message' => 'Error adding venue: ' . $e->getMessage()];
+                $statusCode = 500;
+            }
         }
     }
     elseif ($method === 'POST' && $action === 'edit') {

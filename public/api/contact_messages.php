@@ -68,7 +68,13 @@ try {
                 }
             } else {
                 $messages = $controller->index();
+                // Ensure it's an array
+                if (!is_array($messages)) {
+                    $messages = [];
+                }
+                if (ob_get_level()) ob_clean();
                 echo json_encode($messages);
+                exit();
             }
             break;
 

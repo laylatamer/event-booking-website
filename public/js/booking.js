@@ -706,7 +706,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Ensure tickets are reserved
             const reserved = await reserveTickets();
-            if (reserved) {
+            if (reserved && activeReservations.length > 0) {
                 // Get selected seats from seating managers
                 let selectedSeats = [];
                 if (venueSeatingType === 'stadium' && stadiumSeatingManager) {
@@ -726,6 +726,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     reservations: activeReservations.join(',')
                 });
                 window.location.href = `checkout.php?${params.toString()}`;
+            } else {
+                alert('Failed to reserve tickets. Please try again.');
             }
         });
     }

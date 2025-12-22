@@ -68,7 +68,13 @@ try {
                 }
             } else {
                 $users = $controller->index();
+                // Ensure it's an array
+                if (!is_array($users)) {
+                    $users = [];
+                }
+                if (ob_get_level()) ob_clean();
                 echo json_encode($users);
+                exit();
             }
             break;
 

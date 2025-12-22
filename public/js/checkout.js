@@ -8,6 +8,13 @@ if (document.readyState === 'loading') {
 }
 
 function initVanta() {
+    // Check if THREE.js is loaded first (required by VANTA)
+    if (typeof THREE === 'undefined') {
+        // THREE.js not loaded yet, try again
+        setTimeout(initVanta, 200);
+        return;
+    }
+    
     if (typeof VANTA === 'undefined') {
         // VANTA not loaded yet, try again
         setTimeout(initVanta, 200);
@@ -19,6 +26,7 @@ function initVanta() {
         try {
             VANTA.NET({
                 el: "#vanta-bg",
+                THREE: THREE, // Explicitly pass THREE.js
                 color: 0xf97316,
                 backgroundColor: 0x1a1a1a,
                 points: 12,
