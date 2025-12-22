@@ -735,8 +735,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize
     updateCheckoutTotal();
     
-    // Clean up on page unload
-    window.addEventListener('beforeunload', () => {
+    // Clean up on page unload - but ONLY if we're not going to checkout
+    // If we're going to checkout, we need to keep the reservations!
+    window.addEventListener('beforeunload', (e) => {
+        // Check if we're navigating to checkout
+        const target = e.target?.activeElement?.href || window.location.href;
+        if (target && target.includes('checkout.php')) {
+            // Don't release reservations if going to checkout
+            return;
+        }
+        // Only release if navigating away (not to checkout)
         releaseReservations();
     });
 });
