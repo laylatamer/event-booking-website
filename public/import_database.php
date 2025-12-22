@@ -95,13 +95,39 @@ if ($sqlFile === null) {
 
 // Check if file exists
 if (!file_exists($sqlFile)) {
-    die("❌ SQL file not found: $sqlFile<br><br>" .
-        "Please ensure database/event_ticketing_db.sql exists.<br>" .
-        "Current directory: " . __DIR__ . "<br>" .
-        "Project root: " . $projectRoot . "<br>" .
-        "Looking for: " . htmlspecialchars($sqlFile) . "<br>" .
-        "Project root exists: " . (is_dir($projectRoot) ? 'Yes' : 'No') . "<br>" .
-        "Database directory exists: " . (is_dir($projectRoot . '/database') ? 'Yes' : 'No'));
+    // Try to find project root
+    $projectRoot = null;
+    $possibleRoots = [
+        dirname(__DIR__),  // Parent of public
+        '/app',             // Railway root
+        dirname(dirname(__DIR__)), // Two levels up
+    ];
+    
+    foreach ($possibleRoots as $root) {
+        if (is_dir($root) && is_dir($root . '/database')) {
+            $projectRoot = $root;
+            break;
+        }
+    }
+    
+    $debugInfo = [
+        "SQL file path: " . htmlspecialchars($sqlFile),
+        "Script directory: " . __DIR__,
+        "Current working directory: " . getcwd(),
+        "Tried paths: " . implode(', ', array_map('htmlspecialchars', $possibleSqlPaths)),
+    ];
+    
+    if ($projectRoot) {
+        $debugInfo[] = "Project root found: " . $projectRoot;
+        $debugInfo[] = "Database directory exists: Yes";
+    } else {
+        $debugInfo[] = "Project root: Not found";
+        $debugInfo[] = "Database directory: Not found";
+    }
+    
+    die("❌ SQL file not found!<br><br>" .
+        "Please ensure database/event_ticketing_db.sql exists in your project root.<br><br>" .
+        implode("<br>", $debugInfo));
 }
 
 echo "📦 Starting database import...\n";

@@ -34,12 +34,24 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 WORKDIR /app
 
 # Copy application files
-# Note: If Railway's root is set to 'public', files will be at /app directly
-# If Railway's root is project root, we need to copy everything including public/
+# Railway might build from 'public' directory, so we need to handle both cases
 COPY . .
 
+# If Railway built from 'public', we need to copy parent directories
+# Check if we're in public directory and copy parent structure if needed
+RUN if [ ! -d "/app/database" ] && [ -d "/app/../database" ]; then \
+        echo "Copying parent directories..."; \
+        cp -r /app/../database /app/ 2>/dev/null || true; \
+        cp -r /app/../config /app/ 2>/dev/null || true; \
+        cp -r /app/../app /app/ 2>/dev/null || true; \
+    fi
+
 # Show directory structure for debugging
-RUN echo "=== Contents of /app ===" && ls -la /app
+RUN echo "=== Contents of /app ===" && ls -la /app && \
+    echo "=== Checking for database directory ===" && \
+    (test -d "/app/database" && echo "✓ database directory exists" || echo "✗ database directory NOT found") && \
+    (test -d "/app/config" && echo "✓ config directory exists" || echo "✗ config directory NOT found") && \
+    (test -d "/app/app" && echo "✓ app directory exists" || echo "✗ app directory NOT found")
 
 # Install PHP dependencies (if composer.json exists)
 RUN if [ -f "composer.json" ]; then composer install --no-dev --optimize-autoloader || true; fi
