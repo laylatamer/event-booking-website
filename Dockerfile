@@ -24,7 +24,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Verify PDO MySQL is installed (this will fail build if not installed)
-RUN php -r "if (!extension_loaded('pdo_mysql')) { echo 'ERROR: PDO MySQL extension not loaded!\n'; echo 'Available extensions: '; print_r(get_loaded_extensions()); exit(1); } else { echo 'SUCCESS: PDO MySQL extension is installed!\n'; }"
+RUN php -r "if (!extension_loaded('pdo_mysql')) { echo 'ERROR: PDO MySQL extension not loaded!\n'; echo 'Available PDO drivers: '; print_r(PDO::getAvailableDrivers()); echo '\nAll extensions: '; print_r(get_loaded_extensions()); exit(1); } else { echo 'SUCCESS: PDO MySQL extension is installed!\n'; echo 'Available PDO drivers: '; print_r(PDO::getAvailableDrivers()); }"
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
