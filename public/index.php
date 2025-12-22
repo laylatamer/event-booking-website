@@ -1,10 +1,9 @@
 <?php
 /**
- * Main entry point for the application
- * Routes to homepage
+ * Main Router for the Application
  * 
- * This file handles path resolution for Railway deployment
- * where public/ might be the root directory
+ * Handles all page requests and routes them to the correct view files
+ * Works for both local development and Railway deployment
  */
 
 // Determine project root
@@ -38,13 +37,85 @@ if (!$projectRoot) {
 
 // If still not found, show error with debug info
 if (!$projectRoot || !file_exists($projectRoot . '/app/views/homepage.php')) {
-    die("Error: Could not find homepage.php<br><br>" .
+    die("Error: Could not find project structure<br><br>" .
         "Script directory: " . htmlspecialchars($scriptDir) . "<br>" .
         "Project root: " . ($projectRoot ? htmlspecialchars($projectRoot) : 'Not found') . "<br>" .
         "Files in script dir: " . implode(', ', array_slice(scandir($scriptDir), 0, 10)) . "<br>" .
         "Please ensure Railway's root directory is set to project root (not 'public')");
 }
 
-// Include homepage - it will handle its own path resolution
-require_once $projectRoot . '/app/views/homepage.php';
+// Get the requested page from URL
+$requestUri = $_SERVER['REQUEST_URI'] ?? '/';
+$requestPath = parse_url($requestUri, PHP_URL_PATH);
+
+// Remove query string and leading/trailing slashes
+$requestPath = trim($requestPath, '/');
+
+// Map URLs to view files
+$routes = [
+    '' => 'homepage.php',
+    'index.php' => 'homepage.php',
+    'homepage.php' => 'homepage.php',
+    'allevents.php' => 'allevents.php',
+    'booking.php' => 'booking.php',
+    'checkout.php' => 'checkout.php',
+    'booking_confirmation.php' => 'booking_confirmation.php',
+    'contact_form.php' => 'contact_form.php',
+    'contact.php' => 'contact_form.php',
+    'faq.php' => 'faq.php',
+    'profile.php' => 'profile.php',
+    'auth.php' => 'auth.php',
+    'logout.php' => 'logout.php',
+    'sports.php' => 'sports.php',
+    'entertainment.php' => 'entertainment.php',
+    'customize_tickets.php' => 'customize_tickets.php',
+    'ticket.php' => 'ticket.php',
+    'ticket_verification.php' => 'ticket_verification.php',
+    'terms&conditions.php' => 'terms&conditions.php',
+    'admin' => 'admin/index.php',
+    'admin/' => 'admin/index.php',
+    'admin/index.php' => 'admin/index.php',
+];
+
+// Handle API requests - let them pass through
+if (strpos($requestPath, 'api/') === 0) {
+    // API requests are handled by their own files in public/api/
+    return false; // Let PHP server handle it
+}
+
+// Handle static files (CSS, JS, images) - let them pass through
+$staticExtensions = ['css', 'js', 'jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'ico', 'json'];
+$extension = pathinfo($requestPath, PATHINFO_EXTENSION);
+if (in_array(strtolower($extension), $staticExtensions)) {
+    return false; // Let PHP server handle static files
+}
+
+// Determine which view file to load
+$viewFile = null;
+
+// Check if it's a direct route
+if (isset($routes[$requestPath])) {
+    $viewFile = $routes[$requestPath];
+} else {
+    // Try to match the request path directly to a view file
+    $viewFile = basename($requestPath);
+    if (!file_exists($projectRoot . '/app/views/' . $viewFile)) {
+        $viewFile = null;
+    }
+}
+
+// Default to homepage if no route matches
+if (!$viewFile) {
+    $viewFile = 'homepage.php';
+}
+
+// Check if view file exists
+$viewPath = $projectRoot . '/app/views/' . $viewFile;
+if (!file_exists($viewPath)) {
+    http_response_code(404);
+    die("Page not found: " . htmlspecialchars($requestPath));
+}
+
+// Include the view file
+require_once $viewPath;
 
