@@ -362,19 +362,30 @@ class BookingsModel {
             $status = 'confirmed';
             $paymentStatus = ($data['payment_method'] ?? 'cash') === 'cash' ? 'pending' : 'paid';
             
-            // Check which columns exist in the table
-            try {
-                $columnCheck = $this->db->query("SHOW COLUMNS FROM " . $this->table);
-                if (!$columnCheck) {
-                    $errorInfo = $this->db->errorInfo();
-                    throw new Exception("Failed to check table columns: " . ($errorInfo[2] ?? 'Unknown error'));
+            // Check which columns exist in the table (cache this to avoid repeated queries)
+            // Use a static cache to avoid querying on every booking
+            static $columnCache = [];
+            if (!isset($columnCache[$this->table])) {
+                try {
+                    $startTime = microtime(true);
+                    $columnCheck = $this->db->query("SHOW COLUMNS FROM " . $this->table);
+                    $queryTime = microtime(true) - $startTime;
+                    error_log("DEBUG: SHOW COLUMNS query took " . round($queryTime, 3) . " seconds");
+                    
+                    if (!$columnCheck) {
+                        $errorInfo = $this->db->errorInfo();
+                        throw new Exception("Failed to check table columns: " . ($errorInfo[2] ?? 'Unknown error'));
+                    }
+                    $existingColumns = [];
+                    while ($row = $columnCheck->fetch(PDO::FETCH_ASSOC)) {
+                        $existingColumns[] = $row['Field'];
+                    }
+                    $columnCache[$this->table] = $existingColumns;
+                } catch (PDOException $e) {
+                    throw new Exception("Database error checking columns: " . $e->getMessage());
                 }
-                $existingColumns = [];
-                while ($row = $columnCheck->fetch(PDO::FETCH_ASSOC)) {
-                    $existingColumns[] = $row['Field'];
-                }
-            } catch (PDOException $e) {
-                throw new Exception("Database error checking columns: " . $e->getMessage());
+            } else {
+                $existingColumns = $columnCache[$this->table];
             }
             
             // Build query based on existing columns
@@ -557,8 +568,11 @@ class BookingsModel {
                 }
             }
             
-            // Update ticket availability
+            // Update ticket availability (optimize with batch update if possible)
             if (!empty($data['ticket_categories'])) {
+                $updateStartTime = microtime(true);
+                error_log("DEBUG: Starting ticket availability update for " . count($data['ticket_categories']) . " categories");
+                
                 foreach ($data['ticket_categories'] as $category) {
                     $categoryName = $category['category_name'] ?? $category['categoryName'] ?? '';
                     $quantity = intval($category['quantity'] ?? 0);
@@ -569,6 +583,7 @@ class BookingsModel {
                     }
                     
                     try {
+                        $categoryStartTime = microtime(true);
                         
                         $updateQuery = "UPDATE event_ticket_categories 
                                        SET available_tickets = available_tickets - :quantity,
@@ -584,6 +599,8 @@ class BookingsModel {
                         $updateStmt->bindValue(':category_name', $categoryName, PDO::PARAM_STR);
                         
                         $executeResult = $updateStmt->execute();
+                        $categoryTime = microtime(true) - $categoryStartTime;
+                        error_log("DEBUG: Category '$categoryName' update took " . round($categoryTime, 3) . " seconds");
                         
                         if (!$executeResult) {
                             $errorInfo = $updateStmt->errorInfo();
@@ -609,6 +626,9 @@ class BookingsModel {
                         throw new Exception("Database error updating ticket availability: " . $e->getMessage());
                     }
                 }
+                
+                $updateTotalTime = microtime(true) - $updateStartTime;
+                error_log("DEBUG: Total ticket availability update took " . round($updateTotalTime, 3) . " seconds");
             }
             
             // Save booked seats if provided

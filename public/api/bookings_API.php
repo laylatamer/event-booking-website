@@ -376,10 +376,13 @@ try {
             $data['user_id'] = intval($_SESSION['user_id']);
             
             // Log booking attempt
+            $apiStartTime = microtime(true);
             error_log("Creating booking - User: " . $data['user_id'] . ", Event: " . $data['event_id'] . ", Tickets: " . $data['ticket_count']);
             
             try {
                 $result = $bookingsModel->createBooking($data);
+                $apiTime = microtime(true) - $apiStartTime;
+                error_log("DEBUG: createBooking API call took " . round($apiTime, 3) . " seconds");
                 
                 if ($result['success']) {
                     error_log("Booking created successfully - ID: " . $result['booking_id'] . ", Code: " . $result['booking_code']);
