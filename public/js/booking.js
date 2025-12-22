@@ -142,7 +142,16 @@ document.addEventListener('DOMContentLoaded', () => {
                         fetch('/api/ticket_reservations.php', {
                             method: 'POST',
                             body: formData
-                        }).then(res => res.json())
+                        }).then(async res => {
+                            const data = await res.json();
+                            if (!res.ok) {
+                                return { success: false, message: data.message || `HTTP ${res.status} error` };
+                            }
+                            return data;
+                        }).catch(error => {
+                            console.error('Reservation fetch error:', error);
+                            return { success: false, message: 'Network error: ' + error.message };
+                        })
                     );
                 }
             });
