@@ -400,10 +400,18 @@ class BookingsModel {
                 $values[] = ':customization_fee';
             }
             
-            // Use total_amount if subtotal doesn't exist
-            if (in_array('total_amount', $existingColumns) && !in_array('subtotal', $existingColumns)) {
-                $columns[] = 'total_amount';
-                $values[] = ':total_amount';
+            // Use total_amount if subtotal doesn't exist, OR if both exist (bind total_amount as well)
+            if (in_array('total_amount', $existingColumns)) {
+                if (!in_array('subtotal', $existingColumns)) {
+                    // Only total_amount exists, use it instead of subtotal
+                    $columns[] = 'total_amount';
+                    $values[] = ':total_amount';
+                } else {
+                    // Both exist - check if total_amount is required (NOT NULL without default)
+                    // If so, we should still bind it
+                    $columns[] = 'total_amount';
+                    $values[] = ':total_amount';
+                }
             }
             
             $columns[] = 'final_amount';
