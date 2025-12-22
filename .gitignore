@@ -4,3 +4,6 @@ composer.lock
 
 # Ignore PhpStorm IDE
 .idea
+
+# Temporary import script - DO NOT COMMIT
+import_database.php

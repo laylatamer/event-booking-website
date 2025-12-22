@@ -260,11 +260,14 @@ APP_URL=https://your-app-name.railway.app (optional)
 
 ## Step 7: Import Database Schema
 
-### 7.1 Method 1: Using Railway's Database Tab (Easiest)
+### 7.1 Method 1: Using Railway's Built-in Database Viewer (Easiest - Recommended)
 
 1. Go to your **MySQL service** in Railway
-2. Click **"Data"** tab
-3. You'll see a database viewer
+2. Click **"Data"** tab (this is Railway's built-in database viewer - like phpMyAdmin)
+3. You'll see a database interface with:
+   - **Tables** on the left sidebar
+   - **Query** tab at the top
+   - **Browse** tab to view table data
 4. Click **"Query"** tab
 5. Copy and paste SQL from your migration files one by one:
 
