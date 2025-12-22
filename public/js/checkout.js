@@ -166,12 +166,14 @@ async function initializeCheckout() {
                             // Give a 5 second grace period to account for timing issues
                             const expiresAt = reservation.expires_at ? new Date(reservation.expires_at) : null;
                             const now = new Date();
-                            const gracePeriod = 5000; // 5 seconds
-                            const isExpired = reservation.is_expired || (expiresAt && (expiresAt.getTime() + gracePeriod) < now.getTime());
+                            const gracePeriod = 5000; // 5 seconds in milliseconds
+                            // Reservation is expired if: it's marked as expired OR expires_at is more than gracePeriod in the past
+                            // Correct logic: expiresAt < (now - gracePeriod) means it expired more than gracePeriod ago
+                            const isExpired = reservation.is_expired || (expiresAt && expiresAt.getTime() < (now.getTime() - gracePeriod));
                             
                             if (isExpired) {
                                 expiredReservations++;
-                                console.warn(`Reservation ${result.id} has expired (expires_at: ${reservation.expires_at}, now: ${now.toISOString()})`);
+                                console.warn(`Reservation ${result.id} has expired (expires_at: ${reservation.expires_at}, now: ${now.toISOString()}, gracePeriod: ${gracePeriod}ms)`);
                                 continue;
                             }
                             
@@ -183,9 +185,21 @@ async function initializeCheckout() {
                                 continue;
                             }
                             
+                            // Debug: Log available categories and what we're looking for
+                            console.log(`Looking for category "${categoryName}" in ticket categories:`, ticketCategories.map(c => c.category_name || c.name));
+                            
                             // Find the price for this category
-                            const category = ticketCategories.find(cat => cat.category_name === categoryName);
-                            const categoryPrice = category ? parseFloat(category.price) : 0;
+                            // Try both category_name and name fields
+                            const category = ticketCategories.find(cat => 
+                                (cat.category_name && cat.category_name === categoryName) || 
+                                (cat.name && cat.name === categoryName)
+                            );
+                            
+                            if (!category) {
+                                console.warn(`Category "${categoryName}" not found in ticket categories. Available categories:`, ticketCategories);
+                            }
+                            
+                            const categoryPrice = category ? parseFloat(category.price || category.price_per_ticket || 0) : 0;
                             
                             if (!categoryMap[categoryName]) {
                                 categoryMap[categoryName] = {
@@ -250,9 +264,11 @@ async function initializeCheckout() {
                                     foundReservations++;
                                     const reservation = result.reservation;
                                     
-                                    // Check if reservation is expired
+                                    // Check if reservation is expired (with grace period)
                                     const expiresAt = reservation.expires_at ? new Date(reservation.expires_at) : null;
-                                    const isExpired = reservation.is_expired || (expiresAt && expiresAt < new Date());
+                                    const now = new Date();
+                                    const gracePeriod = 5000; // 5 seconds in milliseconds
+                                    const isExpired = reservation.is_expired || (expiresAt && expiresAt.getTime() < (now.getTime() - gracePeriod));
                                     
                                     if (isExpired) {
                                         expiredReservations++;
