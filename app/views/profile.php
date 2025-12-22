@@ -49,6 +49,12 @@ if (!$user) {
 
 $alert = null;
 
+// Check for error messages from redirects (e.g., from booking_confirmation.php)
+if (isset($_SESSION['error_message'])) {
+    $alert = ['type' => 'error', 'message' => $_SESSION['error_message']];
+    unset($_SESSION['error_message']);
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
@@ -226,6 +232,67 @@ $teamOptions = ['Al Ahly', 'Zamalek', 'Ismaily', 'Pyramids', 'Other'];
 $entertainmentTickets = [];
 $sportsTickets = [];
 $paymentHistory = [];
+
+//profile.php 
+try {
+    $historySql = "
+        SELECT 
+            b.id, 
+            b.booking_code, 
+            b.created_at, 
+            b.final_amount, 
+            b.status, 
+            b.payment_status,
+            e.title as event_title, 
+            e.date as event_date,
+            v.name as venue_name,
+            mc.name as category_name
+        FROM bookings b
+        JOIN events e ON b.event_id = e.id
+        JOIN venues v ON e.venue_id = v.id
+        JOIN subcategories sc ON e.subcategory_id = sc.id
+        JOIN main_categories mc ON sc.main_category_id = mc.id
+        WHERE b.user_id = :user_id
+        ORDER BY b.created_at DESC
+    ";
+
+    $historyStmt = $pdo->prepare($historySql);
+    $historyStmt->execute([':user_id' => $userId]);
+    $bookings = $historyStmt->fetchAll(PDO::FETCH_ASSOC);
+
+    foreach ($bookings as $booking) {
+        $eventDate = new DateTime($booking['event_date']);
+        $formattedDate = $eventDate->format('M d, Y');
+        
+        $ticketData = [
+            'event' => $booking['event_title'],
+            'date'  => $formattedDate,
+            'venue' => $booking['venue_name'],
+            'link'  => 'booking_confirmation.php?code=' . $booking['booking_code'] // Assuming this page exists or will exist
+        ];
+
+        // Categorize Tickets
+        if (strcasecmp($booking['category_name'], 'Sports') === 0) {
+            $sportsTickets[] = $ticketData;
+        } else {
+            $entertainmentTickets[] = $ticketData;
+        }
+
+        // Add to Payment History
+        // Only include if payment is not 'pending' or checking specifically for completed transactions? 
+        // For now, listing all transactions as per history requirement.
+        $paymentDate = new DateTime($booking['created_at']);
+        $paymentHistory[] = [
+            'reference' => $booking['booking_code'],
+            'date'      => $paymentDate->format('M d, Y'),
+            'amount'    => number_format($booking['final_amount'], 2) . ' EGP',
+            'status'    => $booking['payment_status']
+        ];
+    }
+
+} catch (\PDOException $e) {
+    error_log("Error fetching user history: " . $e->getMessage());
+}
 
 $alertBaseStyle = 'margin:1.5rem auto;max-width:1100px;padding:0.9rem 1.25rem;border-radius:10px;font-weight:600;';
 $alertStyles = [
