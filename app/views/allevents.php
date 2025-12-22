@@ -27,7 +27,13 @@ $venues = $eventController->getVenuesWithEvents();
     <title>All Events & Activities</title>
 
     <script type="module" src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-    <link rel="stylesheet" href="../../public/css/allevents.css">
+    <?php
+    // Include path helper if not already included
+    if (!defined('BASE_ASSETS_PATH')) {
+        require_once __DIR__ . '/path_helper.php';
+    }
+    ?>
+    <link rel="stylesheet" href="<?= asset('css/allevents.css') ?>">
     
 </head>
 <body class="page-body">
