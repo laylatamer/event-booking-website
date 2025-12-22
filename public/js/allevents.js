@@ -1,6 +1,6 @@
 (function() {
     // API endpoint for public events
-    const API_BASE = '../../public/api/events_API.php';
+    const API_BASE = '/api/events_API.php';
     
     // State management
     let allEvents = []; // Will be populated by API call
