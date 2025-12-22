@@ -5,7 +5,18 @@
  */
 
 return [
-    // SMTP Configuration
+    // Email Provider Selection
+    // Options: 'sendgrid', 'phpmailer', 'native'
+    // 'sendgrid' - Use SendGrid API (recommended for Railway - no SMTP blocking)
+    // 'phpmailer' - Use PHPMailer with SMTP (may be blocked on Railway)
+    // 'native' - Use PHP native mail() function (not recommended)
+    'email_provider' => 'sendgrid',          // Change to 'phpmailer' if you want to use SMTP instead
+    
+    // SendGrid Configuration (if email_provider is 'sendgrid')
+    'sendgrid_api_key' => '',                // Your SendGrid API key (get from https://app.sendgrid.com/settings/api_keys)
+    // Note: SendGrid free tier allows 100 emails/day
+    
+    // SMTP Configuration (if email_provider is 'phpmailer')
     'smtp_host' => 'smtp.gmail.com',        // Your SMTP server (e.g., smtp.gmail.com, smtp.mailtrap.io)
     'smtp_port' => 587,                      // SMTP port (587 for TLS, 465 for SSL, 25 for non-encrypted)
     'smtp_secure' => 'tls',                  // Encryption: 'tls', 'ssl', or '' for none
@@ -14,13 +25,13 @@ return [
     'smtp_password' => 'nguddcnzotbnktpq',     // Your email password or app password (for Gmail, use App Password)
     
     // Email Settings
-    'from_email' => 'noreply@egzly.com',     // From email address
+    'from_email' => 'noreply@egzly.com',     // From email address (must be verified in SendGrid if using SendGrid)
     'from_name' => 'EحGZLY',                  // From name
     'reply_to_email' => 'support@egzly.com', // Reply-to email address
     'reply_to_name' => 'EحGZLY Support',     // Reply-to name
     
-    // PHPMailer Settings
-    'use_phpmailer' => true,                 // Set to false to use native mail() function (not recommended)
+    // PHPMailer Settings (legacy - use email_provider instead)
+    'use_phpmailer' => false,                // Deprecated: use 'email_provider' instead
     
     // QR Code URL Settings (for ticket verification)
     // Leave empty to auto-detect, or set manually (e.g., 'http://192.168.1.100/event-booking-website' or 'https://yourdomain.com')

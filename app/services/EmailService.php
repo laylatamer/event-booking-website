@@ -182,8 +182,12 @@ class EmailService {
             error_log("EmailService: Using PHPMailer: " . ($this->usePHPMailer ? 'Yes' : 'No'));
             error_log("EmailService: QR code generated: " . ($qrCodeImage ? 'Yes' : 'No'));
             
-            // Send email using PHPMailer or native mail()
-            if ($this->usePHPMailer) {
+            // Send email using configured provider
+            $emailProvider = $this->config['email_provider'] ?? 'phpmailer';
+            
+            if ($emailProvider === 'sendgrid') {
+                $success = $this->sendWithSendGrid($to, $subject, $emailBody, $fullName, $qrCodeImage);
+            } elseif ($emailProvider === 'phpmailer' || $this->usePHPMailer) {
                 $success = $this->sendWithPHPMailer($to, $subject, $emailBody, $fullName, $qrCodeImage);
             } else {
                 $success = $this->sendWithNativeMail($to, $subject, $emailBody);
