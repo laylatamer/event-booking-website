@@ -328,8 +328,71 @@ class EmailService {
             // Character encoding
             $mail->CharSet = 'UTF-8';
             
-            $mail->send();
-            return true;
+            // Send email with aggressive timeout protection
+            $sendStartTime = microtime(true);
+            $maxSendTime = 5; // Maximum 5 seconds for email sending
+            
+            try {
+                // Set a maximum execution time for this specific operation
+                $oldTimeout = ini_get('default_socket_timeout');
+                ini_set('default_socket_timeout', 3); // 3 second socket timeout
+                
+                // Use a timeout wrapper to ensure we don't hang forever
+                $result = false;
+                $errorInfo = '';
+                
+                // Try to send with error suppression to catch connection errors faster
+                try {
+                    $result = $mail->send();
+                    if (!$result) {
+                        $errorInfo = $mail->ErrorInfo;
+                    }
+                } catch (\PHPMailer\PHPMailer\Exception $phpmailerEx) {
+                    $errorInfo = $phpmailerEx->getMessage();
+                    $result = false;
+                } catch (Exception $e) {
+                    $errorInfo = $e->getMessage();
+                    $result = false;
+                }
+                
+                // Restore original timeout
+                ini_set('default_socket_timeout', $oldTimeout);
+                
+                $sendDuration = microtime(true) - $sendStartTime;
+                
+                if (!$result) {
+                    error_log("PHPMailer Error: " . $errorInfo);
+                    error_log("Email send attempt took " . round($sendDuration, 2) . " seconds");
+                    
+                    // Check if it's a connection error (Railway may block SMTP)
+                    if (strpos($errorInfo, 'Could not connect') !== false || 
+                        strpos($errorInfo, 'Failed to connect') !== false ||
+                        strpos($errorInfo, 'Connection timed out') !== false ||
+                        strpos($errorInfo, 'Connection refused') !== false) {
+                        error_log("WARNING: SMTP connection failed - Railway may be blocking outbound SMTP connections on port 587");
+                        error_log("SOLUTION: Consider using Railway's email service or a third-party email API (SendGrid, Mailgun, etc.)");
+                        error_log("ALTERNATIVE: Use native mail() function or disable email sending for now");
+                    }
+                    
+                    return false;
+                }
+                
+                if ($sendDuration > $maxSendTime) {
+                    error_log("WARNING: Email sending took longer than expected: " . round($sendDuration, 2) . " seconds");
+                }
+                
+                error_log("Email sent successfully using PHPMailer to: " . $to . " (took " . round($sendDuration, 2) . " seconds)");
+                return true;
+            } catch (Exception $e) {
+                // Restore original timeout if exception occurred
+                if (isset($oldTimeout)) {
+                    ini_set('default_socket_timeout', $oldTimeout);
+                }
+                $sendDuration = microtime(true) - $sendStartTime;
+                error_log("PHPMailer Exception: " . $e->getMessage());
+                error_log("Email send attempt took " . round($sendDuration, 2) . " seconds before exception");
+                return false;
+            }
             
         } catch (\Exception $e) {
             $errorInfo = isset($mail) && method_exists($mail, 'ErrorInfo') ? $mail->ErrorInfo : $e->getMessage();
