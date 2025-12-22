@@ -19,22 +19,30 @@
             }
         }
 
+        console.log('[Chatbot] Script URL found:', scriptUrl);
+
         // 2. Derive API URL from script URL
         if (scriptUrl) {
             // If script is at .../public/js/chatbot-widget.js
             // API should be at .../public/api/chatbot.php
-            return scriptUrl.replace('/js/chatbot-widget.js', '/api/chatbot.php');
+            const apiUrl = scriptUrl.replace('/js/chatbot-widget.js', '/api/chatbot.php');
+            console.log('[Chatbot] Calculated API URL:', apiUrl);
+            return apiUrl;
         }
 
         // Fallback: Try to guess based on current location
         const path = window.location.pathname;
         const root = path.split('/public/')[0];
         if (root !== path) {
-            return `${window.location.origin}${root}/public/api/chatbot.php`;
+            const fallbackUrl = `${window.location.origin}${root}/public/api/chatbot.php`;
+            console.log('[Chatbot] Fallback API URL (from path):', fallbackUrl);
+            return fallbackUrl;
         }
 
         // Final fallback - assume relatively standard structure
-        return '/event-booking-website/public/api/chatbot.php';
+        const finalFallback = window.location.origin + '/event-booking-website/public/api/chatbot.php';
+        console.log('[Chatbot] Final fallback API URL:', finalFallback);
+        return finalFallback;
     };
 
     // Configuration - UPDATED with dynamic path
@@ -218,18 +226,23 @@
         }
 
         async testApiConnection() {
+            console.log('[Chatbot] Testing API connection at:', config.apiUrl);
             try {
                 const testResponse = await fetch(config.apiUrl, {
                     method: 'GET',
                     headers: { 'Accept': 'application/json' }
                 });
+                console.log('[Chatbot] API test response status:', testResponse.status);
                 const text = await testResponse.text();
+                console.log('[Chatbot] API test response text (first 200 chars):', text.substring(0, 200));
 
                 // Try to parse as JSON
                 try {
                     const data = JSON.parse(text);
                     this.apiWorking = data.success !== false;
+                    console.log('[Chatbot] API test successful:', this.apiWorking);
                 } catch (e) {
+                    console.warn('[Chatbot] Failed to parse API response as JSON:', e);
                     this.apiWorking = false;
                     // Test alternative URLs
                     await this.testAlternativeUrls();
@@ -238,17 +251,24 @@
                 this.apiTested = true;
 
                 if (!this.apiWorking) {
+                    console.warn('[Chatbot] API connection failed, using offline mode');
                     this.addSystemMessage('⚠️ Chatbot API is currently unavailable. Using offline mode.');
+                } else {
+                    console.log('[Chatbot] API connection successful!');
                 }
 
             } catch (error) {
+                console.error('[Chatbot] API connection error:', error);
                 this.apiTested = true;
                 this.apiWorking = false;
                 this.addSystemMessage('⚠️ Chatbot is in offline mode. Basic responses only.');
+                // Try alternative URLs
+                await this.testAlternativeUrls();
             }
         }
 
         async testAlternativeUrls() {
+            console.log('[Chatbot] Testing alternative API URLs...');
 
             // Get script URL again for fallback calculations
             const scripts = document.getElementsByTagName('script');
@@ -260,36 +280,85 @@
                 }
             }
 
-            const urls = [
+            // Build comprehensive list of possible URLs
+            const basePath = window.location.pathname;
+            const possibleUrls = [
                 config.apiUrl, // Try the calculated one first
-                scriptUrl.replace('/js/chatbot-widget.js', '/api/chatbot.php'),
-                '/event-booking-website/public/api/chatbot.php',
-                '/public/api/chatbot.php',
-                './api/chatbot.php',
-                '../api/chatbot.php',
-                window.location.origin + '/event-booking-website/public/api/chatbot.php',
-                window.location.origin + '/public/api/chatbot.php'
             ];
 
-            for (const url of urls) {
+            // If we have a script URL, try variations
+            if (scriptUrl) {
+                // Try replacing js with api
+                possibleUrls.push(scriptUrl.replace('/js/chatbot-widget.js', '/api/chatbot.php'));
+                // Try absolute path from script
+                const scriptPath = new URL(scriptUrl, window.location.origin);
+                const apiPath = scriptPath.pathname.replace('/js/chatbot-widget.js', '/api/chatbot.php');
+                possibleUrls.push(window.location.origin + apiPath);
+            }
+
+            // Try common paths
+            possibleUrls.push(
+                window.location.origin + '/event-booking-website/public/api/chatbot.php',
+                window.location.origin + '/public/api/chatbot.php',
+                '/event-booking-website/public/api/chatbot.php',
+                '/public/api/chatbot.php',
+                window.location.origin + basePath.split('/public/')[0] + '/public/api/chatbot.php'
+            );
+
+            // Remove duplicates
+            const uniqueUrls = [...new Set(possibleUrls.filter(url => url))];
+
+            console.log('[Chatbot] Testing', uniqueUrls.length, 'alternative URLs');
+
+            for (const url of uniqueUrls) {
+                if (url === config.apiUrl && !this.apiWorking) continue; // Skip if already tested
+                
                 try {
+                    console.log('[Chatbot] Testing URL:', url);
+                    // Create timeout controller for older browsers
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 5000);
+                    
                     const response = await fetch(url, {
                         method: 'GET',
-                        headers: { 'Accept': 'application/json' }
+                        headers: { 'Accept': 'application/json' },
+                        signal: controller.signal
                     });
+                    
+                    clearTimeout(timeoutId);
+                    
                     if (response.ok) {
                         const text = await response.text();
-                        if (text.includes('success') || text.includes('API') || text.includes('json')) {
-                            config.apiUrl = url;
-                            this.apiWorking = true;
-                            this.addSystemMessage('✅ Chatbot API connection restored!');
-                            break;
+                        console.log('[Chatbot] URL', url, 'responded with:', text.substring(0, 100));
+                        
+                        // Check if it's a valid JSON response
+                        try {
+                            const data = JSON.parse(text);
+                            if (data.success !== false || data.name || data.version) {
+                                config.apiUrl = url;
+                                this.apiWorking = true;
+                                console.log('[Chatbot] ✅ Found working API URL:', url);
+                                this.addSystemMessage('✅ Chatbot API connection restored!');
+                                return; // Found working URL, stop testing
+                            }
+                        } catch (e) {
+                            // Not JSON, but might still be valid
+                            if (text.includes('success') || text.includes('API') || text.includes('json') || text.includes('chatbot')) {
+                                config.apiUrl = url;
+                                this.apiWorking = true;
+                                console.log('[Chatbot] ✅ Found working API URL (non-JSON):', url);
+                                this.addSystemMessage('✅ Chatbot API connection restored!');
+                                return;
+                            }
                         }
                     }
                 } catch (e) {
+                    console.log('[Chatbot] URL', url, 'failed:', e.message);
                     continue;
                 }
             }
+            
+            console.warn('[Chatbot] No working API URL found after testing all alternatives');
         }
 
         toggleChat() {
@@ -339,6 +408,7 @@
             this.showTyping();
 
             try {
+                console.log('[Chatbot] Sending message to:', config.apiUrl);
                 const response = await fetch(config.apiUrl, {
                     method: 'POST',
                     headers: {
@@ -349,10 +419,13 @@
                     body: JSON.stringify({ message: message })
                 });
 
+                console.log('[Chatbot] Response status:', response.status, response.statusText);
+
                 if (!response.ok) {
                     let errorText = '';
                     try {
                         errorText = await response.text();
+                        console.error('[Chatbot] Error response:', errorText);
                     } catch (e) {
                         errorText = `HTTP ${response.status}`;
                     }
@@ -360,12 +433,15 @@
                 }
 
                 const responseText = await response.text();
+                console.log('[Chatbot] Response text (first 500 chars):', responseText.substring(0, 500));
                 
                 let data;
                 try {
                     data = JSON.parse(responseText);
+                    console.log('[Chatbot] Parsed response data:', data);
                 } catch (jsonError) {
-                    console.error('Chatbot JSON parse error:', jsonError);
+                    console.error('[Chatbot] JSON parse error:', jsonError);
+                    console.error('[Chatbot] Full response text:', responseText);
                     throw new Error(`Invalid JSON response from API. Response: ${responseText.substring(0, 200)}`);
                 }
 
@@ -379,7 +455,7 @@
                 }
 
             } catch (error) {
-                console.error('Chatbot error:', error);
+                console.error('[Chatbot] Send message error:', error);
                 this.hideTyping();
                 this.addMessage('Sorry, I encountered an error. Please try again.', 'bot');
 
@@ -534,10 +610,22 @@
     // Initialize when page loads
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
-            window.eventChatbot = new SimpleChatbot();
+            console.log('[Chatbot] Initializing chatbot widget...');
+            try {
+                window.eventChatbot = new SimpleChatbot();
+                console.log('[Chatbot] Chatbot widget initialized successfully');
+            } catch (error) {
+                console.error('[Chatbot] Failed to initialize chatbot:', error);
+            }
         });
     } else {
-        window.eventChatbot = new SimpleChatbot();
+        console.log('[Chatbot] Initializing chatbot widget (DOM already loaded)...');
+        try {
+            window.eventChatbot = new SimpleChatbot();
+            console.log('[Chatbot] Chatbot widget initialized successfully');
+        } catch (error) {
+            console.error('[Chatbot] Failed to initialize chatbot:', error);
+        }
     }
 
 })();

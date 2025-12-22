@@ -46,8 +46,11 @@ class AIChatbotService {
         // Get AI response
         $aiResponse = $this->getAIResponse($userMessage, $context);
         
-        if (!$aiResponse && $this->config['use_fallback']) {
-            $aiResponse = $this->getFallbackResponse($userMessage);
+        // If AI fails, return null so the main chatbot can use its rule-based fallback
+        // Don't use internal fallback here - let the main chatbot handle it
+        if (!$aiResponse) {
+            error_log("AI Chatbot Service: Failed to get AI response, returning null for fallback");
+            return null; // Return null to trigger rule-based fallback in chatbot.php
         }
         
         // Add AI response to history
@@ -55,7 +58,7 @@ class AIChatbotService {
             $this->conversationHistory[] = ['role' => 'assistant', 'content' => $aiResponse];
         }
         
-        return $aiResponse ?: "I apologize, but I'm having trouble processing your request right now. Please try again or contact support.";
+        return $aiResponse;
     }
     
     /**
@@ -166,13 +169,20 @@ class AIChatbotService {
         } catch (Exception $e) {
             $errorMsg = $e->getMessage();
             error_log("AI Chatbot Error ($provider): " . $errorMsg);
+            error_log("AI Chatbot Error Trace: " . $e->getTraceAsString());
             
             if (strpos($errorMsg, 'Billing Required') !== false || 
                 strpos($errorMsg, 'insufficient_quota') !== false) {
-                error_log("AI Chatbot: Billing not set up");
+                error_log("AI Chatbot: Billing/quota issue detected");
             }
             
-            return null;
+            if (strpos($errorMsg, 'API key') !== false || 
+                strpos($errorMsg, '401') !== false ||
+                strpos($errorMsg, 'Unauthorized') !== false) {
+                error_log("AI Chatbot: API key issue - check your API key in config/ai_config.php");
+            }
+            
+            return null; // Return null to trigger rule-based fallback
         }
     }
     
