@@ -1,5 +1,16 @@
 [phases.setup]
-nixPkgs = ['php83', 'php83Packages.composer', 'php83Extensions.pdo', 'php83Extensions.pdo_mysql', 'php83Extensions.mysqli', 'php83Extensions.curl', 'php83Extensions.gd', 'php83Extensions.mbstring', 'php83Extensions.zip', 'php83Extensions.xml', 'php83Extensions.mysqlnd']
+nixPkgs = [
+    'php83',
+    'php83Packages.composer',
+    'php83Extensions.pdo',
+    'php83Extensions.pdo_mysql',
+    'php83Extensions.mysqli',
+    'php83Extensions.curl',
+    'php83Extensions.gd',
+    'php83Extensions.mbstring',
+    'php83Extensions.zip',
+    'php83Extensions.xml'
+]
 
 [phases.install]
 cmds = [
@@ -8,4 +19,3 @@ cmds = [
 
 [start]
 cmd = 'cd public && php -S 0.0.0.0:$PORT'
-
