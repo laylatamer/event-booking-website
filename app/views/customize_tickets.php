@@ -169,15 +169,21 @@ $costPerTicket = 9.99;
 
 <!DOCTYPE html>
 <html lang="en">
+<?php
+    // Include path helper if not already included
+    if (!defined('BASE_ASSETS_PATH')) {
+        require_once __DIR__ . '/path_helper.php';
+    }
+?>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Customize Your Tickets - <?php echo htmlspecialchars($event['title']); ?></title>
     
-    <link rel="stylesheet" href="../../public/css/ticket-customize.css">
-    <link rel="stylesheet" href="../../public/css/ticket-design.css">
-    <link rel="stylesheet" href="../../public/css/navbar.css">
-    <link rel="stylesheet" href="../../public/css/footer.css">
+    <link rel="stylesheet" href="<?= asset('css/ticket-customize.css') ?>">
+    <link rel="stylesheet" href="<?= asset('css/ticket-design.css') ?>">
+    <link rel="stylesheet" href="<?= asset('css/navbar.css') ?>">
+    <link rel="stylesheet" href="<?= asset('css/footer.css') ?>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -288,8 +294,8 @@ $costPerTicket = 9.99;
         };
     </script>
     
-    <script src="../../public/js/customize-tickets.js"></script>
-    <script src="../../public/js/navbar.js"></script>
+    <script src="<?= asset('js/customize-tickets.js') ?>"></script>
+    <script src="<?= asset('js/navbar.js') ?>"></script>
 </body>
 </html>
 

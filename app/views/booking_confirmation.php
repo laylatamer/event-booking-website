@@ -150,11 +150,17 @@ $eventImageSrc = $booking['event_image'] ?: 'https://placehold.co/300x200/16181d
 ?>
 <!DOCTYPE html>
 <html lang="en">
+<?php
+    // Include path helper if not already included
+    if (!defined('BASE_ASSETS_PATH')) {
+        require_once __DIR__ . '/path_helper.php';
+    }
+?>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Booking Confirmation | Eحgzly</title>
-    <link rel="stylesheet" href="../../public/css/booking_confirmation.css">
+    <link rel="stylesheet" href="<?= asset('css/booking_confirmation.css') ?>">
 </head>
 <body>
 

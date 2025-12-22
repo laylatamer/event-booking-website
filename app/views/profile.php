@@ -302,11 +302,17 @@ $alertStyles = [
 ?>
 <!DOCTYPE html>
 <html lang="en">
+<?php
+    // Include path helper if not already included
+    if (!defined('BASE_ASSETS_PATH')) {
+        require_once __DIR__ . '/path_helper.php';
+    }
+?>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profile | Eحgzly</title>
-    <link rel="stylesheet" href="../../public/css/profile.css">
+    <link rel="stylesheet" href="<?= asset('css/profile.css') ?>">
 </head>
 <body>
 
@@ -581,6 +587,6 @@ $alertStyles = [
         </footer>
 
 
-    <script src="../../public/js/profile.js"></script>
+    <script src="<?= asset('js/profile.js') ?>"></script>
 </body>
 </html>

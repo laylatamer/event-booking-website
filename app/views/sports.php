@@ -20,12 +20,18 @@ $apiEvents = json_encode($sportsEvents);
 
 <!DOCTYPE html>
 <html lang="en">
+<?php
+    // Include path helper if not already included
+    if (!defined('BASE_ASSETS_PATH')) {
+        require_once __DIR__ . '/path_helper.php';
+    }
+?>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sports Events</title>
     <script type="module" src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-    <link rel="stylesheet" href="../../public/css/allevents.css">
+    <link rel="stylesheet" href="<?= asset('css/allevents.css') ?>">
    
 </head>
 <body class="page-body">
@@ -248,7 +254,7 @@ include 'includes/header.php';
         });
     </script>
     
-    <script type="module" src="../../public/js/sports.js?v=2"></script>
+    <script type="module" src="<?= asset('js/sports.js?v=2') ?>"></script>
     <?php
     include 'partials/footer.php';
     ?>

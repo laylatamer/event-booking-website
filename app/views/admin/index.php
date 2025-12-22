@@ -89,11 +89,17 @@ if (!in_array($currentSection, $validSections)) {
 ?>
 <!DOCTYPE html>
 <html lang="en">
+<?php
+    // Include path helper if not already included
+    if (!defined('BASE_ASSETS_PATH')) {
+        require_once __DIR__ . '/path_helper.php';
+    }
+?>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EحGZLY - Admin Panel</title>
-    <link rel="stylesheet" href="../../../public/css/adminPanel.css">
+    <link rel="stylesheet" href="<?= asset('css/adminPanel.css') ?>">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.css">
 </head>
 <body>
@@ -178,7 +184,7 @@ if (!in_array($currentSection, $validSections)) {
         // Make current user ID available to JavaScript
         window.currentUserId = <?php echo isset($_SESSION['user_id']) && is_numeric($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 'null'; ?>;
     </script>
-    <script src="../../../public/js/admin/common.js"></script>
+    <script src="<?= asset('js/admin/common.js') ?>"></script>
     
     <?php
     // Only include specific section JS files

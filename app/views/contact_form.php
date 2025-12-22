@@ -4,11 +4,17 @@ require_once __DIR__ . '/../../database/session_init.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
+<?php
+    // Include path helper if not already included
+    if (!defined('BASE_ASSETS_PATH')) {
+        require_once __DIR__ . '/path_helper.php';
+    }
+?>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contact Us | Eحgzly </title>
-    <link rel="stylesheet" href="../../public/css/contact_us.css">
+    <link rel="stylesheet" href="<?= asset('css/contact_us.css') ?>">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/feather-icons"></script>
@@ -104,7 +110,7 @@ include 'partials/header.php';
 // Include the footer file
 include 'partials/footer.php';
 ?>
-    <script type="module" src="../../public/js/contact_us.js"></script>
+    <script type="module" src="<?= asset('js/contact_us.js') ?>"></script>
 
 </body>
 </html>

@@ -19,6 +19,12 @@ $google_maps_link = "https://maps.app.goo.gl/JFKuWYJDqJB42nLN7";
 ?>
 <!DOCTYPE html>
 <html lang="en">
+<?php
+    // Include path helper if not already included
+    if (!defined('BASE_ASSETS_PATH')) {
+        require_once __DIR__ . '/path_helper.php';
+    }
+?>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -26,7 +32,7 @@ $google_maps_link = "https://maps.app.goo.gl/JFKuWYJDqJB42nLN7";
     <!-- Load Inter font from Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
     <!-- Link to external CSS -->
-    <link rel="stylesheet" href="../../public/css/terms.css">
+    <link rel="stylesheet" href="<?= asset('css/terms.css') ?>">
 </head>
 <body class="page-body">
     <!-- Header MUST be included here, AFTER the <body> tag opens -->
@@ -112,7 +118,7 @@ $google_maps_link = "https://maps.app.goo.gl/JFKuWYJDqJB42nLN7";
     </main>
 
     <!-- Link to external JavaScript - renamed to terms.js and path adjusted for structure -->
-    <script type="module" src="../../public/js/terms.js"></script>
+    <script type="module" src="<?= asset('js/terms.js') ?>"></script>
     <?php
     // Include the footer file
     include 'includes/footer.php';

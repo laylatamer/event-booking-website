@@ -218,7 +218,7 @@ include 'partials/header.php';
             }
         });
     </script>
-    <script type="module" src="../../public/js/allevents.js?v=2"></script>
+    <script type="module" src="<?= asset('js/allevents.js') ?>?v=2"></script>
     <?php
     // Include the footer file
     include 'partials/footer.php';
