@@ -328,7 +328,7 @@ let currentBookingDetails = null;
 
 function viewBooking(bookingId) {
     // AJAX call to fetch booking details
-    fetch(`/event-booking-website/public/api/bookings_API.php?action=getOne&id=${bookingId}`)
+    fetch(`/api/bookings_API.php?action=getOne&id=${bookingId}`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {
@@ -793,7 +793,7 @@ async function cancelBooking(bookingId) {
     }
     
     try {
-        const response = await fetch('/event-booking-website/public/api/bookings_API.php?action=cancel', {
+        const response = await fetch('/api/bookings_API.php?action=cancel', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -822,7 +822,7 @@ async function approveCashPayment(bookingId) {
     }
     
     try {
-        const response = await fetch('/event-booking-website/public/api/bookings_API.php?action=approveCashPayment', {
+        const response = await fetch('/api/bookings_API.php?action=approveCashPayment', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

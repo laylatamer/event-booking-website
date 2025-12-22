@@ -4,7 +4,7 @@
  */
 
 // Configuration
-const API_BASE_URL = '/event-booking-website/public/api/bookings_API.php';
+const API_BASE_URL = '/api/bookings_API.php';
 
 // Helper functions
 const utils = {

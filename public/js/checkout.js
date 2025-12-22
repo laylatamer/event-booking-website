@@ -121,6 +121,13 @@ async function initializeCheckout() {
                                 const resData = await resResponse.json();
                                 if (resData.success && resData.reservation) {
                                     const reservation = resData.reservation;
+                                    
+                                    // Check if reservation is expired
+                                    if (reservation.is_expired || (reservation.expires_at && new Date(reservation.expires_at) < new Date())) {
+                                        console.warn(`Reservation ${resId} has expired`);
+                                        continue;
+                                    }
+                                    
                                     const categoryName = reservation.category_name;
                                     const quantity = parseInt(reservation.quantity) || 0;
                                     

@@ -146,20 +146,30 @@ try {
         
         if ($reservationId) {
             try {
-                $query = "SELECT * FROM ticket_reservations WHERE id = ? AND status = 'reserved' AND expires_at > NOW()";
+                // First try to get reservation regardless of status/expiry (for checkout)
+                $query = "SELECT * FROM ticket_reservations WHERE id = ?";
                 $stmt = $pdo->prepare($query);
                 $stmt->execute([$reservationId]);
                 $reservationData = $stmt->fetch(PDO::FETCH_ASSOC);
                 
                 if ($reservationData) {
+                    // Check if expired but still return it (for checkout to handle)
+                    $isExpired = strtotime($reservationData['expires_at']) < time();
+                    $isReserved = $reservationData['status'] === 'reserved';
+                    
+                    if ($isExpired && $isReserved) {
+                        // Mark as expired but still return data
+                        $reservationData['is_expired'] = true;
+                    }
+                    
                     $response = ['success' => true, 'reservation' => $reservationData];
                 } else {
-                    $response = ['success' => false, 'message' => 'Reservation not found or expired'];
+                    $response = ['success' => false, 'message' => 'Reservation not found'];
                     $statusCode = 404;
                 }
             } catch (PDOException $e) {
                 error_log("Error fetching reservation: " . $e->getMessage());
-                $response = ['success' => false, 'message' => 'Database error'];
+                $response = ['success' => false, 'message' => 'Database error: ' . $e->getMessage()];
                 $statusCode = 500;
             }
         } else {
