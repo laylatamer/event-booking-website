@@ -543,4 +543,175 @@ class EmailService {
         
         return $html;
     }
+    
+    /**
+     * Send contact form confirmation email
+     * 
+     * @param string $recipientName User's name
+     * @param string $recipientEmail User's email
+     * @param string $subject The subject of their message (for reference)
+     * @return bool Success status
+     */
+    public function sendContactConfirmationEmail($recipientName, $recipientEmail, $subject = '') {
+        try {
+            error_log("EmailService: Sending contact confirmation email to: " . $recipientEmail);
+            
+            if (empty($recipientEmail) || !filter_var($recipientEmail, FILTER_VALIDATE_EMAIL)) {
+                error_log("ERROR: Invalid email address provided for contact confirmation");
+                return false;
+            }
+            
+            // Prepare email subject
+            $emailSubject = "Thank You for Contacting EحGZLY";
+            
+            // Build email body
+            $emailBody = $this->buildContactConfirmationTemplate($recipientName, $subject);
+            
+            // Log email attempt details
+            error_log("EmailService: Contact confirmation - To: " . $recipientEmail);
+            error_log("EmailService: Contact confirmation - Subject: " . $emailSubject);
+            error_log("EmailService: Contact confirmation - Using PHPMailer: " . ($this->usePHPMailer ? 'Yes' : 'No'));
+            
+            // Send email using PHPMailer or native mail()
+            if ($this->usePHPMailer) {
+                $success = $this->sendWithPHPMailer($recipientEmail, $emailSubject, $emailBody, $recipientName);
+            } else {
+                $success = $this->sendWithNativeMail($recipientEmail, $emailSubject, $emailBody);
+            }
+            
+            if (!$success) {
+                error_log("ERROR: Failed to send contact confirmation email to: " . $recipientEmail);
+                return false;
+            }
+            
+            error_log("SUCCESS: Contact confirmation email sent successfully to: " . $recipientEmail);
+            return true;
+            
+        } catch (Exception $e) {
+            error_log("Error sending contact confirmation email: " . $e->getMessage());
+            error_log("Exception trace: " . $e->getTraceAsString());
+            return false;
+        }
+    }
+    
+    /**
+     * Build HTML email template for contact form confirmation
+     * 
+     * @param string $recipientName User's name
+     * @param string $subject The subject of their message (optional)
+     * @return string HTML email body
+     */
+    private function buildContactConfirmationTemplate($recipientName, $subject = '') {
+        $name = htmlspecialchars($recipientName);
+        $subjectText = !empty($subject) ? htmlspecialchars($subject) : 'your message';
+        
+        $html = '
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thank You for Contacting Us</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .email-container {
+            background-color: #ffffff;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #f97316;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #f97316;
+            margin: 0;
+            font-size: 28px;
+        }
+        .greeting {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .message-content {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+            line-height: 1.8;
+        }
+        .subject-reference {
+            background-color: #fff3e0;
+            padding: 15px;
+            border-left: 4px solid #f97316;
+            margin: 20px 0;
+            border-radius: 3px;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+        }
+        .footer p {
+            margin: 5px 0;
+        }
+        .highlight {
+            color: #f97316;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>🎟️ EحGZLY</h1>
+            <p>Thank You for Contacting Us</p>
+        </div>
+        
+        <div class="greeting">
+            Hello ' . $name . ',
+        </div>
+        
+        <div class="message-content">
+            <p>Thank you for reaching out to us! We have successfully received your message regarding <span class="highlight">' . $subjectText . '</span>.</p>
+            
+            <p>Our team has been notified and someone will get back to you shortly. We typically respond within 24-48 hours during business days.</p>
+            
+            ' . (!empty($subject) ? '
+            <div class="subject-reference">
+                <strong>Your Message Subject:</strong><br>
+                ' . $subjectText . '
+            </div>
+            ' : '') . '
+            
+            <p>In the meantime, feel free to explore our upcoming events and book your tickets!</p>
+        </div>
+        
+        <div class="footer">
+            <p><strong>Best regards,</strong></p>
+            <p>The EحGZLY Team</p>
+            <p style="margin-top: 20px; font-size: 12px; color: #999;">
+                This is an automated confirmation email. Please do not reply to this message.
+            </p>
+        </div>
+    </div>
+</body>
+</html>';
+        
+        return $html;
+    }
 }

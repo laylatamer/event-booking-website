@@ -1,14 +1,17 @@
 <?php
 
 require_once __DIR__ . '/../models/ContactMessage.php';
+require_once __DIR__ . '/../services/EmailService.php';
 
 class ContactController
 {
     private ContactMessage $model;
+    private EmailService $emailService;
 
     public function __construct(ContactMessage $model)
     {
         $this->model = $model;
+        $this->emailService = new EmailService();
     }
 
     public function store(array $request): array
@@ -29,6 +32,18 @@ class ContactController
         }
 
         $id = $this->model->create($payload);
+
+        // Send confirmation email to the user
+        try {
+            $this->emailService->sendContactConfirmationEmail(
+                $payload['name'],
+                $payload['email'],
+                $payload['subject']
+            );
+        } catch (Exception $e) {
+            // Log error but don't fail the request if email fails
+            error_log("Failed to send contact confirmation email: " . $e->getMessage());
+        }
 
         return ['ok' => true, 'id' => $id];
     }
