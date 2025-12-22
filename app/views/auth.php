@@ -32,7 +32,7 @@ require_once __DIR__ . '/../../database/session_init.php';
 // --- ADMIN CONSTANTS (CRITICAL SECURITY NOTE: Use environment variables or a secure vault in production!) ---
 // NOTE: Change this password immediately! This is only hardcoded to meet the specific request.
 define('ADMIN_SECRET_PASSWORD', 'Admin@1234!'); // CRITICAL: Strong secret password for admin access
-define('ADMIN_REDIRECT_PATH', 'admin/index.php'); // Path to redirect admin users upon login
+define('ADMIN_REDIRECT_PATH', '/admin'); // Path to redirect admin users upon login
 define('ADMIN_FEATURE_ENABLED', true); // Admin-specific functionality is ENABLED
 // --- END ADMIN CONSTANTS ---
 
