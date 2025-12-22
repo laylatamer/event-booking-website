@@ -71,7 +71,6 @@ $routes = [
     'checkout.php' => 'checkout.php',
     'booking_confirmation.php' => 'booking_confirmation.php',
     'contact_form.php' => 'contact_form.php',
-    'contact.php' => 'contact_form.php',
     'faq.php' => 'faq.php',
     'profile.php' => 'profile.php',
     'auth.php' => 'auth.php',
