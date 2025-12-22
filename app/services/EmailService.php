@@ -407,6 +407,117 @@ class EmailService {
     }
     
     /**
+     * Send email using SendGrid API
+     * 
+     * @param string $to Recipient email
+     * @param string $subject Email subject
+     * @param string $body HTML email body
+     * @param string $recipientName Recipient name
+     * @param string|false $qrCodeImage QR code image data (optional)
+     * @return bool Success status
+     */
+    private function sendWithSendGrid($to, $subject, $body, $recipientName = '', $qrCodeImage = false) {
+        try {
+            $apiKey = $this->config['sendgrid_api_key'] ?? '';
+            
+            if (empty($apiKey)) {
+                error_log("ERROR: SendGrid API key not configured. Please set 'sendgrid_api_key' in config/email_config.php");
+                return false;
+            }
+            
+            $sendStartTime = microtime(true);
+            
+            // Prepare email data for SendGrid API
+            $emailData = [
+                'personalizations' => [
+                    [
+                        'to' => [
+                            [
+                                'email' => $to,
+                                'name' => $recipientName
+                            ]
+                        ],
+                        'subject' => $subject
+                    ]
+                ],
+                'from' => [
+                    'email' => $this->config['from_email'] ?? 'noreply@egzly.com',
+                    'name' => $this->config['from_name'] ?? 'EحGZLY'
+                ],
+                'reply_to' => [
+                    'email' => $this->config['reply_to_email'] ?? 'support@egzly.com',
+                    'name' => $this->config['reply_to_name'] ?? 'EحGZLY Support'
+                ],
+                'subject' => $subject,
+                'content' => [
+                    [
+                        'type' => 'text/html',
+                        'value' => $body
+                    ],
+                    [
+                        'type' => 'text/plain',
+                        'value' => strip_tags($body)
+                    ]
+                ]
+            ];
+            
+            // Add QR code as attachment if provided
+            if ($qrCodeImage) {
+                $emailData['attachments'] = [
+                    [
+                        'content' => base64_encode($qrCodeImage),
+                        'type' => 'image/png',
+                        'filename' => 'qrcode.png',
+                        'disposition' => 'inline',
+                        'content_id' => 'qrcode'
+                    ]
+                ];
+            }
+            
+            // Send via SendGrid API
+            $ch = curl_init('https://api.sendgrid.com/v3/mail/send');
+            curl_setopt_array($ch, [
+                CURLOPT_POST => true,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_HTTPHEADER => [
+                    'Authorization: Bearer ' . $apiKey,
+                    'Content-Type: application/json'
+                ],
+                CURLOPT_POSTFIELDS => json_encode($emailData),
+                CURLOPT_TIMEOUT => 10, // 10 second timeout
+                CURLOPT_CONNECTTIMEOUT => 5 // 5 second connection timeout
+            ]);
+            
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($ch);
+            curl_close($ch);
+            
+            $sendDuration = microtime(true) - $sendStartTime;
+            
+            if ($curlError) {
+                error_log("SendGrid cURL Error: " . $curlError);
+                error_log("Email send attempt took " . round($sendDuration, 2) . " seconds");
+                return false;
+            }
+            
+            if ($httpCode >= 200 && $httpCode < 300) {
+                error_log("Email sent successfully using SendGrid to: " . $to . " (took " . round($sendDuration, 2) . " seconds)");
+                return true;
+            } else {
+                error_log("SendGrid API Error: HTTP " . $httpCode);
+                error_log("SendGrid Response: " . $response);
+                error_log("Email send attempt took " . round($sendDuration, 2) . " seconds");
+                return false;
+            }
+            
+        } catch (Exception $e) {
+            error_log("SendGrid Exception: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
      * Send email using native PHP mail() function
      * 
      * @param string $to Recipient email
