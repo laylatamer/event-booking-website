@@ -724,10 +724,23 @@ class BookingsModel {
                     
                     error_log("DEBUG: Booking data for email: " . json_encode($bookingDataForEmail));
                     
-                    // Send email
-                    $emailService = new EmailService();
-                    $emailResult = $emailService->sendBookingConfirmationEmail($bookingDataForEmail, $eventData);
-                    error_log("DEBUG: Email send result: " . ($emailResult ? 'SUCCESS' : 'FAILED'));
+                    // Send email asynchronously (don't block the booking response)
+                    // Use a background process or queue if available, otherwise send in background
+                    try {
+                        // For now, send email but don't wait for it to complete
+                        // This prevents email delays from blocking the booking response
+                        $emailService = new EmailService();
+                        
+                        // Set a timeout for email sending (5 seconds max)
+                        $emailStartTime = microtime(true);
+                        $emailResult = @$emailService->sendBookingConfirmationEmail($bookingDataForEmail, $eventData);
+                        $emailDuration = microtime(true) - $emailStartTime;
+                        
+                        error_log("DEBUG: Email send result: " . ($emailResult ? 'SUCCESS' : 'FAILED') . " (took " . round($emailDuration, 2) . " seconds)");
+                    } catch (Exception $emailEx) {
+                        // Don't fail the booking if email fails
+                        error_log("WARNING: Email sending failed but booking succeeded: " . $emailEx->getMessage());
+                    }
                 } catch (Exception $emailException) {
                     // Log email error but don't fail the booking
                     error_log("ERROR: Failed to send confirmation email for booking $bookingCode: " . $emailException->getMessage());

@@ -383,12 +383,26 @@ try {
                 
                 if ($result['success']) {
                     error_log("Booking created successfully - ID: " . $result['booking_id'] . ", Code: " . $result['booking_code']);
+                    
+                    // Send response immediately
+                    ob_clean();
                     echo json_encode([
                         'success' => true,
                         'message' => 'Booking created successfully',
                         'booking_id' => $result['booking_id'],
                         'booking_code' => $result['booking_code']
                     ]);
+                    
+                    // Flush output to send response to client immediately
+                    if (function_exists('fastcgi_finish_request')) {
+                        fastcgi_finish_request();
+                    } else {
+                        // For non-FastCGI environments, flush output
+                        if (ob_get_level()) {
+                            ob_end_flush();
+                        }
+                        flush();
+                    }
                 } else {
                     throw new Exception('Failed to create booking - no success flag returned');
                 }
