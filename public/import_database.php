@@ -22,88 +22,40 @@ if (!$ALLOW_IMPORT) {
 }
 
 // Try to load database connection with error handling
+// SOLUTION: Use Railway-specific config file in public folder
+// This avoids path issues since config/ folder might not be accessible
 try {
-    // Based on the error, we know:
-    // - Script is at: /app/import_database.php (or /app/public/import_database.php)
-    // - Current dir: /app
-    // - /app contains: public folder AND files from public
-    // - We need to find /app/config/db_connect.php
-    
-    $scriptFile = __FILE__;
     $scriptDir = __DIR__;
-    $currentDir = getcwd();
     
-    // The project root should be /app (where config/ folder should be)
-    // But Railway might have a different structure
+    // Priority 1: Use Railway-specific file in same directory (most reliable)
+    $dbConfigPath = $scriptDir . '/db_connect_railway.php';
     
-    // Method 1: Direct path - config should be at /app/config/
-    $possibleConfigPaths = [
-        '/app/config/db_connect.php',  // Most likely
-        $currentDir . '/config/db_connect.php',
-        dirname($scriptFile) . '/../config/db_connect.php',
-        dirname($scriptFile) . '/config/db_connect.php',
-    ];
-    
-    // Method 2: If script is in /app/public/, go up one level
-    if (strpos($scriptFile, '/public/') !== false || strpos($scriptDir, '/public') !== false) {
-        $possibleConfigPaths[] = dirname(dirname($scriptFile)) . '/config/db_connect.php';
-        $possibleConfigPaths[] = dirname($scriptDir) . '/config/db_connect.php';
-    }
-    
-    // Method 3: Search for config folder in /app
-    $searchDirs = ['/app', $currentDir];
-    foreach ($searchDirs as $dir) {
-        if (is_dir($dir)) {
-            $items = @scandir($dir);
-            if ($items && in_array('config', $items)) {
-                $testPath = rtrim($dir, '/') . '/config/db_connect.php';
-                $possibleConfigPaths[] = $testPath;
+    // Priority 2: Try original config from project root
+    if (!file_exists($dbConfigPath)) {
+        $alternatePaths = [
+            $scriptDir . '/../config/db_connect.php',
+            '/app/config/db_connect.php',
+            dirname($scriptDir) . '/config/db_connect.php',
+        ];
+        
+        foreach ($alternatePaths as $path) {
+            $path = str_replace('//', '/', $path);
+            if (file_exists($path)) {
+                $dbConfigPath = $path;
+                break;
             }
         }
     }
     
-    // Try each path
-    $dbConfigPath = null;
-    foreach ($possibleConfigPaths as $path) {
-        // Normalize path
-        $path = str_replace('//', '/', $path);
-        $path = str_replace('/./', '/', $path);
-        
-        if (file_exists($path)) {
-            $dbConfigPath = $path;
-            break;
-        }
-    }
-    
-    // If still not found, create config file inline or show helpful error
-    if ($dbConfigPath === null || !file_exists($dbConfigPath)) {
-        // Check if we can create a temporary config or if config folder exists
-        $configDir = '/app/config';
-        if (!is_dir($configDir)) {
-            // Config folder doesn't exist - this is the root problem!
-            throw new Exception(
-                "❌ Config folder not found at /app/config/\n\n" .
-                "This means the config/ folder is not being deployed to Railway.\n\n" .
-                "Solution: Check Railway deployment settings:\n" .
-                "1. Ensure 'Root Directory' in Railway Settings is NOT set to 'public'\n" .
-                "2. It should be empty or set to '/' (project root)\n" .
-                "3. Redeploy after changing settings\n\n" .
-                "Current structure:\n" .
-                "- Script location: $scriptFile\n" .
-                "- Current directory: $currentDir\n" .
-                "- /app contents: " . (is_dir('/app') ? implode(', ', array_slice(scandir('/app'), 0, 10)) : 'not readable')
-            );
-        } else {
-            // Config folder exists but file doesn't
-            $configFiles = @scandir($configDir);
-            throw new Exception(
-                "❌ Config file not found in /app/config/\n\n" .
-                "Config directory exists: Yes\n" .
-                "Files in config/: " . ($configFiles ? implode(', ', $configFiles) : 'cannot read') . "\n" .
-                "Looking for: db_connect.php\n" .
-                "Script location: $scriptFile"
-            );
-        }
+    // If still not found, show error
+    if (!file_exists($dbConfigPath)) {
+        throw new Exception(
+            "❌ Database config file not found!\n\n" .
+            "Looking for: db_connect_railway.php in $scriptDir\n" .
+            "File exists: " . (file_exists($dbConfigPath) ? 'Yes' : 'No') . "\n" .
+            "Script directory: $scriptDir\n" .
+            "Files in script dir: " . (is_dir($scriptDir) ? implode(', ', array_slice(scandir($scriptDir), 0, 10)) : 'not readable')
+        );
     }
     
     // Debug: list what we're checking
