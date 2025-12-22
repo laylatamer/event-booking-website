@@ -8,6 +8,11 @@
  * This file should NOT be committed to Git or left on the server.
  */
 
+// Enable error display temporarily for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+
 // Only allow this script to run if explicitly enabled
 // Set this to true temporarily to run the import
 $ALLOW_IMPORT = true;
@@ -16,15 +21,36 @@ if (!$ALLOW_IMPORT) {
     die("Import is disabled. Set \$ALLOW_IMPORT = true to enable.");
 }
 
-// Load database connection (go up one level from public folder)
-require_once dirname(__DIR__) . '/config/db_connect.php';
+// Try to load database connection with error handling
+try {
+    $dbConfigPath = dirname(__DIR__) . '/config/db_connect.php';
+    if (!file_exists($dbConfigPath)) {
+        throw new Exception("Database config file not found: $dbConfigPath");
+    }
+    require_once $dbConfigPath;
+    
+    // Check if $pdo was created
+    if (!isset($pdo) || !($pdo instanceof PDO)) {
+        throw new Exception("Database connection failed. PDO object not created.");
+    }
+} catch (Exception $e) {
+    die("❌ Database Connection Error: " . htmlspecialchars($e->getMessage()) . "<br>" .
+        "Config path: " . htmlspecialchars($dbConfigPath ?? 'unknown') . "<br>" .
+        "Current directory: " . __DIR__ . "<br>" .
+        "Parent directory: " . dirname(__DIR__));
+}
 
 // SQL file path (go up one level from public folder)
 $sqlFile = dirname(__DIR__) . '/database/event_ticketing_db.sql';
 
 // Check if file exists
 if (!file_exists($sqlFile)) {
-    die("❌ SQL file not found: $sqlFile\n\nPlease ensure database/event_ticketing_db.sql exists.");
+    die("❌ SQL file not found: $sqlFile<br><br>" .
+        "Please ensure database/event_ticketing_db.sql exists.<br>" .
+        "Current directory: " . __DIR__ . "<br>" .
+        "Looking for: " . htmlspecialchars($sqlFile) . "<br>" .
+        "Parent directory exists: " . (is_dir(dirname(__DIR__)) ? 'Yes' : 'No') . "<br>" .
+        "Database directory exists: " . (is_dir(dirname(__DIR__) . '/database') ? 'Yes' : 'No'));
 }
 
 echo "📦 Starting database import...\n";
