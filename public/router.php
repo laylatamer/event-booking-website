@@ -88,6 +88,13 @@ $routes = [
 // Get view file
 $viewFile = $routes[$requestPath] ?? basename($requestPath);
 
+// Check if it's a file in public directory (like contact.php)
+$publicFilePath = __DIR__ . '/' . basename($requestPath);
+if (file_exists($publicFilePath) && basename($requestPath) === $viewFile && $viewFile !== 'contact_form.php') {
+    require $publicFilePath;
+    exit;
+}
+
 // Check if view exists
 $viewPath = $projectRoot . '/app/views/' . $viewFile;
 if (!file_exists($viewPath)) {
