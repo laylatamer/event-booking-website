@@ -168,10 +168,11 @@ async function initializeCheckout() {
                             if (reservation.expires_at) {
                                 // Parse the expiration date - handle both ISO format and MySQL datetime format
                                 const expiresAtStr = reservation.expires_at;
-                                // If it's in MySQL format (YYYY-MM-DD HH:MM:SS), convert to ISO format
+                                // If it's in MySQL format (YYYY-MM-DD HH:MM:SS), treat it as UTC
                                 if (expiresAtStr.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
-                                    // MySQL datetime format - treat as local time
-                                    expiresAt = new Date(expiresAtStr.replace(' ', 'T'));
+                                    // MySQL datetime format - treat as UTC by appending 'Z'
+                                    // This prevents timezone conversion issues
+                                    expiresAt = new Date(expiresAtStr.replace(' ', 'T') + 'Z');
                                 } else {
                                     // ISO format or other - let Date parse it
                                     expiresAt = new Date(expiresAtStr);
@@ -180,21 +181,6 @@ async function initializeCheckout() {
                             
                             const now = new Date();
                             const gracePeriod = 5000; // 5 seconds in milliseconds
-                            
-                            // Debug: Log the dates for troubleshooting
-                            if (expiresAt) {
-                                console.log(`Reservation ${result.id} expiration check:`, {
-                                    expires_at_raw: reservation.expires_at,
-                                    expires_at_parsed: expiresAt.toISOString(),
-                                    expires_at_timestamp: expiresAt.getTime(),
-                                    now: now.toISOString(),
-                                    now_timestamp: now.getTime(),
-                                    difference_ms: expiresAt.getTime() - now.getTime(),
-                                    difference_seconds: (expiresAt.getTime() - now.getTime()) / 1000,
-                                    is_expired_flag: reservation.is_expired,
-                                    will_be_expired: reservation.is_expired || (expiresAt.getTime() < (now.getTime() - gracePeriod))
-                                });
-                            }
                             
                             // Reservation is expired if: it's marked as expired OR expires_at is more than gracePeriod in the past
                             // Correct logic: expiresAt < (now - gracePeriod) means it expired more than gracePeriod ago
