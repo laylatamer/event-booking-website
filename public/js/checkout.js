@@ -47,6 +47,8 @@ let events = []; // Will be populated from API
 // Initialize default date/time variables (will be updated if event found)
 let formattedDate = 'N/A';
 let formattedTime = 'N/A';
+// Flag to prevent double submissions
+let isBookingInProgress = false;
 // Store max tickets limit from event
 let maxTicketsPerBooking = null;
 
@@ -575,6 +577,12 @@ function setupEventListeners() {
     const placeOrderBtn = document.getElementById('placeOrderBtn');
     if (placeOrderBtn) {
         placeOrderBtn.addEventListener('click', () => {
+            // Prevent double submissions
+            if (isBookingInProgress) {
+                console.log('Booking already in progress, ignoring click');
+                return;
+            }
+
             clearErrors();
             const isCash = cashOption?.classList.contains('chk-payment-method--active'); // Safe navigation
 
@@ -618,6 +626,11 @@ function setupEventListeners() {
 
     if (cashModal && confirmReservationBtn && cancelReservationBtn && cancelReservationBtnSecondary) {
         confirmReservationBtn.addEventListener('click', () => {
+            // Prevent double submissions
+            if (isBookingInProgress) {
+                console.log('Booking already in progress, ignoring click');
+                return;
+            }
             cashModal.classList.add('chk-hidden');
             showReservationSuccess();
         });
@@ -792,47 +805,169 @@ function resetForms() {
 }
 
 async function showPaymentSuccess() {
+    // Prevent double submissions
+    if (isBookingInProgress) {
+        console.log('Booking already in progress, ignoring duplicate call');
+        return;
+    }
+
+    // Set flag and disable button
+    isBookingInProgress = true;
+    const placeOrderBtn = document.getElementById('placeOrderBtn');
+    let originalText = 'Complete Purchase';
+    if (placeOrderBtn) {
+        const spanElement = placeOrderBtn.querySelector('span');
+        originalText = spanElement?.textContent || 'Complete Purchase';
+        placeOrderBtn.disabled = true;
+        placeOrderBtn.style.opacity = '0.6';
+        placeOrderBtn.style.cursor = 'not-allowed';
+        if (spanElement) {
+            spanElement.textContent = 'Processing...';
+        }
+    }
+
     const paymentSection = document.getElementById('paymentSection');
     if(paymentSection) paymentSection.classList.add('chk-animate-pulse');
 
-    // Create booking
-    const bookingResult = await createBooking('card');
-    
-    setTimeout(() => {
-        if(paymentSection) paymentSection.classList.remove('chk-animate-pulse');
-        showConfetti();
-        if (bookingResult.success) {
-            showNoticeModal('Payment Successful', `Your payment has been processed! Booking Code: ${bookingResult.booking_code}. Your tickets will be emailed to you shortly.`, () => {
-                // Redirect to homepage after modal is closed
-                window.location.href = '../../app/views/homepage.php';
-            });
-        } else {
-            showNoticeModal('Payment Processed', 'Your payment has been processed! However, there was an issue saving your booking. Please contact support with your payment details.');
+    try {
+        // Create booking
+        const bookingResult = await createBooking('card');
+        
+        setTimeout(() => {
+            if(paymentSection) paymentSection.classList.remove('chk-animate-pulse');
+            showConfetti();
+            if (bookingResult.success) {
+                showNoticeModal('Payment Successful', `Your payment has been processed! Booking Code: ${bookingResult.booking_code}. Your tickets will be emailed to you shortly.`, () => {
+                    // Redirect to homepage after modal is closed
+                    window.location.href = '../../app/views/homepage.php';
+                });
+            } else {
+                showNoticeModal('Payment Processed', 'Your payment has been processed! However, there was an issue saving your booking. Please contact support with your payment details.');
+                // Re-enable button on error
+                isBookingInProgress = false;
+                if (placeOrderBtn) {
+                    placeOrderBtn.disabled = false;
+                    placeOrderBtn.style.opacity = '1';
+                    placeOrderBtn.style.cursor = 'pointer';
+                    if (placeOrderBtn.querySelector('span')) {
+                        placeOrderBtn.querySelector('span').textContent = originalText;
+                    }
+                }
+            }
+            resetForms();
+        }, 1000);
+    } catch (error) {
+        // Re-enable button on error
+        isBookingInProgress = false;
+        if (placeOrderBtn) {
+            placeOrderBtn.disabled = false;
+            placeOrderBtn.style.opacity = '1';
+            placeOrderBtn.style.cursor = 'pointer';
+            if (placeOrderBtn.querySelector('span')) {
+                placeOrderBtn.querySelector('span').textContent = 'Complete Purchase';
+            }
         }
-        resetForms();
-    }, 1000);
+        if(paymentSection) paymentSection.classList.remove('chk-animate-pulse');
+        console.error('Error processing payment:', error);
+        showNoticeModal('Payment Error', 'There was an error processing your payment. Please try again.');
+    }
 }
 
 async function showReservationSuccess() {
+    // Prevent double submissions
+    if (isBookingInProgress) {
+        console.log('Booking already in progress, ignoring duplicate call');
+        return;
+    }
+
+    // Set flag and disable button
+    isBookingInProgress = true;
+    const placeOrderBtn = document.getElementById('placeOrderBtn');
+    const confirmReservationBtn = document.getElementById('confirmReservationBtn');
+    let originalText = 'Complete Purchase';
+    let confirmOriginalText = 'Confirm Reservation';
+    
+    if (placeOrderBtn) {
+        const spanElement = placeOrderBtn.querySelector('span');
+        originalText = spanElement?.textContent || 'Complete Purchase';
+        placeOrderBtn.disabled = true;
+        placeOrderBtn.style.opacity = '0.6';
+        placeOrderBtn.style.cursor = 'not-allowed';
+        if (spanElement) {
+            spanElement.textContent = 'Processing...';
+        }
+    }
+    
+    if (confirmReservationBtn) {
+        confirmOriginalText = confirmReservationBtn.textContent.trim() || 'Confirm Reservation';
+        confirmReservationBtn.disabled = true;
+        confirmReservationBtn.style.opacity = '0.6';
+        confirmReservationBtn.style.cursor = 'not-allowed';
+        confirmReservationBtn.textContent = 'Processing...';
+    }
+
     const paymentSection = document.getElementById('paymentSection');
     if(paymentSection) paymentSection.classList.add('chk-animate-pulse');
 
-    // Create booking
-    const bookingResult = await createBooking('cash');
-    
-    setTimeout(() => {
-        if(paymentSection) paymentSection.classList.remove('chk-animate-pulse');
-        showConfetti();
-        if (bookingResult.success) {
-            showNoticeModal('Reservation Confirmed', `Your reservation is confirmed! Booking Code: ${bookingResult.booking_code}. Please bring your ID to the venue.`, () => {
-                // Redirect to homepage after modal is closed
-                window.location.href = '../../app/views/homepage.php';
-            });
-        } else {
-            showNoticeModal('Reservation Error', 'There was an issue saving your reservation. Please contact support.');
+    try {
+        // Create booking
+        const bookingResult = await createBooking('cash');
+        
+        setTimeout(() => {
+            if(paymentSection) paymentSection.classList.remove('chk-animate-pulse');
+            showConfetti();
+            if (bookingResult.success) {
+                showNoticeModal('Reservation Confirmed', `Your reservation is confirmed! Booking Code: ${bookingResult.booking_code}. Please bring your ID to the venue.`, () => {
+                    // Redirect to homepage after modal is closed
+                    window.location.href = '../../app/views/homepage.php';
+                });
+            } else {
+                showNoticeModal('Reservation Error', 'There was an issue saving your reservation. Please contact support.');
+                // Re-enable buttons on error
+                isBookingInProgress = false;
+                if (placeOrderBtn) {
+                    placeOrderBtn.disabled = false;
+                    placeOrderBtn.style.opacity = '1';
+                    placeOrderBtn.style.cursor = 'pointer';
+                    const spanElement = placeOrderBtn.querySelector('span');
+                    if (spanElement) {
+                        spanElement.textContent = originalText;
+                    }
+                }
+                if (confirmReservationBtn) {
+                    confirmReservationBtn.disabled = false;
+                    confirmReservationBtn.style.opacity = '1';
+                    confirmReservationBtn.style.cursor = 'pointer';
+                    confirmReservationBtn.textContent = confirmOriginalText;
+                }
+            }
+            resetForms();
+        }, 1000);
+    } catch (error) {
+        // Re-enable buttons on error
+        isBookingInProgress = false;
+        if (placeOrderBtn) {
+            placeOrderBtn.disabled = false;
+            placeOrderBtn.style.opacity = '1';
+            placeOrderBtn.style.cursor = 'pointer';
+            const spanElement = placeOrderBtn.querySelector('span');
+            if (spanElement) {
+                spanElement.textContent = originalText;
+            }
         }
-        resetForms();
-    }, 1000);
+        if (confirmReservationBtn) {
+            confirmReservationBtn.disabled = false;
+            confirmReservationBtn.style.opacity = '1';
+            confirmReservationBtn.style.cursor = 'pointer';
+            const confirmSpanElement = confirmReservationBtn.querySelector('span');
+            if (confirmSpanElement) {
+                confirmSpanElement.textContent = confirmOriginalText;
+            }
+        }
+        if(paymentSection) paymentSection.classList.remove('chk-animate-pulse');
+        console.error('Error processing reservation:', error);
+        showNoticeModal('Reservation Error', 'There was an error processing your reservation. Please try again.');
+    }
 }
 
 async function createBooking(paymentMethod) {
