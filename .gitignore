@@ -7,3 +7,5 @@ composer.lock
 
 # Temporary import script - DO NOT COMMIT
 import_database.php
+public/import_database.php
+public/event_ticketing_db.sql
