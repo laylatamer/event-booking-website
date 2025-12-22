@@ -117,16 +117,56 @@ class EmailService {
             // Prepare email subject
             $subject = "Booking Confirmation - " . ($eventData['title'] ?? 'Event Ticket');
             
-            // Generate QR code data (includes booking code and user name)
-            // Format: JSON string with booking information
-            $qrDataArray = [
-                'booking_code' => $bookingCode,
-                'user_name' => $fullName,
-                'event_title' => $eventData['title'] ?? '',
-                'event_date' => $eventData['date'] ?? '',
-                'ticket_count' => $bookingData['ticket_count'] ?? 0
-            ];
-            $qrData = json_encode($qrDataArray, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            // Generate QR code as a URL that points to the ticket verification page
+            // This ensures QR scanners open it as a webpage showing ticket details
+            // Construct absolute URL for QR code that works on mobile devices
+            
+            // Check if base_url is configured in config
+            $configuredBaseUrl = $this->config['base_url'] ?? '';
+            
+            if (!empty($configuredBaseUrl)) {
+                // Use configured base URL
+                $baseUrl = rtrim($configuredBaseUrl, '/');
+                $ticketUrl = $baseUrl . "/app/views/ticket_verification.php?code=" . urlencode($bookingCode);
+                error_log("Using configured base URL for QR code: " . $baseUrl);
+            } else {
+                // Auto-detect URL
+                $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? "https" : "http";
+                
+                // Get the host - use HTTP_HOST if available, otherwise try to get IP address
+                $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+                
+                // If HTTP_HOST contains localhost, try to get the actual server IP address
+                // This is important so mobile devices can access the page over the network
+                if (strpos($host, 'localhost') !== false || strpos($host, '127.0.0.1') !== false) {
+                    // Try to get the server's local IP address
+                    $localIP = $this->getServerLocalIP();
+                    if ($localIP) {
+                        // Get port from HTTP_HOST if it exists (e.g., localhost:8080)
+                        $port = '';
+                        if (isset($_SERVER['HTTP_HOST']) && strpos($_SERVER['HTTP_HOST'], ':') !== false) {
+                            $portParts = explode(':', $_SERVER['HTTP_HOST']);
+                            if (isset($portParts[1])) {
+                                $port = ':' . $portParts[1];
+                            }
+                        }
+                        $host = $localIP . $port;
+                        error_log("Using auto-detected server IP address for QR code: " . $host);
+                    } else {
+                        error_log("WARNING: Could not determine server IP. QR code will use localhost which may not work on mobile devices.");
+                        error_log("TIP: Set 'base_url' in config/email_config.php to manually specify the URL (e.g., 'http://192.168.1.100/event-booking-website')");
+                    }
+                }
+                
+                // Build the ticket verification URL
+                // Path is fixed based on project structure
+                $ticketUrl = $protocol . "://" . $host . "/event-booking-website/app/views/ticket_verification.php?code=" . urlencode($bookingCode);
+            }
+            
+            // Use the URL as QR code data - when scanned, it will open the ticket verification page
+            $qrData = $ticketUrl;
+            
+            error_log("QR Code URL generated: " . $ticketUrl);
             
             // Generate QR code image
             $qrCodeImage = $this->generateQRCode($qrData);
@@ -713,5 +753,91 @@ class EmailService {
 </html>';
         
         return $html;
+    }
+    
+    /**
+     * Get the server's local IP address for network access
+     * This is needed so mobile devices can access the QR code URL
+     * 
+     * @return string|false IP address or false if not found
+     */
+    private function getServerLocalIP() {
+        // Method 1: Try SERVER_ADDR if available
+        if (isset($_SERVER['SERVER_ADDR']) && $_SERVER['SERVER_ADDR'] !== '127.0.0.1' && $_SERVER['SERVER_ADDR'] !== '::1') {
+            return $_SERVER['SERVER_ADDR'];
+        }
+        
+        // Method 2: Try to get IP from network interfaces (Windows/Linux/Mac)
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            // Windows - use ipconfig
+            $command = 'ipconfig | findstr /i "IPv4"';
+            $output = @shell_exec($command);
+            if ($output) {
+                // Extract all IPs from output (format: IPv4 Address. . . . . . . . . . . : 192.168.1.100)
+                $lines = explode("\n", $output);
+                $preferredIP = null;
+                $fallbackIP = null;
+                
+                foreach ($lines as $line) {
+                    if (preg_match('/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/', $line, $matches)) {
+                        $ip = trim($matches[1]);
+                        // Skip loopback and invalid addresses
+                        if ($ip !== '127.0.0.1' && $ip !== '0.0.0.0' && strpos($ip, '169.254.') !== 0) {
+                            // Found a valid IP address (not loopback, not zero, not APIPA)
+                            $preferredIP = $ip;
+                            break; // Use first valid IP found
+                        }
+                    }
+                }
+                
+                // Return IP if found
+                if ($preferredIP) {
+                    return $preferredIP;
+                }
+            }
+        } else {
+            // Linux/Mac - use hostname or ifconfig/ip
+            // Try hostname -I first (Linux)
+            $output = @shell_exec('hostname -I 2>/dev/null');
+            if ($output) {
+                $ips = explode(' ', trim($output));
+                foreach ($ips as $ip) {
+                    $ip = trim($ip);
+                    if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false && 
+                        $ip !== '127.0.0.1' && strpos($ip, '169.254.') !== 0) {
+                        return $ip;
+                    }
+                }
+            }
+            
+            // Fallback: Try ifconfig (Mac/Linux)
+            $output = @shell_exec('ifconfig 2>/dev/null | grep "inet " | grep -v "127.0.0.1"');
+            if ($output && preg_match('/inet (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/', $output, $matches)) {
+                $ip = $matches[1];
+                if (strpos($ip, '169.254.') !== 0) {
+                    return $ip;
+                }
+            }
+        }
+        
+        // Method 3: Try to get IP from socket connection
+        // This method connects to a public server to determine local IP
+        try {
+            $socket = @socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+            if ($socket) {
+                // Connect to Google DNS (doesn't actually send data)
+                @socket_connect($socket, '8.8.8.8', 80);
+                $localIP = @socket_getsockname($socket, $ip);
+                @socket_close($socket);
+                if ($localIP && $ip && $ip !== '127.0.0.1') {
+                    return $ip;
+                }
+            }
+        } catch (Exception $e) {
+            // Ignore errors
+        }
+        
+        // If all methods fail, return false
+        return false;
     }
 }
