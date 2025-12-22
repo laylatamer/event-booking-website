@@ -73,9 +73,11 @@ $scriptDir = __DIR__;
 $currentDir = getcwd();
 
 $possibleSqlPaths = [
-    $scriptDir . '/../database/event_ticketing_db.sql',  // Parent of public
+    $scriptDir . '/event_ticketing_db.sql',              // Same directory as script (public folder)
+    $scriptDir . '/../database/event_ticketing_db.sql',   // Parent of public
     '/app/database/event_ticketing_db.sql',              // Railway root
-    $currentDir . '/../database/event_ticketing_db.sql', // Parent of current dir
+    '/app/event_ticketing_db.sql',                       // Railway root (if public is root)
+    $currentDir . '/../database/event_ticketing_db.sql',  // Parent of current dir
     dirname($scriptDir) . '/database/event_ticketing_db.sql',
 ];
 
