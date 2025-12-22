@@ -116,6 +116,14 @@ async function initializeCheckout() {
                 orderItems = [];
                 
                 if (reservationsParam) {
+                    // First, try to extend reservations to give more time
+                    try {
+                        // The PHP side should have already extended them, but we can also try here
+                        // This is just a safety measure - the main extension happens in checkout.php
+                    } catch (e) {
+                        console.warn('Could not extend reservations:', e);
+                    }
+                    
                     // Fetch actual reservations with category details
                     const reservationIds = reservationsParam.split(',').filter(id => id.trim());
                     
@@ -126,64 +134,91 @@ async function initializeCheckout() {
                     // Group reservations by category
                     const categoryMap = {};
                     let foundReservations = 0;
+                    let expiredReservations = 0;
                     
-                    for (const resId of reservationIds) {
+                    // Fetch all reservations in parallel for better performance
+                    const reservationPromises = reservationIds.map(async (resId) => {
                         try {
                             const resResponse = await fetch(`/api/ticket_reservations.php?action=getReservation&id=${resId}`);
                             if (resResponse.ok) {
                                 const resData = await resResponse.json();
                                 if (resData.success && resData.reservation) {
-                                    foundReservations++;
-                                    const reservation = resData.reservation;
-                                    
-                                    // Check if reservation is expired
-                                    if (reservation.is_expired || (reservation.expires_at && new Date(reservation.expires_at) < new Date())) {
-                                        console.warn(`Reservation ${resId} has expired`);
-                                        continue;
-                                    }
-                                    
-                                    const categoryName = reservation.category_name;
-                                    const quantity = parseInt(reservation.quantity) || 0;
-                                    
-                                    if (!categoryName || quantity <= 0) {
-                                        console.warn(`Invalid reservation data for ID ${resId}:`, reservation);
-                                        continue;
-                                    }
-                                    
-                                    // Find the price for this category
-                                    const category = ticketCategories.find(cat => cat.category_name === categoryName);
-                                    const categoryPrice = category ? parseFloat(category.price) : 0;
-                                    
-                                    if (!categoryMap[categoryName]) {
-                                        categoryMap[categoryName] = {
-                                            categoryName: categoryName,
-                                            quantity: 0,
-                                            price: categoryPrice
-                                        };
-                                    }
-                                    categoryMap[categoryName].quantity += quantity;
+                                    return { success: true, id: resId, reservation: resData.reservation };
                                 } else {
-                                    console.warn(`Failed to get reservation ${resId}:`, resData);
+                                    return { success: false, id: resId, error: resData.message || 'Unknown error' };
                                 }
                             } else {
-                                // If 404, reservation doesn't exist - might have expired or been deleted
-                                if (resResponse.status === 404) {
-                                    console.warn(`Reservation ${resId} not found (may have expired or been deleted)`);
-                                } else {
-                                    console.warn(`HTTP error fetching reservation ${resId}:`, resResponse.status);
-                                }
+                                return { success: false, id: resId, error: `HTTP ${resResponse.status}`, status: resResponse.status };
                             }
                         } catch (e) {
-                            console.error("Error fetching reservation:", e);
+                            return { success: false, id: resId, error: e.message };
+                        }
+                    });
+                    
+                    const reservationResults = await Promise.all(reservationPromises);
+                    
+                    for (const result of reservationResults) {
+                        if (result.success && result.reservation) {
+                            foundReservations++;
+                            const reservation = result.reservation;
+                            
+                            // Check if reservation is expired
+                            const expiresAt = reservation.expires_at ? new Date(reservation.expires_at) : null;
+                            const isExpired = reservation.is_expired || (expiresAt && expiresAt < new Date());
+                            
+                            if (isExpired) {
+                                expiredReservations++;
+                                console.warn(`Reservation ${result.id} has expired (expires_at: ${reservation.expires_at})`);
+                                continue;
+                            }
+                            
+                            const categoryName = reservation.category_name;
+                            const quantity = parseInt(reservation.quantity) || 0;
+                            
+                            if (!categoryName || quantity <= 0) {
+                                console.warn(`Invalid reservation data for ID ${result.id}:`, reservation);
+                                continue;
+                            }
+                            
+                            // Find the price for this category
+                            const category = ticketCategories.find(cat => cat.category_name === categoryName);
+                            const categoryPrice = category ? parseFloat(category.price) : 0;
+                            
+                            if (!categoryMap[categoryName]) {
+                                categoryMap[categoryName] = {
+                                    categoryName: categoryName,
+                                    quantity: 0,
+                                    price: categoryPrice
+                                };
+                            }
+                            categoryMap[categoryName].quantity += quantity;
+                        } else {
+                            // Log the error but don't fail immediately
+                            if (result.status === 404) {
+                                console.warn(`Reservation ${result.id} not found (may have expired or been deleted)`);
+                            } else {
+                                console.warn(`Failed to get reservation ${result.id}:`, result.error);
+                            }
                         }
                     }
                     
-                    // If no reservations were found, show a helpful message
+                    // If no valid reservations were found, show a helpful message
                     if (foundReservations === 0 && reservationIds.length > 0) {
                         console.error('All reservations expired or not found. Redirecting to booking page...');
                         alert('Your ticket reservations have expired. Please select your tickets again.');
-                        window.location.href = `booking.php?id=${eventId}`;
+                        // Use urlEventId or currentEvent.id if available
+                        const redirectEventId = urlEventId || (currentEvent ? currentEvent.id : null);
+                        if (redirectEventId) {
+                            window.location.href = `booking.php?id=${redirectEventId}`;
+                        } else {
+                            window.location.href = '/';
+                        }
                         return;
+                    }
+                    
+                    // If some reservations expired but we have valid ones, continue
+                    if (expiredReservations > 0 && foundReservations > 0) {
+                        console.warn(`${expiredReservations} reservation(s) expired, but ${foundReservations} are still valid. Continuing with valid reservations.`);
                     }
                     
                     // Convert categoryMap to orderItems

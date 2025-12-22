@@ -13,12 +13,18 @@ requireLogin();
 // Extend expiration for reservations in checkout flow
 $reservationIds = $_GET['reservations'] ?? $_GET['reservation_ids'] ?? null;
 if ($reservationIds) {
-    $database = new Database();
-    $db = $database->getConnection();
-    $reservation = new TicketReservation($db);
-    
-    // Extend expiration by 30 minutes when user reaches checkout
-    $reservation->extendExpirationForReservations($reservationIds, 30);
+    try {
+        $database = new Database();
+        $db = $database->getConnection();
+        $reservation = new TicketReservation($db);
+        
+        // Extend expiration by 30 minutes when user reaches checkout
+        // This ensures reservations don't expire while user is filling out the form
+        $reservation->extendExpirationForReservations($reservationIds, 30);
+    } catch (Exception $e) {
+        // Log error but don't fail the page load
+        error_log("Error extending reservations: " . $e->getMessage());
+    }
 }
 
 // Get customization data from session if returning from customization page
