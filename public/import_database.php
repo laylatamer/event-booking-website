@@ -23,9 +23,30 @@ if (!$ALLOW_IMPORT) {
 
 // Try to load database connection with error handling
 try {
-    $dbConfigPath = dirname(__DIR__) . '/config/db_connect.php';
+    // Get project root - go up from public folder
+    $projectRoot = dirname(__DIR__);
+    
+    // Normalize path (remove double slashes, etc.)
+    $projectRoot = str_replace('//', '/', $projectRoot);
+    if ($projectRoot === '/' || $projectRoot === '') {
+        // Fallback: try to find project root by going up from current directory
+        $projectRoot = '/app';
+    }
+    
+    $dbConfigPath = rtrim($projectRoot, '/') . '/config/db_connect.php';
+    
+    // Debug info
+    $debugInfo = [
+        "Current __DIR__: " . __DIR__,
+        "Project root: " . $projectRoot,
+        "Config path: " . $dbConfigPath,
+        "File exists: " . (file_exists($dbConfigPath) ? 'Yes' : 'No'),
+        "Parent dir exists: " . (is_dir($projectRoot) ? 'Yes' : 'No'),
+        "Config dir exists: " . (is_dir($projectRoot . '/config') ? 'Yes' : 'No')
+    ];
+    
     if (!file_exists($dbConfigPath)) {
-        throw new Exception("Database config file not found: $dbConfigPath");
+        throw new Exception("Database config file not found: $dbConfigPath\n\nDebug info:\n" . implode("\n", $debugInfo));
     }
     require_once $dbConfigPath;
     
@@ -34,23 +55,27 @@ try {
         throw new Exception("Database connection failed. PDO object not created.");
     }
 } catch (Exception $e) {
-    die("❌ Database Connection Error: " . htmlspecialchars($e->getMessage()) . "<br>" .
-        "Config path: " . htmlspecialchars($dbConfigPath ?? 'unknown') . "<br>" .
-        "Current directory: " . __DIR__ . "<br>" .
-        "Parent directory: " . dirname(__DIR__));
+    die("❌ Database Connection Error: " . nl2br(htmlspecialchars($e->getMessage())));
 }
 
 // SQL file path (go up one level from public folder)
-$sqlFile = dirname(__DIR__) . '/database/event_ticketing_db.sql';
+$projectRoot = dirname(__DIR__);
+$projectRoot = str_replace('//', '/', $projectRoot);
+if ($projectRoot === '/' || $projectRoot === '') {
+    $projectRoot = '/app';
+}
+
+$sqlFile = rtrim($projectRoot, '/') . '/database/event_ticketing_db.sql';
 
 // Check if file exists
 if (!file_exists($sqlFile)) {
     die("❌ SQL file not found: $sqlFile<br><br>" .
         "Please ensure database/event_ticketing_db.sql exists.<br>" .
         "Current directory: " . __DIR__ . "<br>" .
+        "Project root: " . $projectRoot . "<br>" .
         "Looking for: " . htmlspecialchars($sqlFile) . "<br>" .
-        "Parent directory exists: " . (is_dir(dirname(__DIR__)) ? 'Yes' : 'No') . "<br>" .
-        "Database directory exists: " . (is_dir(dirname(__DIR__) . '/database') ? 'Yes' : 'No'));
+        "Project root exists: " . (is_dir($projectRoot) ? 'Yes' : 'No') . "<br>" .
+        "Database directory exists: " . (is_dir($projectRoot . '/database') ? 'Yes' : 'No'));
 }
 
 echo "📦 Starting database import...\n";
