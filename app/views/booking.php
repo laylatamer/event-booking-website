@@ -1,11 +1,38 @@
 <?php
+// Enable error reporting for debugging (remove in production)
+error_reporting(E_ALL);
+ini_set('display_errors', 0); // Don't display, but log
+ini_set('log_errors', 1);
+
 // Include error handler FIRST - before any other code
-require_once __DIR__ . '/../../config/error_handler.php';
+if (file_exists(__DIR__ . '/../../config/error_handler.php')) {
+    require_once __DIR__ . '/../../config/error_handler.php';
+}
 
 // Start session
-require_once __DIR__ . '/../../database/session_init.php';
-require_once __DIR__ . '/../../config/db_connect.php';
-require_once __DIR__ . '/../../app/controllers/EventController.php';
+if (file_exists(__DIR__ . '/../../database/session_init.php')) {
+    require_once __DIR__ . '/../../database/session_init.php';
+} else {
+    session_start();
+}
+
+// Database connection
+if (file_exists(__DIR__ . '/../../config/db_connect.php')) {
+    require_once __DIR__ . '/../../config/db_connect.php';
+} else {
+    error_log("Error: db_connect.php not found");
+    http_response_code(500);
+    die("Database configuration not found");
+}
+
+// EventController
+if (file_exists(__DIR__ . '/../../app/controllers/EventController.php')) {
+    require_once __DIR__ . '/../../app/controllers/EventController.php';
+} else {
+    error_log("Error: EventController.php not found");
+    http_response_code(500);
+    die("Event controller not found");
+}
 
 // Get event ID from URL
 $eventId = $_GET['id'] ?? null;
