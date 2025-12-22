@@ -187,9 +187,15 @@ if ($event) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
        <title><?php echo $eventTitle; ?> | Eحgzly</title>
 
-    <link rel="stylesheet" href="../../public/css/booking.css">
-    <link rel="stylesheet" href="../../public/css/theatre-seating.css">
-    <link rel="stylesheet" href="../../public/css/stadium-seating.css">
+    <?php
+    // Include path helper if not already included
+    if (!defined('BASE_ASSETS_PATH')) {
+        require_once __DIR__ . '/path_helper.php';
+    }
+    ?>
+    <link rel="stylesheet" href="<?= asset('css/booking.css') ?>">
+    <link rel="stylesheet" href="<?= asset('css/theatre-seating.css') ?>">
+    <link rel="stylesheet" href="<?= asset('css/stadium-seating.css') ?>">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/feather-icons"></script>
@@ -751,9 +757,9 @@ include 'partials/footer.php';
             maxTickets: <?php echo $event ? $event['max_tickets_per_booking'] : 10; ?>
         };
     </script>
-    <script src="../../public/js/theatre-seating.js"></script>
-    <script src="../../public/js/stadium-seating.js"></script>
-    <script type="module" src="../../public/js/booking.js"></script>
+    <script src="<?= asset('js/theatre-seating.js') ?>"></script>
+    <script src="<?= asset('js/stadium-seating.js') ?>"></script>
+    <script type="module" src="<?= asset('js/booking.js') ?>"></script>
 
 </body>
 </html>
