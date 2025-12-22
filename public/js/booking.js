@@ -726,6 +726,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Stop the reservation check interval before redirecting
                 stopReservationCheck();
                 
+                // CRITICAL: Remove the beforeunload handler to prevent releasing reservations
+                // We need to do this BEFORE redirecting
+                if (window._beforeUnloadHandler) {
+                    window.removeEventListener('beforeunload', window._beforeUnloadHandler);
+                    console.log('Removed beforeunload handler to preserve reservations');
+                }
+                
+                // Set flag to prevent any cleanup
+                navigatingToCheckout = true;
+                
+                // Log for debugging
+                console.log('Navigating to checkout with reservations:', activeReservations);
+                
                 // Redirect to checkout with reservation data
                 const params = new URLSearchParams({
                     event_id: eventId,
