@@ -470,9 +470,11 @@ class BookingsModel {
             if (in_array('subtotal', $existingColumns)) {
                 $stmt->bindValue(':subtotal', $subtotal);
             }
-            // Use total_amount if subtotal doesn't exist
-            if (in_array('total_amount', $existingColumns) && !in_array('subtotal', $existingColumns)) {
-                $stmt->bindValue(':total_amount', $subtotal);
+            // Use total_amount if subtotal doesn't exist, OR if both exist (bind it as well)
+            if (in_array('total_amount', $existingColumns)) {
+                // Bind total_amount to subtotal value (or final_amount if subtotal doesn't exist)
+                $totalAmountValue = in_array('subtotal', $existingColumns) ? $subtotal : $finalAmount;
+                $stmt->bindValue(':total_amount', $totalAmountValue);
             }
             if (in_array('service_fee', $existingColumns)) {
                 $stmt->bindValue(':service_fee', $serviceFee);
@@ -482,11 +484,6 @@ class BookingsModel {
             }
             if (in_array('customization_fee', $existingColumns)) {
                 $stmt->bindValue(':customization_fee', $customizationFee);
-            }
-            
-            // Use total_amount if subtotal doesn't exist
-            if (in_array('total_amount', $existingColumns) && !in_array('subtotal', $existingColumns)) {
-                $stmt->bindValue(':total_amount', $subtotal);
             }
             
             $stmt->bindValue(':final_amount', $finalAmount);
