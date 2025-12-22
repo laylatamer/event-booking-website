@@ -339,14 +339,24 @@ class BookingsModel {
      * @return array Result with success status, booking_id, and booking_code
      */
     public function createBooking($data) {
+        $totalStartTime = microtime(true);
+        error_log("DEBUG: createBooking started at " . date('Y-m-d H:i:s'));
+        
         try {
-            // Check if bookings table exists
-            $tableCheck = $this->db->query("SHOW TABLES LIKE 'bookings'");
-            if ($tableCheck->rowCount() === 0) {
+            // Check if bookings table exists (cache this check)
+            static $bookingsTableExists = null;
+            if ($bookingsTableExists === null) {
+                $tableCheck = $this->db->query("SHOW TABLES LIKE 'bookings'");
+                $bookingsTableExists = $tableCheck->rowCount() > 0;
+            }
+            
+            if (!$bookingsTableExists) {
                 throw new Exception("Bookings table does not exist. Please run database migrations.");
             }
             
+            $transactionStartTime = microtime(true);
             $this->db->beginTransaction();
+            error_log("DEBUG: Transaction started");
             
             // Generate unique booking code
             $bookingCode = $this->generateBookingCode();
@@ -631,12 +641,19 @@ class BookingsModel {
                 error_log("DEBUG: Total ticket availability update took " . round($updateTotalTime, 3) . " seconds");
             }
             
-            // Save booked seats if provided
+            // Save booked seats if provided (optimize with batch insert if many seats)
             if (!empty($data['booked_seats'])) {
+                $seatsStartTime = microtime(true);
+                error_log("DEBUG: Starting booked seats save for " . count($data['booked_seats']) . " seats");
                 
-                // Check if booked_seats table exists
-                $tableCheck = $this->db->query("SHOW TABLES LIKE 'booked_seats'");
-                if ($tableCheck->rowCount() > 0) {
+                // Check if booked_seats table exists (cache this check)
+                static $bookedSeatsTableExists = null;
+                if ($bookedSeatsTableExists === null) {
+                    $tableCheck = $this->db->query("SHOW TABLES LIKE 'booked_seats'");
+                    $bookedSeatsTableExists = $tableCheck->rowCount() > 0;
+                }
+                
+                if ($bookedSeatsTableExists) {
                     $seatsSaved = 0;
                     $seatsFailed = 0;
                     
@@ -678,13 +695,17 @@ class BookingsModel {
                     // Table doesn't exist - log warning but don't fail
                     error_log("Warning: booked_seats table does not exist. Run migration: database/migrations/create_booked_seats_table.sql");
                 }
+                
+                $seatsTotalTime = microtime(true) - $seatsStartTime;
+                error_log("DEBUG: Total booked seats save took " . round($seatsTotalTime, 3) . " seconds");
             } else {
                 error_log("No booked seats provided in booking data");
             }
             
-            // Mark reservations as confirmed
+            // Mark reservations as confirmed (optimize with single query)
             if (!empty($data['reservation_ids'])) {
                 try {
+                    $reservationStartTime = microtime(true);
                     $reservationIds = is_array($data['reservation_ids']) 
                         ? $data['reservation_ids'] 
                         : explode(',', $data['reservation_ids']);
@@ -702,6 +723,8 @@ class BookingsModel {
                         $reservationStmt = $this->db->prepare($reservationQuery);
                         $reservationStmt->execute($reservationIds);
                         
+                        $reservationTime = microtime(true) - $reservationStartTime;
+                        error_log("DEBUG: Reservation confirmation took " . round($reservationTime, 3) . " seconds");
                     }
                 } catch (Exception $e) {
                     // Log but don't fail the booking if reservation update fails
@@ -709,7 +732,13 @@ class BookingsModel {
                 }
             }
             
+            $commitStartTime = microtime(true);
             $this->db->commit();
+            $commitTime = microtime(true) - $commitStartTime;
+            error_log("DEBUG: Transaction committed in " . round($commitTime, 3) . " seconds");
+            
+            $totalTime = microtime(true) - $totalStartTime;
+            error_log("DEBUG: Total createBooking time: " . round($totalTime, 3) . " seconds");
             
             // Return response FIRST, then send email in background
             // This prevents email delays from causing API timeouts
