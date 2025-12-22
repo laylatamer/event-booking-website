@@ -574,7 +574,7 @@ function addCustomFacility() {
 }
 
 function editVenue(venueId) {
-    fetch(`../../../public/api/venue.php?action=get&id=${venueId}`)
+    fetch(`/api/venue.php?action=get&id=${venueId}`)
         .then(response => response.json())
         .then(data => {
             if (data.success && data.venue) {
