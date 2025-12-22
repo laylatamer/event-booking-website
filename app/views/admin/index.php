@@ -188,11 +188,11 @@ if (!in_array($currentSection, $validSections)) {
     
     <?php
     // Only include specific section JS files
-    $jsBasePath = '../../../public/js/admin/';
+    // Use asset() helper for proper path resolution
     if ($currentSection === 'categories') {
-        echo '<script src="' . $jsBasePath . 'categories.js"></script>';
-    } else if (file_exists(__DIR__ . '/' . $jsBasePath . $currentSection . '.js')) {
-        echo '<script src="' . $jsBasePath . $currentSection . '.js"></script>';
+        echo '<script src="' . asset('js/admin/categories.js') . '"></script>';
+    } else if (file_exists(__DIR__ . '/../../../public/js/admin/' . $currentSection . '.js')) {
+        echo '<script src="' . asset('js/admin/' . $currentSection . '.js') . '"></script>';
     } else {
         echo '<!-- No JS file for section: ' . $currentSection . ' -->';
     }
