@@ -188,7 +188,7 @@ class EventController {
             'formattedDiscountedPrice' => $eventData['discounted_price'] ? '$' . number_format($eventData['discounted_price'], 2) : null,
             'image' => $this->normalizeImageUrl($eventData['image_url'] ?? ''),
             'image_url' => $this->normalizeImageUrl($eventData['image_url'] ?? ''),
-            'gallery_images' => array_map([$this, 'normalizeImageUrl'], $galleryImages),
+            'gallery_images' => array_map(function($img) { return $this->normalizeImageUrl($img); }, $galleryImages),
             'total_tickets' => $eventData['total_tickets'],
             'available_tickets' => $eventData['available_tickets'],
             'min_tickets_per_booking' => $eventData['min_tickets_per_booking'],
