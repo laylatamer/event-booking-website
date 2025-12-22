@@ -7,6 +7,5 @@ cmds = [
 ]
 
 [start]
-cmd = 'php -S 0.0.0.0:$PORT -t public'
-workingDir = 'public'
+cmd = 'cd public && php -S 0.0.0.0:$PORT'
 
