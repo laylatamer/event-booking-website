@@ -743,14 +743,33 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Clean up on page unload - but ONLY if we're not going to checkout
     // If we're going to checkout, we need to keep the reservations!
+    // Use a flag to track if we're navigating to checkout
+    let navigatingToCheckout = false;
+    
+    // Set flag when checkout button is clicked
+    const checkoutBtn = document.getElementById('checkout-btn');
+    if (checkoutBtn) {
+        checkoutBtn.addEventListener('click', () => {
+            navigatingToCheckout = true;
+        });
+    }
+    
     window.addEventListener('beforeunload', (e) => {
-        // Check if we're navigating to checkout
-        const target = e.target?.activeElement?.href || window.location.href;
-        if (target && target.includes('checkout.php')) {
-            // Don't release reservations if going to checkout
+        // Don't release reservations if we're navigating to checkout
+        if (navigatingToCheckout) {
+            console.log('Navigating to checkout - preserving reservations');
             return;
         }
+        
+        // Check if we're navigating to checkout by URL
+        const target = e.target?.activeElement?.href || window.location.href;
+        if (target && (target.includes('checkout.php') || target.includes('checkout'))) {
+            console.log('Detected checkout navigation - preserving reservations');
+            return;
+        }
+        
         // Only release if navigating away (not to checkout)
+        console.log('Navigating away from booking page - releasing reservations');
         releaseReservations();
     });
 });
