@@ -24,7 +24,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const ticketCategories = eventData.ticketCategories || [];
     const minTickets = eventData.minTickets || 1;
     const maxTickets = eventData.maxTickets || 10;
-
+    
+    // Load availability on page load
+    if (eventId) {
+        loadAvailability();
+    }
 
     // Fixed fee per ticket
     const fixedFeePerTicket = 5.99;
