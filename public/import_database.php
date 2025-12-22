@@ -87,24 +87,30 @@ try {
     die("❌ Database Connection Error: " . nl2br(htmlspecialchars($e->getMessage())));
 }
 
-// SQL file path - use same project root as config
+// SQL file path - try multiple locations
 $scriptDir = __DIR__;
 $currentDir = getcwd();
 
-if (strpos($scriptDir, '/public') !== false || basename($scriptDir) === 'public') {
-    $projectRoot = dirname($scriptDir);
-} elseif ($currentDir === '/app' || $scriptDir === '/app') {
-    $projectRoot = '/app';
-} else {
-    $projectRoot = dirname($scriptDir);
+$possibleSqlPaths = [
+    $scriptDir . '/../database/event_ticketing_db.sql',  // Parent of public
+    '/app/database/event_ticketing_db.sql',              // Railway root
+    $currentDir . '/../database/event_ticketing_db.sql', // Parent of current dir
+    dirname($scriptDir) . '/database/event_ticketing_db.sql',
+];
+
+$sqlFile = null;
+foreach ($possibleSqlPaths as $path) {
+    $path = str_replace('//', '/', $path);
+    if (file_exists($path)) {
+        $sqlFile = $path;
+        break;
+    }
 }
 
-$projectRoot = rtrim($projectRoot, '/');
-if (empty($projectRoot)) {
-    $projectRoot = '/app';
+// If still not found, use default
+if ($sqlFile === null) {
+    $sqlFile = '/app/database/event_ticketing_db.sql';
 }
-
-$sqlFile = $projectRoot . '/database/event_ticketing_db.sql';
 
 // Check if file exists
 if (!file_exists($sqlFile)) {
