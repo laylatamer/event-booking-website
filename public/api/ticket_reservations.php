@@ -57,8 +57,11 @@ try {
     $action = $_GET['action'] ?? $_POST['action'] ?? '';
     $method = $_SERVER['REQUEST_METHOD'];
     
-    // Clean up expired reservations
-    $reservation->expireOldReservations();
+    // Clean up expired reservations - but NOT when getting a reservation for checkout
+    // This prevents reservations from being expired right before checkout loads them
+    if ($action !== 'getReservation' && $action !== 'getReservations') {
+        $reservation->expireOldReservations();
+    }
     
     if ($method === 'POST' && $action === 'reserve') {
         // Reserve tickets for 15 minutes

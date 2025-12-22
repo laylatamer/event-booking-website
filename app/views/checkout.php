@@ -11,6 +11,7 @@ require_once __DIR__ . '/../../app/models/TicketReservation.php';
 requireLogin();
 
 // Extend expiration for reservations in checkout flow
+// This MUST happen BEFORE any API calls that might expire them
 $reservationIds = $_GET['reservations'] ?? $_GET['reservation_ids'] ?? null;
 if ($reservationIds) {
     try {
@@ -20,7 +21,13 @@ if ($reservationIds) {
         
         // Extend expiration by 30 minutes when user reaches checkout
         // This ensures reservations don't expire while user is filling out the form
-        $reservation->extendExpirationForReservations($reservationIds, 30);
+        // Do this IMMEDIATELY to prevent race conditions
+        $extended = $reservation->extendExpirationForReservations($reservationIds, 30);
+        if ($extended) {
+            error_log("Extended reservations: " . $reservationIds);
+        } else {
+            error_log("Failed to extend reservations: " . $reservationIds);
+        }
     } catch (Exception $e) {
         // Log error but don't fail the page load
         error_log("Error extending reservations: " . $e->getMessage());

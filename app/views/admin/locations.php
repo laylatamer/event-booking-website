@@ -714,7 +714,7 @@ function handleEditLocation(e) {
     submitBtn.innerHTML = '<i data-feather="loader" class="animate-spin"></i> Updating...';
     feather.replace();
     
-    fetch('../../../public/api/venue.php', {
+    fetch('/api/venue.php', {
         method: 'POST',
         body: formData
     })
