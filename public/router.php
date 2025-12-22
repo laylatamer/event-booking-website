@@ -40,17 +40,31 @@ if (in_array($requestPath, $utilityScripts) || in_array(basename($requestPath), 
 }
 
 // Handle admin routes
-if (strpos($requestPath, 'admin/') === 0) {
-    $adminPath = substr($requestPath, 6); // Remove 'admin/' prefix
-    $adminViewPath = $projectRoot . '/app/views/admin/' . ($adminPath ?: 'index.php');
+if (strpos($requestPath, 'admin') === 0) {
+    $adminPath = preg_replace('#^admin/?#', '', $requestPath); // Remove 'admin' or 'admin/' prefix
+    $adminPath = $adminPath ?: 'index.php';
+    
+    // Ensure .php extension
+    if (!preg_match('/\.php$/', $adminPath)) {
+        $adminPath .= '.php';
+    }
+    
+    $adminViewPath = $projectRoot . '/app/views/admin/' . $adminPath;
+    
     if (file_exists($adminViewPath)) {
         require $adminViewPath;
         exit;
-    }
-    // If admin file doesn't exist, try with .php extension
-    $adminViewPath = $projectRoot . '/app/views/admin/' . ($adminPath ?: 'index.php');
-    if (file_exists($adminViewPath)) {
-        require $adminViewPath;
+    } else {
+        // Debug: show what we're looking for
+        http_response_code(404);
+        echo "404 - Admin page not found: " . htmlspecialchars($adminPath) . "<br>";
+        echo "Looking in: " . htmlspecialchars($adminViewPath) . "<br>";
+        echo "Project root: " . htmlspecialchars($projectRoot) . "<br>";
+        if (is_dir($projectRoot . '/app/views/admin')) {
+            echo "Admin directory exists. Files: " . implode(', ', array_slice(scandir($projectRoot . '/app/views/admin'), 2));
+        } else {
+            echo "Admin directory does not exist!";
+        }
         exit;
     }
 }
