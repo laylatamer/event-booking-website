@@ -106,6 +106,9 @@ async function initializeCheckout() {
                 const currentEvent = data.event;
                 const ticketCategories = data.event.ticket_categories || [];
                 
+                // Debug: Log ticket categories to see what we're working with
+                console.log('Ticket categories from API:', ticketCategories);
+                
                 // Store max tickets limit
                 maxTicketsPerBooking = currentEvent.max_tickets_per_booking || null;
                 
