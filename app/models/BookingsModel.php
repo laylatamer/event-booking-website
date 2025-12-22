@@ -691,73 +691,85 @@ class BookingsModel {
             
             $this->db->commit();
             
-            // Send confirmation email if payment method is 'card'
-            $paymentMethod = $data['payment_method'] ?? 'cash';
-            error_log("DEBUG: Payment method is: " . $paymentMethod);
-            
-            // Send email for card payments (credit_card, visa, etc.)
-            if ($paymentMethod === 'card' || $paymentMethod === 'credit_card' || $paymentMethod === 'visa') {
-                error_log("DEBUG: Attempting to send email for card payment booking: " . $bookingCode);
-                try {
-                    // Check if EmailService class exists
-                    if (!class_exists('EmailService')) {
-                        error_log("ERROR: EmailService class not found!");
-                        throw new Exception("EmailService class not found");
-                    }
-                    
-                    // Fetch event data for email
-                    $eventData = $this->getEventDataForEmail($data['event_id']);
-                    error_log("DEBUG: Event data fetched: " . json_encode($eventData));
-                    
-                    // Prepare booking data for email
-                    $bookingDataForEmail = [
-                        'booking_code' => $bookingCode,
-                        'customer_first_name' => $data['customer_first_name'] ?? '',
-                        'customer_last_name' => $data['customer_last_name'] ?? '',
-                        'customer_email' => $data['customer_email'] ?? '',
-                        'ticket_count' => $data['ticket_count'] ?? 0,
-                        'final_amount' => $finalAmount,
-                        'ticket_categories' => $data['ticket_categories'] ?? [],
-                        'booked_seats' => $data['booked_seats'] ?? [],
-                        'ticket_details' => $data['ticket_details'] ?? []
-                    ];
-                    
-                    error_log("DEBUG: Booking data for email: " . json_encode($bookingDataForEmail));
-                    
-                    // Send email asynchronously (don't block the booking response)
-                    // Use a background process or queue if available, otherwise send in background
-                    try {
-                        // For now, send email but don't wait for it to complete
-                        // This prevents email delays from blocking the booking response
-                        $emailService = new EmailService();
-                        
-                        // Set a timeout for email sending (5 seconds max)
-                        $emailStartTime = microtime(true);
-                        $emailResult = @$emailService->sendBookingConfirmationEmail($bookingDataForEmail, $eventData);
-                        $emailDuration = microtime(true) - $emailStartTime;
-                        
-                        error_log("DEBUG: Email send result: " . ($emailResult ? 'SUCCESS' : 'FAILED') . " (took " . round($emailDuration, 2) . " seconds)");
-                    } catch (Exception $emailEx) {
-                        // Don't fail the booking if email fails
-                        error_log("WARNING: Email sending failed but booking succeeded: " . $emailEx->getMessage());
-                    }
-                } catch (Exception $emailException) {
-                    // Log email error but don't fail the booking
-                    error_log("ERROR: Failed to send confirmation email for booking $bookingCode: " . $emailException->getMessage());
-                    error_log("ERROR: Email exception trace: " . $emailException->getTraceAsString());
-                } catch (Error $emailError) {
-                    error_log("FATAL ERROR: Email service error for booking $bookingCode: " . $emailError->getMessage());
-                    error_log("FATAL ERROR: Email error trace: " . $emailError->getTraceAsString());
-                }
-            } else {
-                error_log("DEBUG: Skipping email - payment method is: " . $paymentMethod);
-            }
-            
-            return [
+            // Return response FIRST, then send email in background
+            // This prevents email delays from causing API timeouts
+            $response = [
                 'success' => true,
                 'booking_id' => $bookingId,
                 'booking_code' => $bookingCode
             ];
+            
+            // Send confirmation email if payment method is 'card' (in background, don't block)
+            $paymentMethod = $data['payment_method'] ?? 'cash';
+            error_log("DEBUG: Payment method is: " . $paymentMethod);
+            
+            // Send email for card payments (credit_card, visa, etc.) - but don't wait for it
+            if ($paymentMethod === 'card' || $paymentMethod === 'credit_card' || $paymentMethod === 'visa') {
+                // Store data for background email sending
+                $emailData = [
+                    'booking_code' => $bookingCode,
+                    'event_id' => $data['event_id'],
+                    'customer_first_name' => $data['customer_first_name'] ?? '',
+                    'customer_last_name' => $data['customer_last_name'] ?? '',
+                    'customer_email' => $data['customer_email'] ?? '',
+                    'ticket_count' => $data['ticket_count'] ?? 0,
+                    'final_amount' => $finalAmount,
+                    'ticket_categories' => $data['ticket_categories'] ?? [],
+                    'booked_seats' => $data['booked_seats'] ?? [],
+                    'ticket_details' => $data['ticket_details'] ?? []
+                ];
+                
+                // Use register_shutdown_function to send email AFTER response is sent
+                // This prevents email from blocking the API response
+                register_shutdown_function(function() use ($emailData) {
+                    try {
+                        error_log("DEBUG: Sending email in background for booking: " . $emailData['booking_code']);
+                        
+                        if (!class_exists('EmailService')) {
+                            error_log("ERROR: EmailService class not found!");
+                            return;
+                        }
+                        
+                        // Get fresh database connection for email (in case original connection is closed)
+                        require_once __DIR__ . '/../../config/db_connect.php';
+                        $database = new Database();
+                        $db = $database->getConnection();
+                        
+                        // Create new BookingsModel instance to access getEventDataForEmail
+                        $bookingsModel = new BookingsModel($db);
+                        $eventData = $bookingsModel->getEventDataForEmail($emailData['event_id']);
+                        
+                        // Prepare booking data for email
+                        $bookingDataForEmail = [
+                            'booking_code' => $emailData['booking_code'],
+                            'customer_first_name' => $emailData['customer_first_name'],
+                            'customer_last_name' => $emailData['customer_last_name'],
+                            'customer_email' => $emailData['customer_email'],
+                            'ticket_count' => $emailData['ticket_count'],
+                            'final_amount' => $emailData['final_amount'],
+                            'ticket_categories' => $emailData['ticket_categories'],
+                            'booked_seats' => $emailData['booked_seats'],
+                            'ticket_details' => $emailData['ticket_details']
+                        ];
+                        
+                        // Send email
+                        $emailService = new EmailService();
+                        $emailStartTime = microtime(true);
+                        $emailResult = $emailService->sendBookingConfirmationEmail($bookingDataForEmail, $eventData);
+                        $emailDuration = microtime(true) - $emailStartTime;
+                        
+                        error_log("DEBUG: Email send result: " . ($emailResult ? 'SUCCESS' : 'FAILED') . " (took " . round($emailDuration, 2) . " seconds)");
+                    } catch (Exception $emailException) {
+                        error_log("ERROR: Failed to send confirmation email: " . $emailException->getMessage());
+                    } catch (Error $emailError) {
+                        error_log("FATAL ERROR: Email service error: " . $emailError->getMessage());
+                    }
+                });
+            } else {
+                error_log("DEBUG: Skipping email - payment method is: " . $paymentMethod);
+            }
+            
+            return $response;
             
         } catch (PDOException $e) {
             if ($this->db->inTransaction()) {
