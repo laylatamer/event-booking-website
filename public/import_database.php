@@ -58,25 +58,6 @@ try {
         );
     }
     
-    // Debug: list what we're checking
-    $debugInfo = [
-        "Script __DIR__: " . $scriptDir,
-        "Current working dir: " . $currentDir,
-        "Detected project root: " . $projectRoot,
-        "Config path: " . $dbConfigPath,
-        "Config exists: " . (file_exists($dbConfigPath) ? 'Yes' : 'No'),
-        "Project root exists: " . (is_dir($projectRoot) ? 'Yes' : 'No'),
-        "Config dir exists: " . (is_dir($projectRoot . '/config') ? 'Yes' : 'No')
-    ];
-    
-    if (!file_exists($dbConfigPath)) {
-        // List files in project root for debugging
-        $rootFiles = is_dir($projectRoot) ? implode(', ', array_slice(scandir($projectRoot), 0, 10)) : 'Cannot read';
-        throw new Exception("Database config file not found: $dbConfigPath\n\n" .
-            implode("\n", $debugInfo) . "\n\n" .
-            "Files in project root: " . $rootFiles);
-    }
-    
     require_once $dbConfigPath;
     
     // Check if $pdo was created
