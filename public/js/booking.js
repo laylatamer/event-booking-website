@@ -720,6 +720,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     sessionStorage.setItem('selected_seats', JSON.stringify(selectedSeats));
                 }
                 
+                // Store reservation IDs in sessionStorage as backup
+                sessionStorage.setItem('checkout_reservations', activeReservations.join(','));
+                
+                // Stop the reservation check interval before redirecting
+                stopReservationCheck();
+                
                 // Redirect to checkout with reservation data
                 const params = new URLSearchParams({
                     event_id: eventId,
