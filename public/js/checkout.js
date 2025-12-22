@@ -314,7 +314,7 @@ function renderOrderItems() {
                 </div>
                 <div class="chk-order-item__info">
                     <h3 class="chk-order-item__title">${eventItem.title}</h3>
-                    <p class="chk-order-item__detail">${itemFormattedDate} at ${itemFormattedTime}</p>
+                    <p class="chk-order-item__detail">${itemFormattedDate} ${itemFormattedTime}</p>
                     <p class="chk-order-item__detail">${eventItem.location}</p>
                     <div class="chk-quantity-control">
                         <button class="chk-quantity-control__button chk-quantity-btn decrease" data-id="${eventItem.id}" data-category="${item.categoryName || ''}" ${item.quantity <= 1 ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}>
