@@ -46,15 +46,11 @@ $venues = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <div class="location-image">
                 <?php if (!empty($venueItem['image_url'])): ?>
                     <?php 
-                    $imageUrl = $venueItem['image_url'];
-                    // If it's a local path, build a project-aware URL so files under
-                    // public/uploads/... are reachable when the site is served from
-                    // a subfolder (e.g. /event-booking-website/)
-                    if ($imageUrl && !str_starts_with($imageUrl, 'http')) {
-                        // Project public base - adjust if your site is served from a different subfolder
-                        $projectBase = '/event-booking-website/public';
-                        $imageUrl = $projectBase . '/' . ltrim($imageUrl, '/');
+                    // Include path helper if not already included
+                    if (!defined('BASE_ASSETS_PATH')) {
+                        require_once __DIR__ . '/../path_helper.php';
                     }
+                    $imageUrl = imageUrl($venueItem['image_url']);
                     ?>
                     <img src="<?php echo htmlspecialchars($imageUrl); ?>" 
                          alt="<?php echo htmlspecialchars($venueItem['name']); ?>" 
