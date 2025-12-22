@@ -1014,31 +1014,33 @@ async function showPaymentSuccess() {
 
     try {
         // Create booking
+        console.log('Starting booking creation for card payment...');
         const bookingResult = await createBooking('card');
+        console.log('Booking result:', bookingResult);
         
-        setTimeout(() => {
-            if(paymentSection) paymentSection.classList.remove('chk-animate-pulse');
+        // Remove pulse animation immediately
+        if(paymentSection) paymentSection.classList.remove('chk-animate-pulse');
+        
+        if (bookingResult.success) {
             showConfetti();
-            if (bookingResult.success) {
-                showNoticeModal('Payment Successful', `Your payment has been processed! Booking Code: ${bookingResult.booking_code}. Your tickets will be emailed to you shortly.`, () => {
-                    // Redirect to homepage after modal is closed
-                    window.location.href = '../../app/views/homepage.php';
-                });
-            } else {
-                showNoticeModal('Payment Processed', 'Your payment has been processed! However, there was an issue saving your booking. Please contact support with your payment details.');
-                // Re-enable button on error
-                isBookingInProgress = false;
-                if (placeOrderBtn) {
-                    placeOrderBtn.disabled = false;
-                    placeOrderBtn.style.opacity = '1';
-                    placeOrderBtn.style.cursor = 'pointer';
-                    if (placeOrderBtn.querySelector('span')) {
-                        placeOrderBtn.querySelector('span').textContent = originalText;
-                    }
+            showNoticeModal('Payment Successful', `Your payment has been processed! Booking Code: ${bookingResult.booking_code}. Your tickets will be emailed to you shortly.`, () => {
+                // Redirect to homepage after modal is closed (use absolute path)
+                window.location.href = '/';
+            });
+            resetForms();
+        } else {
+            // Re-enable button on error
+            isBookingInProgress = false;
+            if (placeOrderBtn) {
+                placeOrderBtn.disabled = false;
+                placeOrderBtn.style.opacity = '1';
+                placeOrderBtn.style.cursor = 'pointer';
+                if (placeOrderBtn.querySelector('span')) {
+                    placeOrderBtn.querySelector('span').textContent = originalText;
                 }
             }
-            resetForms();
-        }, 1000);
+            showNoticeModal('Payment Error', bookingResult.message || 'There was an issue processing your payment. Please try again or contact support.');
+        }
     } catch (error) {
         // Re-enable button on error
         isBookingInProgress = false;
@@ -1047,12 +1049,12 @@ async function showPaymentSuccess() {
             placeOrderBtn.style.opacity = '1';
             placeOrderBtn.style.cursor = 'pointer';
             if (placeOrderBtn.querySelector('span')) {
-                placeOrderBtn.querySelector('span').textContent = 'Complete Purchase';
+                placeOrderBtn.querySelector('span').textContent = originalText;
             }
         }
         if(paymentSection) paymentSection.classList.remove('chk-animate-pulse');
         console.error('Error processing payment:', error);
-        showNoticeModal('Payment Error', 'There was an error processing your payment. Please try again.');
+        showNoticeModal('Payment Error', error.message || 'There was an error processing your payment. Please try again.');
     }
 }
 
@@ -1101,8 +1103,8 @@ async function showReservationSuccess() {
             showConfetti();
             if (bookingResult.success) {
                 showNoticeModal('Reservation Confirmed', `Your reservation is confirmed! Booking Code: ${bookingResult.booking_code}. Please bring your ID to the venue.`, () => {
-                    // Redirect to homepage after modal is closed
-                    window.location.href = '../../app/views/homepage.php';
+                    // Redirect to homepage after modal is closed (use absolute path)
+                    window.location.href = '/';
                 });
             } else {
                 showNoticeModal('Reservation Error', 'There was an issue saving your reservation. Please contact support.');

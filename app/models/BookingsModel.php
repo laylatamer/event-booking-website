@@ -695,7 +695,8 @@ class BookingsModel {
             $paymentMethod = $data['payment_method'] ?? 'cash';
             error_log("DEBUG: Payment method is: " . $paymentMethod);
             
-            if ($paymentMethod === 'card') {
+            // Send email for card payments (credit_card, visa, etc.)
+            if ($paymentMethod === 'card' || $paymentMethod === 'credit_card' || $paymentMethod === 'visa') {
                 error_log("DEBUG: Attempting to send email for card payment booking: " . $bookingCode);
                 try {
                     // Check if EmailService class exists
