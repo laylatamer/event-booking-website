@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y \
     libzip-dev \
     libxml2-dev \
     libcurl4-openssl-dev \
+    default-mysql-client \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) \
         pdo \
@@ -21,6 +22,9 @@ RUN apt-get update && apt-get install -y \
         curl \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+# Verify PDO MySQL is installed
+RUN php -m | grep -i pdo_mysql || (echo "ERROR: PDO MySQL not installed!" && php -m && exit 1)
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
