@@ -156,8 +156,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
+            if (reservationPromises.length === 0) {
+                console.warn('No reservations to create');
+                return true; // No tickets selected, but that's okay
+            }
+            
             const results = await Promise.all(reservationPromises);
-            const failed = results.find(r => !r.success);
+            const failed = results.find(r => !r || !r.success);
             
             if (failed) {
                 console.error('Reservation failed:', failed);
@@ -166,14 +171,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             // Check if any results are missing reservation_id
-            if (results.length === 0 || results.some(r => !r.reservation_id)) {
+            const validResults = results.filter(r => r && r.success);
+            if (validResults.length === 0 || validResults.some(r => !r.reservation_id)) {
                 console.error('Reservation results incomplete:', results);
                 alert('Reservation incomplete. Please try again.');
                 return false;
             }
 
             // Store reservation IDs
-            activeReservations = results.filter(r => r.reservation_id).map(r => r.reservation_id);
+            activeReservations = validResults.filter(r => r.reservation_id).map(r => r.reservation_id);
             
             // Start checking reservation expiry
             startReservationCheck();
