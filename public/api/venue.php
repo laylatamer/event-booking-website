@@ -48,11 +48,12 @@ try {
         throw new Exception('PDO connection not available');
     }
     
-    $venue = new Venue($pdo);
-    $action = $_GET['action'] ?? ($_POST['action'] ?? '');
-    $method = $_SERVER['REQUEST_METHOD'];
-    
-    if ($method === 'GET' && $action === 'get') {
+       $venue = new Venue($pdo);
+       $action = $_GET['action'] ?? ($_POST['action'] ?? '');
+       $method = $_SERVER['REQUEST_METHOD'];
+       $statusCode = 200; // Initialize status code
+       
+       if ($method === 'GET' && $action === 'get') {
         // Get single venue
         $id = $_GET['id'] ?? 0;
         $venue->id = $id;
