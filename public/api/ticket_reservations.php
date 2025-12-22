@@ -116,14 +116,19 @@ try {
                     $reservation->expires_at = $expiresAt;
                     
                     if ($reservation->create()) {
+                        // Log successful creation for debugging
+                        error_log("Reservation created successfully: ID={$reservation->id}, event_id={$eventId}, category={$categoryName}, quantity={$quantity}, session_id=" . session_id());
+                        
                         $response = [
                             'success' => true,
                             'message' => 'Tickets reserved for 15 minutes',
                             'reservation_id' => $reservation->id,
-                            'expires_at' => $expiresAt
+                            'expires_at' => $expiresAt,
+                            'session_id' => session_id() // Include for debugging
                         ];
                         $statusCode = 201;
                     } else {
+                        error_log("Failed to create reservation: event_id={$eventId}, category={$categoryName}, quantity={$quantity}");
                         $response = ['success' => false, 'message' => 'Failed to create reservation'];
                         $statusCode = 500;
                     }
@@ -222,9 +227,20 @@ try {
     elseif ($method === 'DELETE' || ($method === 'POST' && $action === 'release')) {
         // Release reservation
         $sessionId = session_id();
+        error_log("Releasing reservations for session: {$sessionId}");
+        
+        // Check how many reservations exist before deletion
+        $checkQuery = "SELECT COUNT(*) as count, GROUP_CONCAT(id) as ids FROM ticket_reservations WHERE session_id = ? AND status = 'reserved'";
+        $checkStmt = $pdo->prepare($checkQuery);
+        $checkStmt->execute([$sessionId]);
+        $checkResult = $checkStmt->fetch(PDO::FETCH_ASSOC);
+        error_log("Reservations to be deleted: count=" . ($checkResult['count'] ?? 0) . ", ids=" . ($checkResult['ids'] ?? 'none'));
+        
         if ($reservation->deleteBySession($sessionId)) {
+            error_log("Successfully deleted reservations for session: {$sessionId}");
             $response = ['success' => true, 'message' => 'Reservations released'];
         } else {
+            error_log("Failed to delete reservations for session: {$sessionId}");
             $response = ['success' => false, 'message' => 'Failed to release reservations'];
             $statusCode = 400;
         }
