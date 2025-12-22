@@ -4,7 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
-    <link rel="stylesheet" href="../../public/css/footer.css">
+    <?php
+    // Include path helper if not already included
+    if (!defined('BASE_ASSETS_PATH')) {
+        require_once __DIR__ . '/../path_helper.php';
+    }
+    ?>
+    <link rel="stylesheet" href="<?= asset('css/footer.css') ?>">
     <script src="../../public/js/footer.js"></script>
 </head>
 <body>

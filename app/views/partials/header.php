@@ -48,11 +48,17 @@ if ($isLoggedIn && !empty($userImage) && $userImage !== null) {
     <link rel="icon" type="image/png" href="<?= htmlspecialchars($faviconPath) ?>">
     <link rel="shortcut icon" href="<?= htmlspecialchars($faviconPath) ?>">
     <link rel="apple-touch-icon" href="<?= htmlspecialchars($faviconPath) ?>">
-    <link rel="stylesheet" href="../../public/css/header.css">
-    <link rel="stylesheet" href="../../public/css/navbar.css">
+    <?php
+    // Include path helper if not already included
+    if (!defined('BASE_ASSETS_PATH')) {
+        require_once __DIR__ . '/../path_helper.php';
+    }
+    ?>
+    <link rel="stylesheet" href="<?= asset('css/header.css') ?>">
+    <link rel="stylesheet" href="<?= asset('css/navbar.css') ?>">
     <!-- Chatbot styles (fixed path and filename) -->
-    <link rel="stylesheet" href="../../public/css/chatbot-widget.css">
-    <script src="../../public/js/header.js"></script>
+    <link rel="stylesheet" href="<?= asset('css/chatbot-widget.css') ?>">
+    <script src="<?= asset('js/header.js') ?>"></script>
         </head>
 <body>
     <div class="page-top-gap" aria-hidden="true"></div>

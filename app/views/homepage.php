@@ -4,6 +4,9 @@ require_once __DIR__ . '/../../config/error_handler.php';
 
 // Start session
 require_once __DIR__ . '/../../database/session_init.php';
+
+// Include path helper for asset paths
+require_once __DIR__ . '/path_helper.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -11,10 +14,10 @@ require_once __DIR__ . '/../../database/session_init.php';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tickets | Home</title>
-    <link rel="stylesheet" href="../../public/css/header.css">
-    <link rel="stylesheet" href="../../public/css/navbar.css">
-    <link rel="stylesheet" href="../../public/css/footer.css">
-    <link rel="stylesheet" href="../../public/css/homepage.css">
+    <link rel="stylesheet" href="<?= asset('css/header.css') ?>">
+    <link rel="stylesheet" href="<?= asset('css/navbar.css') ?>">
+    <link rel="stylesheet" href="<?= asset('css/footer.css') ?>">
+    <link rel="stylesheet" href="<?= asset('css/homepage.css') ?>">
 </head>
 <body>
     <?php
