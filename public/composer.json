@@ -1,0 +1,8 @@
+{
+  "name": "event-booking-website/public",
+  "description": "Public directory",
+  "require": {
+    "php": ">=8.0"
+  }
+}
+
