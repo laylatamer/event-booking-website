@@ -23,31 +23,36 @@ if (!$ALLOW_IMPORT) {
 
 // Try to load database connection with error handling
 try {
-    // Get project root - go up from public folder
-    $projectRoot = dirname(__DIR__);
+    // Get project root - on Railway it's /app, locally it's parent of public
+    $possibleRoots = [
+        dirname(__DIR__),  // Parent of public folder
+        '/app',            // Railway standard root
+        getcwd()           // Current working directory
+    ];
     
-    // Normalize path (remove double slashes, etc.)
-    $projectRoot = str_replace('//', '/', $projectRoot);
-    if ($projectRoot === '/' || $projectRoot === '') {
-        // Fallback: try to find project root by going up from current directory
+    $projectRoot = null;
+    foreach ($possibleRoots as $root) {
+        $testPath = rtrim($root, '/') . '/config/db_connect.php';
+        if (file_exists($testPath)) {
+            $projectRoot = $root;
+            break;
+        }
+    }
+    
+    if ($projectRoot === null) {
+        // Last resort: use /app (Railway standard)
         $projectRoot = '/app';
     }
     
     $dbConfigPath = rtrim($projectRoot, '/') . '/config/db_connect.php';
     
-    // Debug info
-    $debugInfo = [
-        "Current __DIR__: " . __DIR__,
-        "Project root: " . $projectRoot,
-        "Config path: " . $dbConfigPath,
-        "File exists: " . (file_exists($dbConfigPath) ? 'Yes' : 'No'),
-        "Parent dir exists: " . (is_dir($projectRoot) ? 'Yes' : 'No'),
-        "Config dir exists: " . (is_dir($projectRoot . '/config') ? 'Yes' : 'No')
-    ];
-    
     if (!file_exists($dbConfigPath)) {
-        throw new Exception("Database config file not found: $dbConfigPath\n\nDebug info:\n" . implode("\n", $debugInfo));
+        throw new Exception("Database config file not found: $dbConfigPath\n\n" .
+            "Tried roots: " . implode(', ', $possibleRoots) . "\n" .
+            "Current __DIR__: " . __DIR__ . "\n" .
+            "Selected root: " . $projectRoot);
     }
+    
     require_once $dbConfigPath;
     
     // Check if $pdo was created
@@ -58,11 +63,24 @@ try {
     die("❌ Database Connection Error: " . nl2br(htmlspecialchars($e->getMessage())));
 }
 
-// SQL file path (go up one level from public folder)
-$projectRoot = dirname(__DIR__);
-$projectRoot = str_replace('//', '/', $projectRoot);
-if ($projectRoot === '/' || $projectRoot === '') {
-    $projectRoot = '/app';
+// SQL file path - use same project root detection
+$possibleRoots = [
+    dirname(__DIR__),
+    '/app',
+    getcwd()
+];
+
+$projectRoot = null;
+foreach ($possibleRoots as $root) {
+    $testPath = rtrim($root, '/') . '/database/event_ticketing_db.sql';
+    if (file_exists($testPath)) {
+        $projectRoot = $root;
+        break;
+    }
+}
+
+if ($projectRoot === null) {
+    $projectRoot = '/app'; // Railway standard
 }
 
 $sqlFile = rtrim($projectRoot, '/') . '/database/event_ticketing_db.sql';
