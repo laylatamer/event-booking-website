@@ -116,8 +116,15 @@ try {
             echo json_encode(['error' => 'Method not allowed']);
     }
 } catch (Exception $e) {
+    error_log("Contact messages API error: " . $e->getMessage());
+    if (ob_get_level()) ob_clean();
     http_response_code(500);
-    echo json_encode(['error' => 'Server error']);
+    echo json_encode(['success' => false, 'error' => 'Server error', 'message' => $e->getMessage()]);
+    exit();
 }
 
-
+// Clean any output before sending JSON
+if (ob_get_level()) {
+    ob_clean();
+}
+?>
