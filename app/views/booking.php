@@ -45,8 +45,21 @@ if (!$eventId) {
 
 // Fetch event from database
 try {
+    if (!class_exists('Database')) {
+        throw new Exception("Database class not found. Check db_connect.php");
+    }
+    
     $database = new Database();
     $db = $database->getConnection();
+    
+    if (!$db) {
+        throw new Exception("Database connection failed");
+    }
+    
+    if (!class_exists('EventController')) {
+        throw new Exception("EventController class not found");
+    }
+    
     $eventController = new EventController($db);
     $eventData = $eventController->getEventById($eventId);
     
