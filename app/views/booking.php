@@ -12,7 +12,7 @@ $eventId = $_GET['id'] ?? null;
 
 if (!$eventId) {
     // Redirect to homepage if no event ID provided
-    header('Location: homepage.php');
+    header('Location: /');
     exit;
 }
 
