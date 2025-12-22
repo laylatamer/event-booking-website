@@ -1,0 +1,546 @@
+<?php
+/**
+ * EmailService Class
+ * Handles email sending functionality with QR code generation using PHPMailer
+ */
+
+// Load email configuration
+$configPath = __DIR__ . '/../../config/email_config.php';
+if (file_exists($configPath)) {
+    $emailConfig = require $configPath;
+} else {
+    // Default configuration (will use native mail() if PHPMailer not available)
+    $emailConfig = [
+        'use_phpmailer' => false,
+        'from_email' => 'noreply@egzly.com',
+        'from_name' => 'EحGZLY',
+        'reply_to_email' => 'support@egzly.com',
+        'reply_to_name' => 'EحGZLY Support'
+    ];
+}
+
+// Try to load PHPMailer if configured
+$phpmailerLoaded = false;
+if ($emailConfig['use_phpmailer'] ?? false) {
+    // Try to use Composer autoloader first (recommended)
+    $autoloadPath = __DIR__ . '/../../vendor/autoload.php';
+    if (file_exists($autoloadPath)) {
+        require_once $autoloadPath;
+        // Check if PHPMailer class is available
+        if (class_exists('PHPMailer\PHPMailer\PHPMailer')) {
+            $phpmailerLoaded = true;
+            error_log("PHPMailer loaded via Composer autoloader");
+        }
+    }
+    
+    // Fallback: Try manual loading if Composer autoloader didn't work
+    if (!$phpmailerLoaded) {
+        $phpmailerPaths = [
+            __DIR__ . '/../../vendor/phpmailer/phpmailer/src/PHPMailer.php',
+            __DIR__ . '/../../PHPMailer/PHPMailer.php',
+            __DIR__ . '/../../../PHPMailer/PHPMailer.php'
+        ];
+        
+        foreach ($phpmailerPaths as $path) {
+            if (file_exists($path)) {
+                require_once $path;
+                $smtpPath = str_replace('PHPMailer.php', 'SMTP.php', $path);
+                $exceptionPath = str_replace('PHPMailer.php', 'Exception.php', $path);
+                if (file_exists($smtpPath)) require_once $smtpPath;
+                if (file_exists($exceptionPath)) require_once $exceptionPath;
+                $phpmailerLoaded = true;
+                error_log("PHPMailer loaded from: " . $path);
+                break;
+            }
+        }
+    }
+    
+    if (!$phpmailerLoaded) {
+        error_log("WARNING: PHPMailer not found. Falling back to native mail() function.");
+        error_log("Please install PHPMailer or set use_phpmailer to false in config/email_config.php");
+    }
+}
+
+class EmailService {
+    private $config;
+    private $usePHPMailer;
+    
+    public function __construct() {
+        // Load email configuration
+        $configPath = __DIR__ . '/../../config/email_config.php';
+        if (file_exists($configPath)) {
+            $this->config = require $configPath;
+        } else {
+            $this->config = [
+                'use_phpmailer' => false,
+                'from_email' => 'noreply@egzly.com',
+                'from_name' => 'EحGZLY',
+                'reply_to_email' => 'support@egzly.com',
+                'reply_to_name' => 'EحGZLY Support'
+            ];
+        }
+        
+        // Check if PHPMailer is available
+        $this->usePHPMailer = ($this->config['use_phpmailer'] ?? false) && class_exists('PHPMailer\PHPMailer\PHPMailer');
+        
+        if ($this->usePHPMailer) {
+            error_log("EmailService: Using PHPMailer for email sending");
+        } else {
+            error_log("EmailService: Using native mail() function");
+        }
+    }
+    
+    /**
+     * Send booking confirmation email with QR code
+     * 
+     * @param array $bookingData Booking information
+     * @param array $eventData Event information
+     * @return bool Success status
+     */
+    public function sendBookingConfirmationEmail($bookingData, $eventData) {
+        try {
+            error_log("EmailService: Starting email send process");
+            
+            $to = $bookingData['customer_email'] ?? '';
+            if (empty($to)) {
+                error_log("ERROR: No email address provided in booking data");
+                return false;
+            }
+            
+            $firstName = $bookingData['customer_first_name'] ?? '';
+            $lastName = $bookingData['customer_last_name'] ?? '';
+            $fullName = trim($firstName . ' ' . $lastName);
+            $bookingCode = $bookingData['booking_code'] ?? '';
+            
+            error_log("EmailService: Sending email to: " . $to . " for booking: " . $bookingCode);
+            
+            // Prepare email subject
+            $subject = "Booking Confirmation - " . ($eventData['title'] ?? 'Event Ticket');
+            
+            // Generate QR code data (includes booking code and user name)
+            // Format: JSON string with booking information
+            $qrDataArray = [
+                'booking_code' => $bookingCode,
+                'user_name' => $fullName,
+                'event_title' => $eventData['title'] ?? '',
+                'event_date' => $eventData['date'] ?? '',
+                'ticket_count' => $bookingData['ticket_count'] ?? 0
+            ];
+            $qrData = json_encode($qrDataArray, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            
+            // Generate QR code image
+            $qrCodeImage = $this->generateQRCode($qrData);
+            
+            // Build email body with QR code
+            if ($this->usePHPMailer && $qrCodeImage) {
+                // When using PHPMailer, we'll embed as attachment and reference with CID
+                $qrCodeHtml = '<img src="cid:qrcode" alt="Booking QR Code" style="max-width: 300px; height: auto; margin: 20px auto; display: block;" />';
+                $emailBody = $this->buildEmailTemplate($fullName, $bookingData, $eventData, $qrCodeHtml);
+            } elseif ($qrCodeImage) {
+                // For native mail(), use base64 embedding
+                $qrCodeBase64 = base64_encode($qrCodeImage);
+                $qrCodeHtml = '<img src="data:image/png;base64,' . $qrCodeBase64 . '" alt="Booking QR Code" style="max-width: 300px; height: auto; margin: 20px auto; display: block;" />';
+                $emailBody = $this->buildEmailTemplate($fullName, $bookingData, $eventData, $qrCodeHtml);
+            } else {
+                error_log("Failed to generate QR code for booking: " . $bookingCode);
+                // Continue without QR code
+                $emailBody = $this->buildEmailTemplate($fullName, $bookingData, $eventData, '');
+            }
+            
+            // Log email attempt details
+            error_log("EmailService: Attempting to send email to: " . $to);
+            error_log("EmailService: Subject: " . $subject);
+            error_log("EmailService: Email body length: " . strlen($emailBody) . " bytes");
+            error_log("EmailService: Using PHPMailer: " . ($this->usePHPMailer ? 'Yes' : 'No'));
+            error_log("EmailService: QR code generated: " . ($qrCodeImage ? 'Yes' : 'No'));
+            
+            // Send email using PHPMailer or native mail()
+            if ($this->usePHPMailer) {
+                $success = $this->sendWithPHPMailer($to, $subject, $emailBody, $fullName, $qrCodeImage);
+            } else {
+                $success = $this->sendWithNativeMail($to, $subject, $emailBody);
+            }
+            
+            if (!$success) {
+                error_log("ERROR: Failed to send email for booking: " . $bookingCode);
+                error_log("ERROR: Recipient: " . $to);
+                return false;
+            }
+            
+            error_log("SUCCESS: Booking confirmation email sent successfully to: " . $to . " for booking: " . $bookingCode);
+            return true;
+            
+        } catch (Exception $e) {
+            error_log("Error sending booking confirmation email: " . $e->getMessage());
+            error_log("Exception trace: " . $e->getTraceAsString());
+            return false;
+        }
+    }
+    
+    /**
+     * Send email using PHPMailer
+     * 
+     * @param string $to Recipient email
+     * @param string $subject Email subject
+     * @param string $body HTML email body
+     * @param string $recipientName Recipient name
+     * @param string|false $qrCodeImage QR code image data (optional)
+     * @return bool Success status
+     */
+    private function sendWithPHPMailer($to, $subject, $body, $recipientName = '', $qrCodeImage = false) {
+        try {
+            // Use fully qualified class name
+            $mailClassName = 'PHPMailer\PHPMailer\PHPMailer';
+            if (!class_exists($mailClassName)) {
+                error_log("ERROR: PHPMailer class not found");
+                return false;
+            }
+            
+            $mail = new $mailClassName(true);
+            
+            // Server settings
+            $mail->isSMTP();
+            $mail->Host = $this->config['smtp_host'] ?? 'smtp.gmail.com';
+            $mail->SMTPAuth = $this->config['smtp_auth'] ?? true;
+            $mail->Username = $this->config['smtp_username'] ?? '';
+            $mail->Password = $this->config['smtp_password'] ?? '';
+            $mail->SMTPSecure = $this->config['smtp_secure'] ?? 'tls';
+            $mail->Port = $this->config['smtp_port'] ?? 587;
+            
+            // Enable verbose debug output (set to 0 for production)
+            $mail->SMTPDebug = 0;
+            $mail->Debugoutput = function($str, $level) {
+                error_log("PHPMailer Debug: " . $str);
+            };
+            
+            // Recipients
+            $mail->setFrom(
+                $this->config['from_email'] ?? 'noreply@egzly.com',
+                $this->config['from_name'] ?? 'EحGZLY'
+            );
+            $mail->addAddress($to, $recipientName);
+            $mail->addReplyTo(
+                $this->config['reply_to_email'] ?? 'support@egzly.com',
+                $this->config['reply_to_name'] ?? 'EحGZLY Support'
+            );
+            
+            // Add QR code as embedded image if provided
+            if ($qrCodeImage) {
+                // Save QR code to temporary file and embed it
+                // This is the most reliable method for embedding images in emails
+                $tempFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'qrcode_' . uniqid() . '.png';
+                
+                try {
+                    if (file_put_contents($tempFile, $qrCodeImage) !== false) {
+                        // Embed the image with CID 'qrcode' which matches the HTML reference
+                        $mail->addEmbeddedImage($tempFile, 'qrcode', 'qrcode.png');
+                        error_log("QR code embedded successfully as attachment");
+                        
+                        // Clean up temp file after sending
+                        register_shutdown_function(function() use ($tempFile) {
+                            if (file_exists($tempFile)) {
+                                @unlink($tempFile);
+                            }
+                        });
+                    } else {
+                        error_log("Warning: Could not write QR code to temp file");
+                    }
+                } catch (\Exception $e) {
+                    error_log("Warning: Could not embed QR code image: " . $e->getMessage());
+                    // Clean up temp file on error
+                    if (file_exists($tempFile)) {
+                        @unlink($tempFile);
+                    }
+                }
+            }
+            
+            // Content
+            $mail->isHTML(true);
+            $mail->Subject = $subject;
+            $mail->Body = $body;
+            $mail->AltBody = strip_tags($body); // Plain text version
+            
+            // Character encoding
+            $mail->CharSet = 'UTF-8';
+            
+            $mail->send();
+            return true;
+            
+        } catch (\Exception $e) {
+            $errorInfo = isset($mail) && method_exists($mail, 'ErrorInfo') ? $mail->ErrorInfo : $e->getMessage();
+            error_log("PHPMailer Error: " . $errorInfo);
+            error_log("Exception: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Send email using native PHP mail() function
+     * 
+     * @param string $to Recipient email
+     * @param string $subject Email subject
+     * @param string $body HTML email body
+     * @return bool Success status
+     */
+    private function sendWithNativeMail($to, $subject, $body) {
+        // Check if mail function is available
+        if (!function_exists('mail')) {
+            error_log("ERROR: mail() function is not available in PHP");
+            return false;
+        }
+        
+        // Email headers
+        $headers = $this->getEmailHeaders();
+        
+        // Send email
+        $success = @mail($to, $subject, $body, $headers);
+        
+        // Get last error if any
+        $lastError = error_get_last();
+        if ($lastError && $lastError['type'] === E_WARNING && strpos($lastError['message'], 'mail') !== false) {
+            error_log("ERROR: PHP mail() warning: " . $lastError['message']);
+        }
+        
+        return $success;
+    }
+    
+    /**
+     * Get email headers for HTML email (native mail() function)
+     * 
+     * @return string Email headers
+     */
+    private function getEmailHeaders() {
+        $fromEmail = $this->config['from_email'] ?? 'noreply@egzly.com';
+        $fromName = $this->config['from_name'] ?? 'EحGZLY';
+        $replyTo = $this->config['reply_to_email'] ?? 'support@egzly.com';
+        
+        $headers = "MIME-Version: 1.0\r\n";
+        $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
+        $headers .= "From: " . $fromName . " <" . $fromEmail . ">\r\n";
+        $headers .= "Reply-To: " . $replyTo . "\r\n";
+        $headers .= "X-Mailer: PHP/" . phpversion() . "\r\n";
+        
+        return $headers;
+    }
+    
+    /**
+     * Generate QR code image from data
+     * 
+     * @param string $data Data to encode in QR code
+     * @return string|false PNG image data or false on failure
+     */
+    private function generateQRCode($data) {
+        try {
+            // Use a QR code API service (simple and doesn't require additional libraries)
+            // Using api.qrserver.com as Google Charts API is deprecated
+            $size = 300;
+            
+            // URL-encode the data
+            $encodedData = urlencode($data);
+            
+            // Use QR Server API (free and reliable)
+            $url = "https://api.qrserver.com/v1/create-qr-code/?size={$size}x{$size}&data={$encodedData}&format=png";
+            
+            // Set context options for better reliability
+            $context = stream_context_create([
+                'http' => [
+                    'timeout' => 10,
+                    'method' => 'GET',
+                    'header' => 'User-Agent: EحGZLY Booking System'
+                ]
+            ]);
+            
+            // Fetch the QR code image
+            $imageData = @file_get_contents($url, false, $context);
+            
+            if ($imageData === false || empty($imageData)) {
+                error_log("Warning: Failed to generate QR code from api.qrserver.com");
+                return false;
+            }
+            
+            // Verify it's actually an image (PNG magic number)
+            if (substr($imageData, 0, 8) !== "\x89PNG\r\n\x1a\n") {
+                error_log("Warning: QR code API returned invalid image data");
+                return false;
+            }
+            
+            return $imageData;
+            
+        } catch (\Exception $e) {
+            error_log("Error generating QR code: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Build HTML email template
+     * 
+     * @param string $fullName Customer full name
+     * @param array $bookingData Booking information
+     * @param array $eventData Event information
+     * @param string $qrCodeHtml QR code HTML (base64 embedded image)
+     * @return string HTML email body
+     */
+    private function buildEmailTemplate($fullName, $bookingData, $eventData, $qrCodeHtml) {
+        $eventTitle = htmlspecialchars($eventData['title'] ?? 'Event');
+        $eventDate = isset($eventData['date']) ? date('F j, Y \a\t g:i A', strtotime($eventData['date'])) : 'TBA';
+        $venueName = htmlspecialchars($eventData['venue_name'] ?? 'TBA');
+        $venueAddress = htmlspecialchars($eventData['venue_address'] ?? '');
+        $bookingCode = htmlspecialchars($bookingData['booking_code'] ?? '');
+        $ticketCount = $bookingData['ticket_count'] ?? 0;
+        $finalAmount = isset($bookingData['final_amount']) ? number_format($bookingData['final_amount'], 2) : '0.00';
+        
+        $html = '
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Confirmation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .email-container {
+            background-color: #ffffff;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #f97316;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #f97316;
+            margin: 0;
+            font-size: 28px;
+        }
+        .greeting {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .booking-info {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #666;
+        }
+        .info-value {
+            color: #333;
+        }
+        .qr-section {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+        .qr-section h3 {
+            color: #f97316;
+            margin-bottom: 15px;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+        }
+        .booking-code {
+            font-size: 24px;
+            font-weight: bold;
+            color: #f97316;
+            letter-spacing: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>🎟️ EحGZLY</h1>
+            <p>Booking Confirmation</p>
+        </div>
+        
+        <div class="greeting">
+            Hello ' . htmlspecialchars($fullName) . ',
+        </div>
+        
+        <p>Thank you for your booking! We are excited to have you join us. Your booking has been confirmed and your payment has been processed successfully.</p>
+        
+        <div class="booking-info">
+            <div class="info-row">
+                <span class="info-label">Booking Code:</span>
+                <span class="info-value booking-code">' . $bookingCode . '</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Event:</span>
+                <span class="info-value">' . $eventTitle . '</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Date & Time:</span>
+                <span class="info-value">' . $eventDate . '</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Venue:</span>
+                <span class="info-value">' . $venueName . ($venueAddress ? ', ' . $venueAddress : '') . '</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Number of Tickets:</span>
+                <span class="info-value">' . $ticketCount . '</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Total Amount:</span>
+                <span class="info-value">$' . $finalAmount . '</span>
+            </div>
+        </div>
+        
+        ' . ($qrCodeHtml ? '
+        <div class="qr-section">
+            <h3>Your Booking QR Code</h3>
+            <p>Please present this QR code at the venue for entry:</p>
+            ' . $qrCodeHtml . '
+        </div>
+        ' : '') . '
+        
+        <p><strong>Important Notes:</strong></p>
+        <ul>
+            <li>Please arrive at least 30 minutes before the event starts</li>
+            <li>Bring a valid ID for verification</li>
+            <li>Keep this email and your booking code for reference</li>
+        </ul>
+        
+        <div class="footer">
+            <p>If you have any questions or need to make changes to your booking, please contact our support team.</p>
+            <p>Thank you for choosing EحGZLY!</p>
+        </div>
+    </div>
+</body>
+</html>';
+        
+        return $html;
+    }
+}

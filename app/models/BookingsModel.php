@@ -4,6 +4,8 @@
  * Handles all booking-related database operations
  */
 
+require_once __DIR__ . '/../services/EmailService.php';
+
 class BookingsModel {
     private $db;
     private $table = 'bookings';
@@ -610,6 +612,51 @@ class BookingsModel {
             
             $this->db->commit();
             
+            // Send confirmation email if payment method is 'card'
+            $paymentMethod = $data['payment_method'] ?? 'cash';
+            error_log("DEBUG: Payment method is: " . $paymentMethod);
+            
+            if ($paymentMethod === 'card') {
+                error_log("DEBUG: Attempting to send email for card payment booking: " . $bookingCode);
+                try {
+                    // Check if EmailService class exists
+                    if (!class_exists('EmailService')) {
+                        error_log("ERROR: EmailService class not found!");
+                        throw new Exception("EmailService class not found");
+                    }
+                    
+                    // Fetch event data for email
+                    $eventData = $this->getEventDataForEmail($data['event_id']);
+                    error_log("DEBUG: Event data fetched: " . json_encode($eventData));
+                    
+                    // Prepare booking data for email
+                    $bookingDataForEmail = [
+                        'booking_code' => $bookingCode,
+                        'customer_first_name' => $data['customer_first_name'] ?? '',
+                        'customer_last_name' => $data['customer_last_name'] ?? '',
+                        'customer_email' => $data['customer_email'] ?? '',
+                        'ticket_count' => $data['ticket_count'] ?? 0,
+                        'final_amount' => $finalAmount
+                    ];
+                    
+                    error_log("DEBUG: Booking data for email: " . json_encode($bookingDataForEmail));
+                    
+                    // Send email
+                    $emailService = new EmailService();
+                    $emailResult = $emailService->sendBookingConfirmationEmail($bookingDataForEmail, $eventData);
+                    error_log("DEBUG: Email send result: " . ($emailResult ? 'SUCCESS' : 'FAILED'));
+                } catch (Exception $emailException) {
+                    // Log email error but don't fail the booking
+                    error_log("ERROR: Failed to send confirmation email for booking $bookingCode: " . $emailException->getMessage());
+                    error_log("ERROR: Email exception trace: " . $emailException->getTraceAsString());
+                } catch (Error $emailError) {
+                    error_log("FATAL ERROR: Email service error for booking $bookingCode: " . $emailError->getMessage());
+                    error_log("FATAL ERROR: Email error trace: " . $emailError->getTraceAsString());
+                }
+            } else {
+                error_log("DEBUG: Skipping email - payment method is: " . $paymentMethod);
+            }
+            
             return [
                 'success' => true,
                 'booking_id' => $bookingId,
@@ -628,6 +675,63 @@ class BookingsModel {
             }
             error_log("Error creating booking: " . $e->getMessage() . " | File: " . $e->getFile() . " | Line: " . $e->getLine());
             throw new Exception("Error creating booking: " . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Get event data for email sending
+     * 
+     * @param int $eventId Event ID
+     * @return array Event data with venue information
+     */
+    private function getEventDataForEmail($eventId) {
+        try {
+            $query = "SELECT 
+                        e.title,
+                        e.description,
+                        e.date,
+                        v.name as venue_name,
+                        v.address as venue_address,
+                        v.city as venue_city,
+                        v.country as venue_country
+                      FROM events e
+                      LEFT JOIN venues v ON e.venue_id = v.id
+                      WHERE e.id = :event_id
+                      LIMIT 1";
+            
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':event_id', $eventId, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            $eventData = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$eventData) {
+                // Return default values if event not found
+                return [
+                    'title' => 'Event',
+                    'description' => '',
+                    'date' => '',
+                    'venue_name' => 'TBA',
+                    'venue_address' => '',
+                    'venue_city' => '',
+                    'venue_country' => ''
+                ];
+            }
+            
+            return $eventData;
+            
+        } catch (Exception $e) {
+            error_log("Error fetching event data for email: " . $e->getMessage());
+            // Return default values on error
+            return [
+                'title' => 'Event',
+                'description' => '',
+                'date' => '',
+                'venue_name' => 'TBA',
+                'venue_address' => '',
+                'venue_city' => '',
+                'venue_country' => ''
+            ];
         }
     }
     

@@ -1,0 +1,6 @@
+/vendor/
+vendor
+composer.lock
+
+# Ignore PhpStorm IDE
+.idea
