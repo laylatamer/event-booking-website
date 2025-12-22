@@ -635,7 +635,7 @@ function deleteVenue(venueId, venueName) {
         formData.append('action', 'delete');
         formData.append('id', venueId);
         
-        fetch('../../../public/api/venue.php', {
+        fetch('/api/venue.php', {
             method: 'POST',
             body: formData
         })
