@@ -11,7 +11,7 @@
     }
     ?>
     <link rel="stylesheet" href="<?= asset('css/footer.css') ?>">
-    <script src="../../public/js/footer.js"></script>
+    <script src="<?= asset('js/footer.js') ?>"></script>
 </head>
 <body>
     <footer class="footer" id="footer">
@@ -77,6 +77,6 @@
         </footer>
 
     <!-- Chatbot script (fixed path) -->
-    <script src="../../public/js/chatbot-widget.js"></script>
+    <script src="<?= asset('js/chatbot-widget.js') ?>"></script>
 </body>
 </html>
