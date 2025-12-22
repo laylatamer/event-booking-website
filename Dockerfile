@@ -34,20 +34,27 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 WORKDIR /app
 
 # Copy application files
+# Note: If Railway's root is set to 'public', files will be at /app directly
+# If Railway's root is project root, we need to copy everything including public/
 COPY . .
 
-# Verify public directory exists and show directory structure
-RUN echo "=== Checking /app directory ===" && \
-    ls -la /app && \
-    echo "=== Checking for public directory ===" && \
-    (test -d /app/public && echo "✓ public directory exists" || (echo "✗ public directory NOT FOUND!" && ls -la /app && exit 1))
+# Show directory structure for debugging
+RUN echo "=== Contents of /app ===" && ls -la /app
 
-# Install PHP dependencies
-RUN composer install --no-dev --optimize-autoloader || true
+# Install PHP dependencies (if composer.json exists)
+RUN if [ -f "composer.json" ]; then composer install --no-dev --optimize-autoloader || true; fi
 
 # Expose port (Railway will set PORT env var)
 EXPOSE 8080
 
-# Start PHP built-in server from public folder (using absolute path)
-CMD if [ ! -d "/app/public" ]; then echo "ERROR: /app/public does not exist!" && ls -la /app && exit 1; fi && php -S 0.0.0.0:${PORT:-8080} -t /app/public
+# Start PHP built-in server
+# If files are at /app (public as root), serve from /app
+# If files are at /app/public (project root), serve from /app/public
+CMD if [ -d "/app/public" ]; then \
+        echo "Serving from /app/public (project root detected)"; \
+        php -S 0.0.0.0:${PORT:-8080} -t /app/public; \
+    else \
+        echo "Serving from /app (public as root detected)"; \
+        php -S 0.0.0.0:${PORT:-8080} -t /app; \
+    fi
 
