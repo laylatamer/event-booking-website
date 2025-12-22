@@ -1,5 +1,5 @@
 // events.js - Clean Admin Events Management with File Upload
-const API_BASE = '../../../public/api/events_API.php';
+const API_BASE = '/api/events_API.php';
 const UPLOAD_API_URL = '/event-booking-website/public/api/uploads.php';
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -334,7 +334,7 @@ async function loadTicketCategories(venueId, formType, existingTicketCategories 
     section.style.display = 'block';
     
     try {
-        const response = await fetch(`../../../public/api/venue.php?action=get&id=${venueId}`);
+        const response = await fetch(`/api/venue.php?action=get&id=${venueId}`);
         const data = await response.json();
         
         if (!data.success) {
@@ -1078,7 +1078,7 @@ async function deleteEvent(eventId) {
 async function viewEventDetails(eventId) {
     try {
         // Use the public API for viewing details
-        const response = await fetch(`../../../public/api/events_API.php?action=getOne&id=${eventId}`);
+        const response = await fetch(`/api/events_API.php?action=getOne&id=${eventId}`);
         
         if (!response.ok) {
             throw new Error('Failed to load event details');

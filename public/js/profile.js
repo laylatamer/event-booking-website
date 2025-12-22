@@ -40,8 +40,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const currentCountry = countrySelect ? countrySelect.dataset.currentCountry || '' : '';
     const currentState = stateSelect ? stateSelect.dataset.currentState || '' : '';
 
-    const COUNTRY_ENDPOINT = '../../public/api/countries.php';
-    const STATES_ENDPOINT = '../../public/api/states.php';
+    const COUNTRY_ENDPOINT = '/api/countries.php';
+    const STATES_ENDPOINT = '/api/states.php';
 
     async function populateCountries() {
         if (!countrySelect) return;

@@ -36,3 +36,32 @@ function asset($path) {
     return BASE_ASSETS_PATH . $path;
 }
 
+/**
+ * Helper function to normalize image URLs
+ * Handles both absolute URLs (http/https) and relative paths
+ */
+function imageUrl($url) {
+    if (empty($url)) {
+        return 'https://placehold.co/400x400/2a2a2a/f97316?text=Event';
+    }
+    
+    // If it's already an absolute URL, return as-is
+    if (preg_match('/^https?:\/\//', $url)) {
+        return $url;
+    }
+    
+    // If it starts with /, it's already an absolute path
+    if (strpos($url, '/') === 0) {
+        return $url;
+    }
+    
+    // Otherwise, treat as relative to uploads or public directory
+    // Check if it's in uploads directory
+    if (strpos($url, 'uploads/') === 0 || strpos($url, 'uploads\\') === 0) {
+        return BASE_ASSETS_PATH . ltrim(str_replace('\\', '/', $url), '/');
+    }
+    
+    // Default: assume it's in public directory or relative to base
+    return BASE_ASSETS_PATH . ltrim(str_replace('\\', '/', $url), '/');
+}
+

@@ -115,6 +115,15 @@ class EventController {
     private function formatEventForDisplay($eventData) {
         $date = new DateTime($eventData['date']);
         
+        // Normalize image URL
+        $imageUrl = $eventData['image_url'] ?? '';
+        if (!empty($imageUrl) && !preg_match('/^https?:\/\//', $imageUrl)) {
+            // If relative path, make it absolute
+            if (strpos($imageUrl, '/') !== 0) {
+                $imageUrl = '/' . ltrim($imageUrl, '/');
+            }
+        }
+        
         return [
             'id' => $eventData['id'],
             'title' => $eventData['title'],
@@ -127,7 +136,8 @@ class EventController {
             'formattedPrice' => '$' . number_format($eventData['price'], 2),
             'location' => $eventData['venue_name'],
             'venue_city' => $eventData['venue_city'],
-            'image' => $eventData['image_url'],
+            'image' => $imageUrl,
+            'image_url' => $imageUrl, // Also include for compatibility
             'available_tickets' => $eventData['available_tickets'],
             'status' => $eventData['status']
         ];
@@ -176,8 +186,9 @@ class EventController {
             'discounted_price' => $eventData['discounted_price'],
             'formattedPrice' => '$' . number_format($eventData['price'], 2),
             'formattedDiscountedPrice' => $eventData['discounted_price'] ? '$' . number_format($eventData['discounted_price'], 2) : null,
-            'image' => $eventData['image_url'],
-            'gallery_images' => $galleryImages,
+            'image' => $this->normalizeImageUrl($eventData['image_url'] ?? ''),
+            'image_url' => $this->normalizeImageUrl($eventData['image_url'] ?? ''),
+            'gallery_images' => array_map([$this, 'normalizeImageUrl'], $galleryImages),
             'total_tickets' => $eventData['total_tickets'],
             'available_tickets' => $eventData['available_tickets'],
             'min_tickets_per_booking' => $eventData['min_tickets_per_booking'],

@@ -39,6 +39,22 @@ if (in_array($requestPath, $utilityScripts) || in_array(basename($requestPath), 
     }
 }
 
+// Handle admin routes
+if (strpos($requestPath, 'admin/') === 0) {
+    $adminPath = substr($requestPath, 6); // Remove 'admin/' prefix
+    $adminViewPath = $projectRoot . '/app/views/admin/' . ($adminPath ?: 'index.php');
+    if (file_exists($adminViewPath)) {
+        require $adminViewPath;
+        exit;
+    }
+    // If admin file doesn't exist, try with .php extension
+    $adminViewPath = $projectRoot . '/app/views/admin/' . ($adminPath ?: 'index.php');
+    if (file_exists($adminViewPath)) {
+        require $adminViewPath;
+        exit;
+    }
+}
+
 // Map routes to view files
 $routes = [
     '' => 'homepage.php',
@@ -60,6 +76,9 @@ $routes = [
     'ticket.php' => 'ticket.php',
     'ticket_verification.php' => 'ticket_verification.php',
     'terms&conditions.php' => 'terms&conditions.php',
+    'admin' => 'admin/index.php',
+    'admin/' => 'admin/index.php',
+    'admin/index.php' => 'admin/index.php',
 ];
 
 // Get view file

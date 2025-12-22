@@ -135,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     formData.append('quantity', quantity);
 
                     reservationPromises.push(
-                        fetch('../../public/api/ticket_reservations.php', {
+                        fetch('/api/ticket_reservations.php', {
                             method: 'POST',
                             body: formData
                         }).then(res => res.json())
@@ -167,7 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function releaseReservations() {
         try {
-            await fetch('../../public/api/ticket_reservations.php?action=release', {
+            await fetch('/api/ticket_reservations.php?action=release', {
                 method: 'POST'
             });
             activeReservations = [];
@@ -181,7 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Check every minute if reservations are still valid
         reservationCheckInterval = setInterval(async () => {
             try {
-                const response = await fetch(`../../public/api/ticket_reservations.php?action=getReservations`);
+                const response = await fetch(`/api/ticket_reservations.php?action=getReservations`);
                 const data = await response.json();
                 
                 if (data.success && data.reservations.length === 0) {
@@ -249,7 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Reload booked seats to ensure they're up to date when modal opens
             try {
-                const seatsResponse = await fetch(`../../public/api/bookings_API.php?action=getBookedSeats&event_id=${eventId}`);
+                const seatsResponse = await fetch(`/api/bookings_API.php?action=getBookedSeats&event_id=${eventId}`);
                 const seatsData = await seatsResponse.json();
                 
                 if (seatsData.success && seatsData.seats) {
@@ -293,7 +293,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             // Load booked seats first
                             let bookedSeatsList = [];
                             try {
-                                const seatsResponse = await fetch(`../../public/api/bookings_API.php?action=getBookedSeats&event_id=${eventId}`);
+                                const seatsResponse = await fetch(`/api/bookings_API.php?action=getBookedSeats&event_id=${eventId}`);
                                 const seatsData = await seatsResponse.json();
                                 if (seatsData.success && seatsData.seats) {
                                     bookedSeatsList = seatsData.seats;
@@ -328,7 +328,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             // Load booked seats first
                             let bookedSeatsList = [];
                             try {
-                                const seatsResponse = await fetch(`../../public/api/bookings_API.php?action=getBookedSeats&event_id=${eventId}`);
+                                const seatsResponse = await fetch(`/api/bookings_API.php?action=getBookedSeats&event_id=${eventId}`);
                                 const seatsData = await seatsResponse.json();
                                 if (seatsData.success && seatsData.seats) {
                                     bookedSeatsList = seatsData.seats;
@@ -364,7 +364,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         try {
             // Load ticket availability
-            const response = await fetch(`../../public/api/ticket_reservations.php?action=getAvailability&event_id=${eventId}`);
+            const response = await fetch(`/api/ticket_reservations.php?action=getAvailability&event_id=${eventId}`);
             const data = await response.json();
             
             if (data.success) {
@@ -381,7 +381,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             // Load booked seats
-            const seatsResponse = await fetch(`../../public/api/bookings_API.php?action=getBookedSeats&event_id=${eventId}`);
+            const seatsResponse = await fetch(`/api/bookings_API.php?action=getBookedSeats&event_id=${eventId}`);
             const seatsData = await seatsResponse.json();
             
             if (seatsData.success && seatsData.seats && seatsData.seats.length > 0) {

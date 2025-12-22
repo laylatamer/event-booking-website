@@ -91,7 +91,7 @@ async function initializeCheckout() {
         
         // Fetch event data from API
         if (urlEventId) {
-            const response = await fetch(`../../public/api/events_API.php?action=getEvent&id=${urlEventId}`);
+            const response = await fetch(`/api/events_API.php?action=getEvent&id=${urlEventId}`);
             const data = await response.json();
             
             if (data.success && data.event) {
@@ -116,7 +116,7 @@ async function initializeCheckout() {
                     
                     for (const resId of reservationIds) {
                         try {
-                            const resResponse = await fetch(`../../public/api/ticket_reservations.php?action=getReservation&id=${resId}`);
+                            const resResponse = await fetch(`/api/ticket_reservations.php?action=getReservation&id=${resId}`);
                             if (resResponse.ok) {
                                 const resData = await resResponse.json();
                                 if (resData.success && resData.reservation) {
@@ -1103,7 +1103,7 @@ async function createBooking(paymentMethod) {
         
         
         // Call API
-        const response = await fetch('../../public/api/bookings_API.php?action=create', {
+        const response = await fetch('/api/bookings_API.php?action=create', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

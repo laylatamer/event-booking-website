@@ -485,7 +485,7 @@ async function saveCustomization() {
         saveBtn.disabled = true;
         
         // Save to session/database
-        const response = await fetch('../../public/api/save_ticket_customization.php', {
+        const response = await fetch('/api/save_ticket_customization.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
