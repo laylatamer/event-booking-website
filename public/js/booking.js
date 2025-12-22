@@ -759,15 +759,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Use a flag to track if we're navigating to checkout
     let navigatingToCheckout = false;
     
-    // Set flag when checkout button is clicked
-    const checkoutBtn = document.getElementById('checkout-btn');
-    if (checkoutBtn) {
-        checkoutBtn.addEventListener('click', () => {
-            navigatingToCheckout = true;
-        });
-    }
-    
-    window.addEventListener('beforeunload', (e) => {
+    // Create a named function so we can remove it later
+    const beforeUnloadHandler = (e) => {
         // Don't release reservations if we're navigating to checkout
         if (navigatingToCheckout) {
             console.log('Navigating to checkout - preserving reservations');
@@ -778,11 +771,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const target = e.target?.activeElement?.href || window.location.href;
         if (target && (target.includes('checkout.php') || target.includes('checkout'))) {
             console.log('Detected checkout navigation - preserving reservations');
+            navigatingToCheckout = true;
             return;
         }
         
         // Only release if navigating away (not to checkout)
         console.log('Navigating away from booking page - releasing reservations');
         releaseReservations();
-    });
+    };
+    
+    window.addEventListener('beforeunload', beforeUnloadHandler);
+    
+    // Store the handler reference so we can remove it when needed
+    window._beforeUnloadHandler = beforeUnloadHandler;
 });
