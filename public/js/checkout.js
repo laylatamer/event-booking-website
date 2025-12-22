@@ -1015,13 +1015,24 @@ async function showPaymentSuccess() {
     try {
         // Create booking
         console.log('Starting booking creation for card payment...');
-        const bookingResult = await createBooking('card');
+        console.log('isBookingInProgress flag:', isBookingInProgress);
+        
+        // Add a timeout wrapper to prevent infinite hanging
+        const bookingPromise = createBooking('card');
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Booking request timed out after 30 seconds. Please try again.')), 30000);
+        });
+        
+        const bookingResult = await Promise.race([bookingPromise, timeoutPromise]);
         console.log('Booking result:', bookingResult);
         
         // Remove pulse animation immediately
         if(paymentSection) paymentSection.classList.remove('chk-animate-pulse');
         
-        if (bookingResult.success) {
+        // Reset flag on success
+        isBookingInProgress = false;
+        
+        if (bookingResult && bookingResult.success) {
             showConfetti();
             showNoticeModal('Payment Successful', `Your payment has been processed! Booking Code: ${bookingResult.booking_code}. Your tickets will be emailed to you shortly.`, () => {
                 // Redirect to homepage after modal is closed (use absolute path)
@@ -1030,7 +1041,6 @@ async function showPaymentSuccess() {
             resetForms();
         } else {
             // Re-enable button on error
-            isBookingInProgress = false;
             if (placeOrderBtn) {
                 placeOrderBtn.disabled = false;
                 placeOrderBtn.style.opacity = '1';
@@ -1039,7 +1049,7 @@ async function showPaymentSuccess() {
                     placeOrderBtn.querySelector('span').textContent = originalText;
                 }
             }
-            showNoticeModal('Payment Error', bookingResult.message || 'There was an issue processing your payment. Please try again or contact support.');
+            showNoticeModal('Payment Error', (bookingResult && bookingResult.message) || 'There was an issue processing your payment. Please try again or contact support.');
         }
     } catch (error) {
         // Re-enable button on error
@@ -1054,6 +1064,7 @@ async function showPaymentSuccess() {
         }
         if(paymentSection) paymentSection.classList.remove('chk-animate-pulse');
         console.error('Error processing payment:', error);
+        console.error('Error stack:', error.stack);
         showNoticeModal('Payment Error', error.message || 'There was an error processing your payment. Please try again.');
     }
 }
