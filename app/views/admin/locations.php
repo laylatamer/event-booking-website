@@ -674,7 +674,7 @@ function handleAddLocation(e) {
     submitBtn.innerHTML = '<i data-feather="loader" class="animate-spin"></i> Adding...';
     feather.replace();
     
-    fetch('../../../public/api/venue.php', {
+    fetch('/api/venue.php', {
         method: 'POST',
         body: formData
     })

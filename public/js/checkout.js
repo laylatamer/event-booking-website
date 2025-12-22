@@ -205,9 +205,9 @@ async function initializeCheckout() {
                     // If no valid reservations were found, show a helpful message
                     // But wait a moment - the extension might still be processing
                     if (foundReservations === 0 && reservationIds.length > 0) {
-                        // Wait a bit and try once more - extension might need time
-                        console.warn('No reservations found on first try, waiting 500ms and retrying...');
-                        await new Promise(resolve => setTimeout(resolve, 500));
+                        // Wait longer and try once more - extension might need time
+                        console.warn('No reservations found on first try, waiting 1 second and retrying...');
+                        await new Promise(resolve => setTimeout(resolve, 1000));
                         
                         // Retry fetching reservations
                         const retryPromises = reservationIds.map(async (resId) => {
