@@ -1,20 +1,19 @@
 <?php
 // Start session
 require_once __DIR__ . '/../database/session_init.php';
+require_once __DIR__ . '/../config/db_connect.php';
 
 require_once __DIR__ . '/../app/controllers/ContactController.php';
+require_once __DIR__ . '/../app/models/ContactMessage.php';
 
 // Check if user is logged in
-if (!isLoggedIn()) {
+if (!isset($_SESSION['user_id']) || empty($_SESSION['user_id'])) {
     // Set message in session for display on login page
     $_SESSION['auth_message'] = ['text' => 'You should be logged in to send a message', 'type' => 'error'];
     // Redirect to login page
     header('Location: /auth.php');
     exit;
 }
-
-require_once __DIR__ . '/../app/controllers/ContactController.php';
-require_once __DIR__ . '/../app/models/ContactMessage.php';
 
 $controller = new ContactController(new ContactMessage($pdo));
 
@@ -33,5 +32,3 @@ if ($result['ok']) {
 
 header('Location: /contact_form.php');
 exit;
-
-
