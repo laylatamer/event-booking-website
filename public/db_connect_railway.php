@@ -3,6 +3,11 @@
 // This file is a copy of config/db_connect.php for Railway deployment
 // It reads from environment variables that Railway provides
 
+// Check if PDO MySQL extension is available
+if (!extension_loaded('pdo_mysql')) {
+    die("<h1>PDO MySQL Extension Not Available</h1><p>The PDO MySQL extension is not installed.<br>Available PDO drivers: " . implode(', ', PDO::getAvailableDrivers()) . "</p>");
+}
+
 // Get database credentials from Railway environment variables
 $host = getenv('MYSQLHOST') ?: getenv('DB_HOST') ?: 'localhost';
 $db = getenv('MYSQLDATABASE') ?: getenv('DB_NAME') ?: 'event_ticketing_db';
@@ -23,7 +28,9 @@ $options = [
 try {
     $pdo = new PDO($dsn, $user, $pass, $options);
 } catch (\PDOException $e) {
-    die("<h1>Database Connection Failed</h1><p>Please check your credentials.<br>Detailed Error: " . htmlspecialchars($e->getMessage()) . "</p>");
+    $errorMsg = $e->getMessage();
+    $availableDrivers = implode(', ', PDO::getAvailableDrivers());
+    die("<h1>Database Connection Failed</h1><p>Error: " . htmlspecialchars($errorMsg) . "<br>Available PDO drivers: $availableDrivers<br>If 'mysql' is not listed, the PDO MySQL extension is not installed.</p>");
 }
 
 class Database {
