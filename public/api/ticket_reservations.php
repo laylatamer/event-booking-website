@@ -145,18 +145,26 @@ try {
         $reservationId = $_GET['id'] ?? 0;
         
         if ($reservationId) {
-            $query = "SELECT * FROM ticket_reservations WHERE id = ?";
-            $stmt = $pdo->prepare($query);
-            $stmt->execute([$reservationId]);
-            $reservationData = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            if ($reservationData) {
-                $response = ['success' => true, 'reservation' => $reservationData];
-            } else {
-                $response = ['success' => false, 'message' => 'Reservation not found'];
+            try {
+                $query = "SELECT * FROM ticket_reservations WHERE id = ? AND status = 'reserved' AND expires_at > NOW()";
+                $stmt = $pdo->prepare($query);
+                $stmt->execute([$reservationId]);
+                $reservationData = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if ($reservationData) {
+                    $response = ['success' => true, 'reservation' => $reservationData];
+                } else {
+                    $response = ['success' => false, 'message' => 'Reservation not found or expired'];
+                    $statusCode = 404;
+                }
+            } catch (PDOException $e) {
+                error_log("Error fetching reservation: " . $e->getMessage());
+                $response = ['success' => false, 'message' => 'Database error'];
+                $statusCode = 500;
             }
         } else {
             $response = ['success' => false, 'message' => 'Reservation ID required'];
+            $statusCode = 400;
         }
     }
     elseif ($method === 'POST' && $action === 'confirm') {

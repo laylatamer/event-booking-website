@@ -1,6 +1,6 @@
 // /public/js/admin/categories.js - COMPLETE UPDATED VERSION WITH IMAGE UPLOAD
-const API_BASE_URL = '/event-booking-website/public/api/categories_API.php';
-const UPLOAD_API_URL = '/event-booking-website/public/api/uploads.php';
+const API_BASE_URL = '/api/categories_API.php';
+const UPLOAD_API_URL = '/api/uploads.php';
 
 let subcategories = [];
 let isInitialized = false;

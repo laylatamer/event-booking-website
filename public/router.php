@@ -17,6 +17,13 @@ $requestUri = $_SERVER['REQUEST_URI'] ?? '/';
 $requestPath = parse_url($requestUri, PHP_URL_PATH);
 $requestPath = trim($requestPath, '/');
 
+// Preserve query string for admin routes
+$queryString = parse_url($requestUri, PHP_URL_QUERY);
+if ($queryString) {
+    $_SERVER['QUERY_STRING'] = $queryString;
+    parse_str($queryString, $_GET);
+}
+
 // Handle static files - serve them directly
 $staticExtensions = ['css', 'js', 'jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'ico', 'json', 'pdf'];
 $extension = pathinfo($requestPath, PATHINFO_EXTENSION);

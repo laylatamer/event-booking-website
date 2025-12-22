@@ -5,7 +5,7 @@
 let users = [];
 let filteredUsers = [];
 const itemsPerPage = 4;
-const apiUrl = '/event-booking-website/public/api/users.php';
+const apiUrl = '/api/users.php';
 
 if (typeof currentPage !== 'undefined' && !currentPage.users) {
     currentPage.users = 1;

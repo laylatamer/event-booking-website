@@ -1,14 +1,41 @@
 <?php
 // app/api/venue.php
 
+// Suppress error display and use output buffering
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
+// Start output buffering early to catch any errors
+if (!ob_get_level()) {
+    ob_start();
+}
+
+// Catch fatal errors and return JSON
+register_shutdown_function(function() {
+    $error = error_get_last();
+    if ($error !== NULL && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        // Only handle if we haven't already sent output
+        if (!headers_sent()) {
+            ob_clean();
+            http_response_code(500);
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => false,
+                'error' => 'System error',
+                'message' => 'Please try again later',
+                'error_details' => $error['message'] . ' in ' . $error['file'] . ' on line ' . $error['line']
+            ]);
+        }
+        exit();
+    }
+});
+
 // Set JSON header immediately
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
-
-ini_set('display_errors', 0);
-ini_set('log_errors', 1);
 
 $response = ['success' => false, 'message' => 'Unknown error'];
 $statusCode = 200;
@@ -208,6 +235,12 @@ try {
     $statusCode = 500;
 }
 
+// Clean any output before sending JSON
+if (ob_get_level()) {
+    ob_clean();
+}
+
 http_response_code($statusCode);
 echo json_encode($response);
+exit();
 ?>

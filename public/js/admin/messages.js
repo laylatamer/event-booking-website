@@ -5,7 +5,7 @@
 let messages = [];
 let filteredMessages = [];
 const itemsPerPage = 10;
-const apiUrl = '/event-booking-website/public/api/contact_messages.php';
+const apiUrl = '/api/contact_messages.php';
 
 if (typeof currentPage !== 'undefined' && !currentPage.messages) {
     currentPage.messages = 1;
