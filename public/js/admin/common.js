@@ -194,22 +194,28 @@ async function handleUpdateProfile(e) {
     }
     
     try {
+        // Use FormData to support file uploads
+        const formData = new FormData();
+        formData.append('id', parseInt(userId));
+        formData.append('first_name', firstName);
+        formData.append('last_name', lastName);
+        formData.append('email', email);
+        formData.append('phone_number', phone);
+        formData.append('address', address);
+        formData.append('city', city);
+        formData.append('state', state);
+        formData.append('country', country);
+        
+        // Add avatar file if one was selected
+        if (selectedAvatarFile) {
+            formData.append('profile_image', selectedAvatarFile);
+        }
+        
+        // Use POST for FormData requests (PUT doesn't populate $_POST in PHP)
+        // The API will handle POST for updates when it contains an 'id' field
         const response = await fetch('/event-booking-website/public/api/users.php', {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                id: parseInt(userId),
-                first_name: firstName,
-                last_name: lastName,
-                email: email,
-                phone_number: phone,
-                address: address,
-                city: city,
-                state: state,
-                country: country
-            })
+            method: 'POST',
+            body: formData
         });
         
         const result = await response.json();
@@ -223,12 +229,15 @@ async function handleUpdateProfile(e) {
             if (username) username.textContent = fullName;
             if (userEmail) userEmail.textContent = email;
             
+            // Reset the selected avatar file
+            selectedAvatarFile = null;
+            
             closeModal('user-profile');
             
             // Show success message
             alert('Profile updated successfully!');
             
-            // Reload page to show updated data
+            // Reload page to show updated data (including new avatar)
             window.location.reload();
         } else {
             alert('Error: ' + (result.message || 'Failed to update profile. Please try again.'));
@@ -247,10 +256,17 @@ async function handleUpdateProfile(e) {
     }
 }
 
+// Store selected avatar file for form submission
+let selectedAvatarFile = null;
+
 // Handle avatar upload
 function handleAvatarUpload(e) {
     const file = e.target.files[0];
     if (file) {
+        // Store the file for later submission
+        selectedAvatarFile = file;
+        
+        // Preview the image
         const reader = new FileReader();
         reader.onload = function(event) {
             currentUser.avatar = event.target.result;
