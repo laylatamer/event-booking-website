@@ -462,6 +462,10 @@ class BookingsModel {
             if (in_array('subtotal', $existingColumns)) {
                 $stmt->bindValue(':subtotal', $subtotal);
             }
+            // Use total_amount if subtotal doesn't exist
+            if (in_array('total_amount', $existingColumns) && !in_array('subtotal', $existingColumns)) {
+                $stmt->bindValue(':total_amount', $subtotal);
+            }
             if (in_array('service_fee', $existingColumns)) {
                 $stmt->bindValue(':service_fee', $serviceFee);
             }
