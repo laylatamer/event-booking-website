@@ -150,6 +150,7 @@ try {
         if ($reservationId) {
             try {
                 // First try to get reservation regardless of status/expiry (for checkout)
+                // This is critical - we need to find the reservation even if it's expired
                 $query = "SELECT * FROM ticket_reservations WHERE id = ?";
                 $stmt = $pdo->prepare($query);
                 $stmt->execute([$reservationId]);
@@ -157,8 +158,13 @@ try {
                 
                 if ($reservationData) {
                     // Check if expired but still return it (for checkout to handle)
-                    $isExpired = strtotime($reservationData['expires_at']) < time();
+                    $expiresAt = strtotime($reservationData['expires_at']);
+                    $now = time();
+                    $isExpired = $expiresAt < $now;
                     $isReserved = $reservationData['status'] === 'reserved';
+                    
+                    // Log for debugging
+                    error_log("Reservation {$reservationId} check: expires_at={$reservationData['expires_at']}, now=" . date('Y-m-d H:i:s', $now) . ", isExpired=" . ($isExpired ? 'yes' : 'no') . ", status={$reservationData['status']}");
                     
                     if ($isExpired && $isReserved) {
                         // Mark as expired but still return data
@@ -167,7 +173,16 @@ try {
                     
                     $response = ['success' => true, 'reservation' => $reservationData];
                 } else {
-                    $response = ['success' => false, 'message' => 'Reservation not found'];
+                    // Reservation not found - log for debugging
+                    error_log("Reservation {$reservationId} not found in database");
+                    
+                    // Try to see if there are any reservations at all
+                    $checkQuery = "SELECT COUNT(*) as count FROM ticket_reservations";
+                    $checkStmt = $pdo->query($checkQuery);
+                    $checkResult = $checkStmt->fetch(PDO::FETCH_ASSOC);
+                    error_log("Total reservations in database: " . ($checkResult['count'] ?? 0));
+                    
+                    $response = ['success' => false, 'message' => 'Reservation not found', 'reservation_id' => $reservationId];
                     $statusCode = 404;
                 }
             } catch (PDOException $e) {
