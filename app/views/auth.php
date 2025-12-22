@@ -1,4 +1,7 @@
 <?php
+// Include error handler FIRST - before any other code
+require_once __DIR__ . '/../../config/error_handler.php';
+
 // =========================================================================
 // PHP/MySQL AUTHENTICATION HANDLER (FIXED & EXTENDED)
 // Features added: Admin Secret Login (via Ctrl+Alt+A modal)

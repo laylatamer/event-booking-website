@@ -1,8 +1,14 @@
 Options -Indexes
 
+# Disable PHP error display
+php_flag display_errors Off
+php_flag display_startup_errors Off
+
 # Custom error documents
-ErrorDocument 404 /event-booking-website/app/views/error.php
-ErrorDocument 500 /event-booking-website/app/views/error.php
+ErrorDocument 404 /event-booking-website/app/views/error.php?code=404
+ErrorDocument 500 /event-booking-website/app/views/error.php?code=500
+ErrorDocument 403 /event-booking-website/app/views/error.php?code=403
+ErrorDocument 401 /event-booking-website/app/views/error.php?code=401
 
 # If you later add clean URLs, place RewriteRules below this line.
 

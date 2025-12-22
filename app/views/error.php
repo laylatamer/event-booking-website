@@ -1,12 +1,32 @@
 <?php
 // Centralized error page for 404 and 500 (and any other HTTP code)
+// Try to load error handler, but don't fail if it has issues
+try {
+    if (file_exists(__DIR__ . '/../../config/error_handler.php')) {
+        require_once __DIR__ . '/../../config/error_handler.php';
+    }
+} catch (Exception $e) {
+    // Ignore errors in error handler itself
+}
+
 // Sessions are already centralized; load session init to keep consistency
-require_once __DIR__ . '/../../database/session_init.php';
+try {
+    require_once __DIR__ . '/../../database/session_init.php';
+} catch (Exception $e) {
+    // Continue without session if it fails
+}
 
 // Determine status code and message
-$status = http_response_code();
-if ($status === 200) {
-    // If none set, default to 404
+// First check if status code is provided in query string
+$status = isset($_GET['code']) ? (int)$_GET['code'] : null;
+
+// If not in query string, check http_response_code
+if ($status === null) {
+    $status = http_response_code();
+}
+
+// If still not set or is 200, default to 404
+if ($status === null || $status === 200) {
     $status = 404;
     http_response_code($status);
 }
