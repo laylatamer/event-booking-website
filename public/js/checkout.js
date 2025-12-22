@@ -216,20 +216,28 @@ async function initializeCheckout() {
                             
                             // Debug: Log available categories and what we're looking for
                             console.log(`Looking for category "${categoryName}" in ticket categories:`, ticketCategories.map(c => c.category_name || c.name));
+                            console.log(`Full ticket categories array:`, ticketCategories);
                             
                             // Find the price for this category
-                            // Try both category_name and name fields
-                            const category = ticketCategories.find(cat => 
-                                (cat.category_name && cat.category_name === categoryName) || 
-                                (cat.name && cat.name === categoryName)
-                            );
+                            // Try both category_name and name fields, with case-insensitive matching
+                            const category = ticketCategories.find(cat => {
+                                const catName = cat.category_name || cat.name || '';
+                                return catName.toLowerCase().trim() === categoryName.toLowerCase().trim();
+                            });
                             
                             if (!category) {
-                                console.warn(`Category "${categoryName}" not found in ticket categories. Available categories:`, ticketCategories);
+                                console.error(`Category "${categoryName}" not found in ticket categories. Available categories:`, ticketCategories.map(c => ({
+                                    category_name: c.category_name,
+                                    name: c.name,
+                                    price: c.price
+                                })));
+                                // Still add to categoryMap with price 0 so we can see it in the UI
+                                // This will help debug the issue
                             }
                             
                             const categoryPrice = category ? parseFloat(category.price || category.price_per_ticket || 0) : 0;
                             
+                            // Always add to categoryMap, even if category not found (for debugging)
                             if (!categoryMap[categoryName]) {
                                 categoryMap[categoryName] = {
                                     categoryName: categoryName,
@@ -238,6 +246,13 @@ async function initializeCheckout() {
                                 };
                             }
                             categoryMap[categoryName].quantity += quantity;
+                            
+                            console.log(`Added reservation to categoryMap:`, {
+                                categoryName: categoryName,
+                                quantity: categoryMap[categoryName].quantity,
+                                price: categoryPrice,
+                                foundCategory: !!category
+                            });
                         } else {
                             // Log the error but don't fail immediately
                             if (result.status === 404) {
