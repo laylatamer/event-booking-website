@@ -11,18 +11,14 @@ try {
     $vendorPath = __DIR__ . '/../../vendor/autoload.php';
     if (file_exists($vendorPath)) {
         require_once $vendorPath;
-        $cloudinaryLoaded = true;
+        // Check if Cloudinary classes exist
+        if (class_exists('Cloudinary\Cloudinary')) {
+            $cloudinaryLoaded = true;
+        }
     }
 } catch (Throwable $e) {
     // Cloudinary SDK not available
     $cloudinaryLoaded = false;
-}
-
-// Only use Cloudinary classes if SDK is loaded
-if ($cloudinaryLoaded) {
-    use Cloudinary\Cloudinary;
-    use Cloudinary\Configuration\Configuration;
-    use Cloudinary\Api\Upload\UploadApi;
 }
 
 class CloudinaryService {
@@ -43,9 +39,9 @@ class CloudinaryService {
         
         $this->enabled = !empty($cloudName) && !empty($apiKey) && !empty($apiSecret);
         
-        if ($this->enabled) {
+        if ($this->enabled && class_exists('Cloudinary\Cloudinary')) {
             try {
-                Configuration::instance([
+                \Cloudinary\Configuration\Configuration::instance([
                     'cloud' => [
                         'cloud_name' => $cloudName,
                         'api_key' => $apiKey,
@@ -55,7 +51,7 @@ class CloudinaryService {
                         'secure' => true
                     ]
                 ]);
-                $this->cloudinary = new Cloudinary();
+                $this->cloudinary = new \Cloudinary\Cloudinary();
             } catch (Throwable $e) {
                 error_log("Cloudinary initialization failed: " . $e->getMessage());
                 $this->enabled = false;
@@ -73,6 +69,11 @@ class CloudinaryService {
     public function uploadImage($file, $folder = 'uploads', $publicId = null) {
         if (!$this->enabled) {
             return ['success' => false, 'message' => 'Cloudinary not configured'];
+        }
+        
+        // Check if Cloudinary classes are available
+        if (!class_exists('Cloudinary\Api\Upload\UploadApi')) {
+            return ['success' => false, 'message' => 'Cloudinary SDK not installed'];
         }
         
         try {
@@ -105,7 +106,7 @@ class CloudinaryService {
             }
             
             // Upload to Cloudinary
-            $uploadApi = new UploadApi();
+            $uploadApi = new \Cloudinary\Api\Upload\UploadApi();
             $result = $uploadApi->upload($file['tmp_name'], [
                 'public_id' => $publicId,
                 'folder' => $folder,
@@ -138,8 +139,12 @@ class CloudinaryService {
             return false;
         }
         
+        if (!class_exists('Cloudinary\Api\Upload\UploadApi')) {
+            return false;
+        }
+        
         try {
-            $uploadApi = new UploadApi();
+            $uploadApi = new \Cloudinary\Api\Upload\UploadApi();
             $uploadApi->destroy($publicId);
             return true;
         } catch (Exception $e) {
