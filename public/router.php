@@ -101,6 +101,7 @@ $routes = [
     'terms&conditions.php' => 'terms&conditions.php',
     'contact.php' => 'contact.php', // Handle contact.php in public directory
     'error.php' => 'error.php', // Allow direct access to error page
+    'check_cloudinary.php' => 'check_cloudinary.php', // Cloudinary status checker
 ];
 
 // Get view file

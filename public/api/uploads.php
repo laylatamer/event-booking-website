@@ -120,13 +120,17 @@ try {
         $result = $cloudinaryService->uploadImage($file, $folder);
         
         if ($result['success']) {
+            // Clean any output before sending JSON
+            ob_clean();
+            
             // Return Cloudinary URL (full URL, not relative path)
             echo json_encode([
                 'success' => true,
                 'url' => $result['url'], // Full Cloudinary URL
                 'cloudinary_url' => $result['url'],
                 'public_id' => $result['public_id'],
-                'message' => 'File uploaded successfully to Cloudinary'
+                'message' => 'File uploaded successfully to Cloudinary',
+                'storage' => 'cloudinary'
             ]);
             exit;
         } else {
@@ -161,7 +165,9 @@ try {
         'success' => true,
         'url' => $relativePath, // Return relative path only, not full URL
         'filename' => $filename,
-        'message' => 'File uploaded successfully (local storage)'
+        'message' => 'File uploaded successfully (local storage - will be lost on redeploy)',
+        'storage' => 'local',
+        'warning' => 'Cloudinary not configured. Images will be lost on Railway redeploy.'
     ]);
     
 } catch (Exception $e) {

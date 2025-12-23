@@ -54,7 +54,19 @@ RUN echo "=== Contents of /app ===" && ls -la /app && \
     (test -d "/app/app" && echo "✓ app directory exists" || echo "✗ app directory NOT found")
 
 # Install PHP dependencies (if composer.json exists)
-RUN if [ -f "composer.json" ]; then composer install --no-dev --optimize-autoloader || true; fi
+# Don't fail silently - we need Cloudinary SDK
+RUN if [ -f "composer.json" ]; then \
+        echo "Installing Composer dependencies..."; \
+        composer install --no-dev --optimize-autoloader; \
+        echo "Composer dependencies installed successfully"; \
+        if [ -f "vendor/autoload.php" ]; then \
+            echo "✓ vendor/autoload.php exists"; \
+        else \
+            echo "✗ vendor/autoload.php NOT found"; \
+        fi; \
+    else \
+        echo "No composer.json found, skipping Composer install"; \
+    fi
 
 # Create upload directories structure (will be mounted as volume in Railway)
 # These directories will be created if volume is not mounted, or Railway will mount volume here
