@@ -486,18 +486,8 @@ class EmailService {
                 ]
             ];
             
-            // Add QR code as attachment if provided
-            if ($qrCodeImage) {
-                $emailData['attachments'] = [
-                    [
-                        'content' => base64_encode($qrCodeImage),
-                        'type' => 'image/png',
-                        'filename' => 'qrcode.png',
-                        'disposition' => 'inline',
-                        'content_id' => 'qrcode'
-                    ]
-                ];
-            }
+            // Note: QR code is embedded as base64 in HTML body, no attachment needed
+            // This ensures it appears in the correct location in the email template
             
             // Send via SendGrid API
             $ch = curl_init('https://api.sendgrid.com/v3/mail/send');
