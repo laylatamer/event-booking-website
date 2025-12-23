@@ -47,8 +47,8 @@ class CloudinaryService {
         
         // Try to initialize Cloudinary
         try {
-            // Set global configuration (required for UploadApi to work)
-            \Cloudinary\Configuration\Configuration::instance([
+            // Prepare configuration array
+            $configArray = [
                 'cloud' => [
                     'cloud_name' => $cloudName,
                     'api_key' => $apiKey,
@@ -57,15 +57,18 @@ class CloudinaryService {
                 'url' => [
                     'secure' => true
                 ]
-            ]);
+            ];
             
-            // Create Cloudinary instance (uses global config)
-            $this->cloudinary = new \Cloudinary\Cloudinary();
+            // Set global configuration (required for UploadApi to work)
+            \Cloudinary\Configuration\Configuration::instance($configArray);
+            
+            // Create Cloudinary instance with config (ensures validation passes)
+            $this->cloudinary = new \Cloudinary\Cloudinary($configArray);
             
             // Verify configuration was set correctly
-            $config = \Cloudinary\Configuration\Configuration::instance();
-            $actualCloudName = $config->cloud->cloudName;
-            $actualApiSecret = $config->cloud->apiSecret;
+            $globalConfig = \Cloudinary\Configuration\Configuration::instance();
+            $actualCloudName = $globalConfig->cloud->cloudName;
+            $actualApiSecret = $globalConfig->cloud->apiSecret;
             
             if ($actualCloudName === $cloudName && !empty($actualApiSecret)) {
                 $this->enabled = true;
