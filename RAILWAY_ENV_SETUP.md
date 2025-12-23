@@ -17,7 +17,7 @@ To use SendGrid for email sending, you need to set the API key as an environment
 3. **Add the environment variable**
    - Click **"New Variable"**
    - **Variable Name:** `SENDGRID_API_KEY`
-   - **Value:** `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`
+   - **Value:** (Paste your SendGrid API key here - get it from https://app.sendgrid.com/settings/api_keys)
    - Click **"Add"**
 
 4. **Redeploy your service**
