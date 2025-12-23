@@ -37,14 +37,7 @@ if (strpos($requestPath, 'api/') === 0) {
 }
 
 // Handle utility scripts in public directory (only if they exist)
-$utilityScripts = ['run_migration.php'];
-if (in_array($requestPath, $utilityScripts) || in_array(basename($requestPath), $utilityScripts)) {
-    $scriptPath = __DIR__ . '/' . basename($requestPath);
-    if (file_exists($scriptPath)) {
-        require $scriptPath;
-        exit;
-    }
-}
+// Note: Utility scripts should be accessed directly, not through router
 
 // Handle admin routes - must check BEFORE other routes
 if (strpos($requestPath, 'admin') === 0 || $requestPath === 'admin') {
