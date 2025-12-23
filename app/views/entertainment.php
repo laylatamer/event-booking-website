@@ -68,7 +68,7 @@ include 'partials/header.php';
                 <?php foreach ($entertainmentEvents as $event): ?>
                     <div class="event-card-base" data-event-id="<?php echo $event['id']; ?>">
                         <div class="event-image-container">
-                            <img src="<?php echo htmlspecialchars($event['image']); ?>" 
+                            <img src="<?php echo htmlspecialchars(imageUrl($event['image'] ?? $event['image_url'] ?? '')); ?>" 
                                  onerror="this.onerror=null; this.src='https://placehold.co/400x400/2a2a2a/f97316?text=<?php echo urlencode($event['subcategory']); ?>'" 
                                  alt="<?php echo htmlspecialchars($event['title']); ?>" 
                                  class="event-card-img">

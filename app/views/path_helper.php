@@ -39,6 +39,7 @@ function asset($path) {
 /**
  * Helper function to normalize image URLs
  * Handles both absolute URLs (http/https) and relative paths
+ * Ensures images are accessible via web (uploads/ paths become /uploads/)
  */
 function imageUrl($url) {
     if (empty($url)) {
@@ -50,18 +51,29 @@ function imageUrl($url) {
         return $url;
     }
     
-    // If it starts with /, it's already an absolute path
+    // Clean up the path (remove backslashes, normalize)
+    $url = str_replace('\\', '/', trim($url));
+    
+    // If it starts with /, it's already an absolute path - return as-is
     if (strpos($url, '/') === 0) {
         return $url;
     }
     
-    // Otherwise, treat as relative to uploads or public directory
-    // Check if it's in uploads directory
-    if (strpos($url, 'uploads/') === 0 || strpos($url, 'uploads\\') === 0) {
-        return BASE_ASSETS_PATH . ltrim(str_replace('\\', '/', $url), '/');
+    // If it's in uploads directory (most common case)
+    // Paths like "uploads/events/file.jpg" should become "/uploads/events/file.jpg"
+    if (strpos($url, 'uploads/') === 0) {
+        return '/' . $url; // Make it absolute from web root
     }
     
-    // Default: assume it's in public directory or relative to base
-    return BASE_ASSETS_PATH . ltrim(str_replace('\\', '/', $url), '/');
+    // If it contains uploads anywhere, extract and make absolute
+    if (strpos($url, 'uploads/') !== false) {
+        $parts = explode('uploads/', $url);
+        if (count($parts) > 1) {
+            return '/uploads/' . $parts[1];
+        }
+    }
+    
+    // Default: prepend with base assets path
+    return BASE_ASSETS_PATH . ltrim($url, '/');
 }
 

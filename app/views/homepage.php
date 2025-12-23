@@ -153,9 +153,9 @@ require_once __DIR__ . '/path_helper.php';
                 <?php else: ?>
                     <?php foreach ($entertainmentSubcategories as $subcategory): ?>
                         <?php
-                        // Default image if none provided
+                        // Normalize image URL using helper function
                         $catImage = !empty($subcategory['image_url']) 
-                            ? $subcategory['image_url'] 
+                            ? imageUrl($subcategory['image_url']) 
                             : 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1200&auto=format&fit=crop';
                         ?>
                         <div class="cat-card">
@@ -209,7 +209,7 @@ require_once __DIR__ . '/path_helper.php';
                         <?php
                         // Default image if none provided
                         $catImage = !empty($subcategory['image_url']) 
-                            ? $subcategory['image_url'] 
+                            ? imageUrl($subcategory['image_url'])
                             : 'https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?q=80&w=1200&auto=format&fit=crop';
                         ?>
                         <div class="cat-card">

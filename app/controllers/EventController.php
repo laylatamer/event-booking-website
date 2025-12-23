@@ -142,7 +142,7 @@ class EventController {
             $subcategories[] = [
                 'id' => $row['id'],
                 'name' => $row['name'],
-                'image_url' => $row['image_url'], // Now includes image_url from database
+                'image_url' => $this->normalizeImageUrl($row['image_url'] ?? ''), // Normalize image URL for web access
                 'main_category' => $categoryName,
                 'event_count' => (int)$eventCount
             ];
@@ -154,14 +154,8 @@ class EventController {
     private function formatEventForDisplay($eventData) {
         $date = new DateTime($eventData['date']);
         
-        // Normalize image URL
-        $imageUrl = $eventData['image_url'] ?? '';
-        if (!empty($imageUrl) && !preg_match('/^https?:\/\//', $imageUrl)) {
-            // If relative path, make it absolute
-            if (strpos($imageUrl, '/') !== 0) {
-                $imageUrl = '/' . ltrim($imageUrl, '/');
-            }
-        }
+        // Normalize image URL using helper function
+        $imageUrl = $this->normalizeImageUrl($eventData['image_url'] ?? '');
         
         return [
             'id' => $eventData['id'],
