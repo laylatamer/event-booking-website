@@ -109,33 +109,41 @@ try {
     
     // Try Cloudinary first, fallback to local storage
     if ($useCloudinary && $cloudinaryService) {
-        // Map upload type to Cloudinary folder
-        $folderMap = [
-            'subcategories' => 'subcategories',
-            'events' => 'events',
-            'event_gallery' => 'events/gallery'
-        ];
-        $folder = $folderMap[$type] ?? 'uploads';
-        
-        $result = $cloudinaryService->uploadImage($file, $folder);
-        
-        if ($result['success']) {
-            // Clean any output before sending JSON
-            ob_clean();
+        try {
+            // Map upload type to Cloudinary folder
+            $folderMap = [
+                'subcategories' => 'subcategories',
+                'events' => 'events',
+                'event_gallery' => 'events/gallery'
+            ];
+            $folder = $folderMap[$type] ?? 'uploads';
             
-            // Return Cloudinary URL (full URL, not relative path)
-            echo json_encode([
-                'success' => true,
-                'url' => $result['url'], // Full Cloudinary URL
-                'cloudinary_url' => $result['url'],
-                'public_id' => $result['public_id'],
-                'message' => 'File uploaded successfully to Cloudinary',
-                'storage' => 'cloudinary'
-            ]);
-            exit;
-        } else {
-            // Cloudinary failed, fall back to local
-            error_log("Cloudinary upload failed: " . ($result['message'] ?? 'Unknown error') . " - Falling back to local storage");
+            $result = $cloudinaryService->uploadImage($file, $folder);
+            
+            if ($result && isset($result['success']) && $result['success']) {
+                // Clean any output before sending JSON
+                ob_clean();
+                
+                // Return Cloudinary URL (full URL, not relative path)
+                echo json_encode([
+                    'success' => true,
+                    'url' => $result['url'], // Full Cloudinary URL
+                    'cloudinary_url' => $result['url'],
+                    'public_id' => $result['public_id'] ?? null,
+                    'message' => 'File uploaded successfully to Cloudinary',
+                    'storage' => 'cloudinary'
+                ]);
+                exit;
+            } else {
+                // Cloudinary failed, fall back to local
+                $errorMsg = $result['message'] ?? 'Unknown error';
+                error_log("Cloudinary upload failed: " . $errorMsg . " - Falling back to local storage");
+            }
+        } catch (Throwable $e) {
+            // If Cloudinary throws an exception, log it and fall back to local
+            error_log("Cloudinary upload exception: " . $e->getMessage());
+            error_log("Cloudinary upload stack trace: " . $e->getTraceAsString());
+            // Continue to local storage fallback
         }
     }
     
@@ -183,10 +191,18 @@ try {
     // Catch any other errors (fatal errors, etc.)
     ob_clean();
     
+    // Log the full error for debugging
+    error_log("Upload API fatal error: " . $e->getMessage());
+    error_log("Upload API stack trace: " . $e->getTraceAsString());
+    error_log("Upload API file: " . $e->getFile() . " line: " . $e->getLine());
+    
     http_response_code(500);
     echo json_encode([
         'success' => false,
-        'message' => 'Upload failed: ' . $e->getMessage()
+        'message' => 'Upload failed: ' . $e->getMessage(),
+        'error_type' => get_class($e),
+        'error_file' => basename($e->getFile()),
+        'error_line' => $e->getLine()
     ]);
 }
 

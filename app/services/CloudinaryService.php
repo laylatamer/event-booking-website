@@ -153,6 +153,11 @@ class CloudinaryService {
             
         } catch (Exception $e) {
             error_log("Cloudinary upload error: " . $e->getMessage());
+            error_log("Cloudinary upload stack trace: " . $e->getTraceAsString());
+            return ['success' => false, 'message' => 'Upload failed: ' . $e->getMessage()];
+        } catch (Throwable $e) {
+            error_log("Cloudinary upload fatal error: " . $e->getMessage());
+            error_log("Cloudinary upload stack trace: " . $e->getTraceAsString());
             return ['success' => false, 'message' => 'Upload failed: ' . $e->getMessage()];
         }
     }
