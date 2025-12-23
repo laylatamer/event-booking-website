@@ -313,6 +313,8 @@ class EventController {
     }
 
     public function getAllActiveEvents() {
+        // Use DATE() to compare dates only, ignoring time, so events today are included
+        // Also ensure venue and subcategory are active
         $query = "SELECT e.*, 
                          s.name as subcategory_name,
                          s.main_category_id,
@@ -325,7 +327,10 @@ class EventController {
                   JOIN main_categories mc ON s.main_category_id = mc.id
                   JOIN venues v ON e.venue_id = v.id
                   WHERE e.status = 'active'
-                  AND e.date >= NOW()
+                  AND v.status = 'active'
+                  AND s.status = 'active'
+                  AND mc.status = 'active'
+                  AND DATE(e.date) >= DATE(NOW())
                   ORDER BY e.date ASC";
         
         $stmt = $this->db->prepare($query);
@@ -339,12 +344,18 @@ class EventController {
     }
 
     public function getMainCategoriesWithEvents() {
+        // Use DATE() to compare dates only, ignoring time, so events today are included
+        // Also ensure venue and subcategory are active
         $query = "SELECT DISTINCT mc.id, mc.name, mc.status
                   FROM main_categories mc
                   JOIN subcategories s ON mc.id = s.main_category_id
                   JOIN events e ON s.id = e.subcategory_id
+                  JOIN venues v ON e.venue_id = v.id
                   WHERE e.status = 'active'
-                  AND e.date >= NOW()
+                  AND v.status = 'active'
+                  AND s.status = 'active'
+                  AND mc.status = 'active'
+                  AND DATE(e.date) >= DATE(NOW())
                   ORDER BY mc.name ASC";
         
         $stmt = $this->db->prepare($query);
@@ -358,11 +369,18 @@ class EventController {
     }
 
     public function getVenuesWithEvents() {
+        // Use DATE() to compare dates only, ignoring time, so events today are included
+        // Also ensure venue and subcategory are active
         $query = "SELECT DISTINCT v.id, v.name, v.city
                   FROM venues v
                   JOIN events e ON v.id = e.venue_id
+                  JOIN subcategories s ON e.subcategory_id = s.id
+                  JOIN main_categories mc ON s.main_category_id = mc.id
                   WHERE e.status = 'active'
-                  AND e.date >= NOW()
+                  AND v.status = 'active'
+                  AND s.status = 'active'
+                  AND mc.status = 'active'
+                  AND DATE(e.date) >= DATE(NOW())
                   ORDER BY v.name ASC";
         
         $stmt = $this->db->prepare($query);

@@ -204,6 +204,8 @@ class Event {
     }
 
     public function getByCategory($category) {
+        // Use DATE() to compare dates only, ignoring time, so events today are included
+        // Also ensure venue and subcategory are active
         $query = "SELECT e.*, 
                          s.name as subcategory_name,
                          mc.name as main_category_name,
@@ -212,7 +214,12 @@ class Event {
                   JOIN subcategories s ON e.subcategory_id = s.id
                   JOIN main_categories mc ON s.main_category_id = mc.id
                   JOIN venues v ON e.venue_id = v.id
-                  WHERE mc.name = ? AND e.status = 'active' 
+                  WHERE mc.name = ? 
+                  AND e.status = 'active'
+                  AND v.status = 'active'
+                  AND s.status = 'active'
+                  AND mc.status = 'active'
+                  AND DATE(e.date) >= DATE(NOW())
                   ORDER BY e.date ASC";
         
         $stmt = $this->conn->prepare($query);
@@ -222,6 +229,8 @@ class Event {
     }
 
     public function getUpcoming($limit = 10) {
+        // Use DATE() to compare dates only, ignoring time, so events today are included
+        // Also ensure venue and subcategory are active
         $query = "SELECT e.*, 
                          s.name as subcategory_name,
                          mc.name as main_category_name,
@@ -231,7 +240,11 @@ class Event {
                   JOIN subcategories s ON e.subcategory_id = s.id
                   JOIN main_categories mc ON s.main_category_id = mc.id
                   JOIN venues v ON e.venue_id = v.id
-                  WHERE e.date >= NOW() AND e.status = 'active' 
+                  WHERE DATE(e.date) >= DATE(NOW()) 
+                  AND e.status = 'active'
+                  AND v.status = 'active'
+                  AND s.status = 'active'
+                  AND mc.status = 'active'
                   ORDER BY e.date ASC 
                   LIMIT ?";
         
