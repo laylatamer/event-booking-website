@@ -13,7 +13,9 @@ return [
     'email_provider' => 'sendgrid',          // Change to 'phpmailer' if you want to use SMTP instead
     
     // SendGrid Configuration (if email_provider is 'sendgrid')
-    'sendgrid_api_key' => '',                // Your SendGrid API key (get from https://app.sendgrid.com/settings/api_keys)
+    // API key is read from SENDGRID_API_KEY environment variable (set in Railway dashboard)
+    // If not set, will fall back to this value (leave empty for security)
+    'sendgrid_api_key' => getenv('SENDGRID_API_KEY') ?: '',  // Read from environment variable
     // Note: SendGrid free tier allows 100 emails/day
     
     // SMTP Configuration (if email_provider is 'phpmailer')
