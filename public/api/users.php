@@ -91,6 +91,17 @@ try {
                 if (!empty($_FILES) && isset($_FILES['profile_image'])) {
                     $file = $_FILES['profile_image'];
                     if ($file['error'] === UPLOAD_ERR_OK) {
+                        // Try Cloudinary first
+                        $useCloudinary = false;
+                        $cloudinaryService = null;
+                        try {
+                            require_once __DIR__ . '/../../app/services/CloudinaryService.php';
+                            $cloudinaryService = new CloudinaryService();
+                            $useCloudinary = $cloudinaryService->isEnabled();
+                        } catch (Exception $e) {
+                            error_log("Cloudinary not available: " . $e->getMessage());
+                        }
+                        
                         // Validate file type
                         $finfo = finfo_open(FILEINFO_MIME_TYPE);
                         $mime = finfo_file($finfo, $file['tmp_name']);
@@ -114,27 +125,47 @@ try {
                             break;
                         }
                         
-                        // Create upload directory if it doesn't exist (in public/uploads for web accessibility)
-                        $uploadDir = __DIR__ . '/../uploads/profile_pics/';
-                        if (!is_dir($uploadDir)) {
-                            mkdir($uploadDir, 0777, true);
+                        // Try Cloudinary upload
+                        if ($useCloudinary && $cloudinaryService) {
+                            $userId = (int)$data['id'];
+                            $publicId = 'user_' . $userId . '_' . time();
+                            $result = $cloudinaryService->uploadImage($file, 'profile_pics', $publicId);
+                            
+                            if ($result['success']) {
+                                // Save Cloudinary URL to database
+                                $data['profile_image_path'] = $result['url'];
+                                error_log("Profile image uploaded to Cloudinary: " . $result['url']);
+                            } else {
+                                // Cloudinary failed, fall back to local
+                                error_log("Cloudinary upload failed, using local storage: " . ($result['message'] ?? 'Unknown error'));
+                                $useCloudinary = false;
+                            }
                         }
                         
-                        // Generate unique filename
-                        $userId = (int)$data['id'];
-                        $newFileName = 'user_' . $userId . '_' . time() . '.' . $allowed[$mime];
-                        $targetPath = $uploadDir . $newFileName;
-                        
-                        // Move uploaded file
-                        if (move_uploaded_file($file['tmp_name'], $targetPath)) {
-                            // Save the relative path to the database (accessible via web)
-                            $data['profile_image_path'] = 'uploads/profile_pics/' . $newFileName;
-                            error_log("Profile image uploaded successfully: " . $data['profile_image_path']);
-                        } else {
-                            error_log("Failed to move uploaded file from {$file['tmp_name']} to {$targetPath}");
-                            http_response_code(500);
-                            echo json_encode(['ok' => false, 'message' => 'Failed to save the uploaded image.']);
-                            break;
+                        // Fallback to local storage
+                        if (!$useCloudinary) {
+                            // Create upload directory if it doesn't exist (in public/uploads for web accessibility)
+                            $uploadDir = __DIR__ . '/../uploads/profile_pics/';
+                            if (!is_dir($uploadDir)) {
+                                mkdir($uploadDir, 0777, true);
+                            }
+                            
+                            // Generate unique filename
+                            $userId = (int)$data['id'];
+                            $newFileName = 'user_' . $userId . '_' . time() . '.' . $allowed[$mime];
+                            $targetPath = $uploadDir . $newFileName;
+                            
+                            // Move uploaded file
+                            if (move_uploaded_file($file['tmp_name'], $targetPath)) {
+                                // Save the relative path to the database (accessible via web)
+                                $data['profile_image_path'] = 'uploads/profile_pics/' . $newFileName;
+                                error_log("Profile image uploaded successfully (local): " . $data['profile_image_path']);
+                            } else {
+                                error_log("Failed to move uploaded file from {$file['tmp_name']} to {$targetPath}");
+                                http_response_code(500);
+                                echo json_encode(['ok' => false, 'message' => 'Failed to save the uploaded image.']);
+                                break;
+                            }
                         }
                     } elseif ($file['error'] !== UPLOAD_ERR_NO_FILE) {
                         // Handle upload errors (except NO_FILE which is fine)

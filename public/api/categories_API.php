@@ -48,11 +48,15 @@ require_once $configPath;
 
 // Image upload helper function
 function handleImageUpload($file, $type = 'subcategories') {
-    $uploadDir = __DIR__ . '/../../public/uploads/' . $type . '/';
-    
-    // Create directory if it doesn't exist
-    if (!file_exists($uploadDir)) {
-        mkdir($uploadDir, 0755, true);
+    // Try Cloudinary first
+    $useCloudinary = false;
+    $cloudinaryService = null;
+    try {
+        require_once __DIR__ . '/../../app/services/CloudinaryService.php';
+        $cloudinaryService = new CloudinaryService();
+        $useCloudinary = $cloudinaryService->isEnabled();
+    } catch (Exception $e) {
+        error_log("Cloudinary not available: " . $e->getMessage());
     }
     
     // Check for upload errors
@@ -76,6 +80,31 @@ function handleImageUpload($file, $type = 'subcategories') {
         throw new Exception('Invalid file type. Allowed: ' . implode(', ', $allowedTypes));
     }
     
+    // Try Cloudinary upload
+    if ($useCloudinary && $cloudinaryService) {
+        $result = $cloudinaryService->uploadImage($file, $type);
+        
+        if ($result['success']) {
+            // Return Cloudinary URL
+            return [
+                'success' => true,
+                'url' => $result['url'], // Full Cloudinary URL
+                'cloudinary_url' => $result['url'],
+                'public_id' => $result['public_id']
+            ];
+        } else {
+            error_log("Cloudinary upload failed, using local storage: " . ($result['message'] ?? 'Unknown error'));
+        }
+    }
+    
+    // Fallback to local storage
+    $uploadDir = __DIR__ . '/../../public/uploads/' . $type . '/';
+    
+    // Create directory if it doesn't exist
+    if (!file_exists($uploadDir)) {
+        mkdir($uploadDir, 0755, true);
+    }
+    
     // Generate unique filename
     $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
     $filename = uniqid() . '_' . time() . '.' . $extension;
@@ -86,13 +115,12 @@ function handleImageUpload($file, $type = 'subcategories') {
         throw new Exception('Failed to save file');
     }
     
-    // Generate URL
-    $baseUrl = 'http://' . $_SERVER['HTTP_HOST'] . '/event-booking-website/public/uploads/' . $type . '/';
-    $fileUrl = $baseUrl . $filename;
+    // Generate relative path (not full URL)
+    $relativePath = 'uploads/' . $type . '/' . $filename;
     
     return [
         'success' => true,
-        'url' => $fileUrl,
+        'url' => $relativePath,
         'filename' => $filename
     ];
 }

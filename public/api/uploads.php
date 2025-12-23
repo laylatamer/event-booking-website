@@ -12,7 +12,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// Get absolute paths
+// Try to load Cloudinary service
+$useCloudinary = false;
+$cloudinaryService = null;
+try {
+    require_once __DIR__ . '/../../app/services/CloudinaryService.php';
+    $cloudinaryService = new CloudinaryService();
+    $useCloudinary = $cloudinaryService->isEnabled();
+} catch (Exception $e) {
+    error_log("Cloudinary not available: " . $e->getMessage());
+}
+
+// Get absolute paths (fallback to local storage)
 $currentDir = __DIR__;
 $projectRoot = dirname(dirname($currentDir));
 $uploadDir = $projectRoot . '/public/uploads/';
@@ -77,6 +88,35 @@ try {
         throw new Exception('Invalid file type. Allowed: ' . implode(', ', $config['allowed_mime']));
     }
     
+    // Try Cloudinary first, fallback to local storage
+    if ($useCloudinary && $cloudinaryService) {
+        // Map upload type to Cloudinary folder
+        $folderMap = [
+            'subcategories' => 'subcategories',
+            'events' => 'events',
+            'event_gallery' => 'events/gallery'
+        ];
+        $folder = $folderMap[$type] ?? 'uploads';
+        
+        $result = $cloudinaryService->uploadImage($file, $folder);
+        
+        if ($result['success']) {
+            // Return Cloudinary URL (full URL, not relative path)
+            echo json_encode([
+                'success' => true,
+                'url' => $result['url'], // Full Cloudinary URL
+                'cloudinary_url' => $result['url'],
+                'public_id' => $result['public_id'],
+                'message' => 'File uploaded successfully to Cloudinary'
+            ]);
+            exit;
+        } else {
+            // Cloudinary failed, fall back to local
+            error_log("Cloudinary upload failed: " . ($result['message'] ?? 'Unknown error') . " - Falling back to local storage");
+        }
+    }
+    
+    // Fallback to local storage
     // Generate unique filename
     $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
     $filename = uniqid() . '_' . time() . '.' . $extension;
@@ -99,7 +139,7 @@ try {
         'success' => true,
         'url' => $relativePath, // Return relative path only, not full URL
         'filename' => $filename,
-        'message' => 'File uploaded successfully'
+        'message' => 'File uploaded successfully (local storage)'
     ]);
     
 } catch (Exception $e) {

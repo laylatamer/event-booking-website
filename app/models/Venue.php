@@ -41,6 +41,30 @@ class Venue {
             throw new Exception('File size must be less than 5MB.');
         }
         
+        // Try Cloudinary first
+        $useCloudinary = false;
+        $cloudinaryService = null;
+        try {
+            require_once __DIR__ . '/../services/CloudinaryService.php';
+            $cloudinaryService = new CloudinaryService();
+            $useCloudinary = $cloudinaryService->isEnabled();
+        } catch (Exception $e) {
+            error_log("Cloudinary not available: " . $e->getMessage());
+        }
+        
+        if ($useCloudinary && $cloudinaryService) {
+            $publicId = 'venue_' . ($this->id ?? uniqid()) . '_' . time();
+            $result = $cloudinaryService->uploadImage($file, 'venues', $publicId);
+            
+            if ($result['success']) {
+                // Return Cloudinary URL
+                return $result['url'];
+            } else {
+                error_log("Cloudinary upload failed, using local storage: " . ($result['message'] ?? 'Unknown error'));
+            }
+        }
+        
+        // Fallback to local storage
         // Create uploads directory if it doesn't exist (in public/uploads for web accessibility)
         $uploadDir = __DIR__ . '/../../public/uploads/venues/';
         if (!file_exists($uploadDir)) {
