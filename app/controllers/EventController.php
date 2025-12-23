@@ -124,6 +124,9 @@ class EventController {
         
         $subcategories = [];
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            // Normalize image URL (handles both Cloudinary URLs and local paths)
+            $row['image_url'] = $this->normalizeImageUrl($row['image_url'] ?? '');
+            
             // Count events for this subcategory (shows 0 if no events)
             $countQuery = "SELECT COUNT(*) as event_count 
                           FROM events 
