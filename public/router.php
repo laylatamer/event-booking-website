@@ -65,15 +65,17 @@ if (strpos($requestPath, 'admin') === 0 || $requestPath === 'admin') {
         require $adminViewPath;
         exit;
     } else {
+        // Redirect to error page for 404
         http_response_code(404);
-        echo "404 - Admin page not found: " . htmlspecialchars($adminPath) . "<br>";
-        echo "Looking for: " . htmlspecialchars($adminViewPath) . "<br>";
-        echo "Project root: " . htmlspecialchars($projectRoot) . "<br>";
-        if (is_dir($projectRoot . '/app/views/admin')) {
-            $files = array_slice(scandir($projectRoot . '/app/views/admin'), 2);
-            echo "Available files: " . implode(', ', $files);
+        $errorPage = $projectRoot . '/app/views/error.php';
+        if (file_exists($errorPage)) {
+            $_GET['code'] = 404;
+            require $errorPage;
+            exit;
+        } else {
+            echo "404 - Admin page not found: " . htmlspecialchars($adminPath);
+            exit;
         }
-        exit;
     }
 }
 
