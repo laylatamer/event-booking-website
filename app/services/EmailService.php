@@ -502,8 +502,25 @@ class EmailService {
                 return false;
             }
             
+            // Log full response for debugging
+            error_log("SendGrid Response Code: " . $httpCode);
+            error_log("SendGrid Response Body: " . $response);
+            error_log("SendGrid From Email: " . ($emailData['from']['email'] ?? 'not set'));
+            error_log("SendGrid To Email: " . $to);
+            
             if ($httpCode >= 200 && $httpCode < 300) {
+                // Check if response contains any warnings
+                $responseData = json_decode($response, true);
+                if ($responseData && isset($responseData['errors'])) {
+                    error_log("SendGrid Warnings/Errors in response: " . json_encode($responseData['errors']));
+                    // Still return true if HTTP code is 200-299, but log the warnings
+                }
+                
                 error_log("Email sent successfully using SendGrid to: " . $to . " (took " . round($sendDuration, 2) . " seconds)");
+                error_log("IMPORTANT: If email not received, check:");
+                error_log("  1. Spam/Junk folder");
+                error_log("  2. Sender email (" . ($emailData['from']['email'] ?? 'not set') . ") must be verified in SendGrid");
+                error_log("  3. SendGrid Activity Feed: https://app.sendgrid.com/activity");
                 return true;
             } else {
                 error_log("SendGrid API Error: HTTP " . $httpCode);
