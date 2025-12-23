@@ -429,6 +429,11 @@ class EmailService {
             $sendStartTime = microtime(true);
             
             // Prepare email data for SendGrid API
+            $fromEmail = $this->config['from_email'] ?? 'noreply@egzly.com';
+            $fromName = $this->config['from_name'] ?? 'EحGZLY';
+            $replyToEmail = $this->config['reply_to_email'] ?? 'support@egzly.com';
+            $replyToName = $this->config['reply_to_name'] ?? 'EحGZLY Support';
+            
             $emailData = [
                 'personalizations' => [
                     [
@@ -442,12 +447,12 @@ class EmailService {
                     ]
                 ],
                 'from' => [
-                    'email' => $this->config['from_email'] ?? 'noreply@egzly.com',
-                    'name' => $this->config['from_name'] ?? 'EحGZLY'
+                    'email' => $fromEmail,
+                    'name' => $fromName
                 ],
                 'reply_to' => [
-                    'email' => $this->config['reply_to_email'] ?? 'support@egzly.com',
-                    'name' => $this->config['reply_to_name'] ?? 'EحGZLY Support'
+                    'email' => $replyToEmail,
+                    'name' => $replyToName
                 ],
                 'subject' => $subject,
                 'content' => [
@@ -458,6 +463,26 @@ class EmailService {
                     [
                         'type' => 'text/html',
                         'value' => $body
+                    ]
+                ],
+                // Add headers to improve deliverability and reduce spam
+                'headers' => [
+                    'X-Mailer' => 'EحGZLY Event Booking System',
+                    'X-Priority' => '1', // High priority
+                    'List-Unsubscribe' => '<mailto:' . $replyToEmail . '?subject=Unsubscribe>',
+                    'List-Unsubscribe-Post' => 'List-Unsubscribe=One-Click',
+                    'Precedence' => 'bulk',
+                    'X-Auto-Response-Suppress' => 'All'
+                ],
+                // Add categories for better tracking and deliverability
+                'categories' => ['booking-confirmation', 'transactional'],
+                // Mail settings to improve deliverability
+                'mail_settings' => [
+                    'sandbox_mode' => [
+                        'enable' => false
+                    ],
+                    'spam_check' => [
+                        'enable' => false // Disable spam check to avoid false positives
                     ]
                 ]
             ];
