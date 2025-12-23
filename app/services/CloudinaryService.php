@@ -29,34 +29,58 @@ class CloudinaryService {
         // Check if Cloudinary SDK is loaded
         if (!class_exists('Cloudinary\Cloudinary')) {
             $this->enabled = false;
+            error_log("CloudinaryService: Cloudinary SDK class not found");
             return;
         }
         
-        // Check if Cloudinary is configured
-        $cloudName = getenv('CLOUDINARY_CLOUD_NAME') ?: '';
-        $apiKey = getenv('CLOUDINARY_API_KEY') ?: '';
-        $apiSecret = getenv('CLOUDINARY_API_SECRET') ?: '';
+        // Check if Cloudinary is configured - trim whitespace from env vars
+        $cloudName = trim(getenv('CLOUDINARY_CLOUD_NAME') ?: '');
+        $apiKey = trim(getenv('CLOUDINARY_API_KEY') ?: '');
+        $apiSecret = trim(getenv('CLOUDINARY_API_SECRET') ?: '');
         
-        $this->enabled = !empty($cloudName) && !empty($apiKey) && !empty($apiSecret);
-        
-        if ($this->enabled && class_exists('Cloudinary\Cloudinary')) {
-            try {
-                \Cloudinary\Configuration\Configuration::instance([
-                    'cloud' => [
-                        'cloud_name' => $cloudName,
-                        'api_key' => $apiKey,
-                        'api_secret' => $apiSecret
-                    ],
-                    'url' => [
-                        'secure' => true
-                    ]
-                ]);
-                $this->cloudinary = new \Cloudinary\Cloudinary();
-            } catch (Throwable $e) {
-                error_log("Cloudinary initialization failed: " . $e->getMessage());
-                $this->enabled = false;
-            }
+        // Check if all required values are present
+        if (empty($cloudName) || empty($apiKey) || empty($apiSecret)) {
+            $this->enabled = false;
+            error_log("CloudinaryService: Missing environment variables. CloudName: " . (!empty($cloudName) ? 'set' : 'empty') . ", APIKey: " . (!empty($apiKey) ? 'set' : 'empty') . ", APISecret: " . (!empty($apiSecret) ? 'set' : 'empty'));
+            return;
         }
+        
+        // Try to initialize Cloudinary
+        try {
+            // Set configuration using instance method
+            $config = \Cloudinary\Configuration\Configuration::instance();
+            $config->cloud->cloudName = $cloudName;
+            $config->cloud->apiKey = $apiKey;
+            $config->cloud->apiSecret = $apiSecret;
+            $config->url->secure = true;
+            
+            // Create Cloudinary instance
+            $this->cloudinary = new \Cloudinary\Cloudinary();
+            
+            // Test the configuration by trying to access a property
+            // This will throw an exception if config is invalid
+            $testCloudName = $this->cloudinary->configuration->cloud->cloudName;
+            
+            if ($testCloudName === $cloudName) {
+                $this->enabled = true;
+                error_log("CloudinaryService: Successfully initialized with cloud name: " . $cloudName);
+            } else {
+                $this->enabled = false;
+                error_log("CloudinaryService: Configuration test failed. Expected: " . $cloudName . ", Got: " . $testCloudName);
+            }
+        } catch (Throwable $e) {
+            error_log("Cloudinary initialization failed: " . $e->getMessage());
+            error_log("Cloudinary initialization stack trace: " . $e->getTraceAsString());
+            $this->enabled = false;
+        }
+    }
+    
+    /**
+     * Check if Cloudinary service is enabled and ready to use
+     * @return bool
+     */
+    public function isEnabled() {
+        return $this->enabled === true && $this->cloudinary !== null;
     }
     
     /**
@@ -153,13 +177,6 @@ class CloudinaryService {
         }
     }
     
-    /**
-     * Check if Cloudinary is enabled
-     * @return bool
-     */
-    public function isEnabled() {
-        return $this->enabled;
-    }
     
     /**
      * Get Cloudinary URL from public ID
