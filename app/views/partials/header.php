@@ -19,13 +19,13 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_id'] !== null) {
     $isAdmin = isAdmin();
 }
 
-// Get profile image source
+// Get profile image source - use imageUrl helper to handle Cloudinary URLs
+require_once __DIR__ . '/../path_helper.php';
 if ($isLoggedIn && !empty($userImage) && $userImage !== null) {
-    $cleanPath = ltrim($userImage, '/\\');
-    $profileImageSrc = '../../public/image.php?path=' . urlencode($cleanPath);
+    $profileImageSrc = imageUrl($userImage);
 } else {
     // Use default profile picture
-    $profileImageSrc = '../../public/image.php?path=';
+    $profileImageSrc = '/image.php?path=';
 }
 ?>
 <!DOCTYPE html>

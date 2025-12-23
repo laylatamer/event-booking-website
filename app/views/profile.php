@@ -240,13 +240,13 @@ if ($fullName === '') {
     $fullName = $user['email'];
 }
 
-// Use image proxy for default avatar when profile_image_path is NULL or empty
+// Use imageUrl helper to handle both Cloudinary URLs and local paths
+require_once __DIR__ . '/path_helper.php';
 if (!empty($user['profile_image_path']) && $user['profile_image_path'] !== null) {
-    $cleanPath = ltrim($user['profile_image_path'], '/\\');
-    $profileImageSrc = '../../public/image.php?path=' . urlencode($cleanPath);
+    $profileImageSrc = imageUrl($user['profile_image_path']);
 } else {
     // Use image proxy with empty path to get default avatar
-    $profileImageSrc = '../../public/image.php?path=';
+    $profileImageSrc = '/image.php?path=';
 }
 
 $email = $user['email'] ?? '';
