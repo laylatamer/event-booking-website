@@ -12,6 +12,8 @@ echo "<h1>Fix Image URLs in Database</h1>";
 echo "<p>Converting full URLs (http://localhost/...) to relative paths (uploads/...)</p>";
 
 try {
+    // Create database instance and get connection
+    $database = new Database();
     $pdo = $database->getConnection();
     
     // Fix events table
