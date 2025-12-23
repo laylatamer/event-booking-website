@@ -22,11 +22,14 @@ ini_set('log_errors', 1);
 // Try to load Cloudinary service (suppress errors)
 $useCloudinary = false;
 $cloudinaryService = null;
+$cloudinaryError = null;
 try {
     // Check if vendor/autoload.php exists (composer dependencies)
     $vendorPath = __DIR__ . '/../../vendor/autoload.php';
     if (file_exists($vendorPath)) {
         require_once $vendorPath;
+    } else {
+        $cloudinaryError = "Vendor autoload not found";
     }
     
     $cloudinaryServicePath = __DIR__ . '/../../app/services/CloudinaryService.php';
@@ -34,9 +37,15 @@ try {
         require_once $cloudinaryServicePath;
         $cloudinaryService = new CloudinaryService();
         $useCloudinary = $cloudinaryService->isEnabled();
+        if (!$useCloudinary) {
+            $cloudinaryError = "Cloudinary service is not enabled (check environment variables)";
+        }
+    } else {
+        $cloudinaryError = "CloudinaryService.php not found";
     }
 } catch (Throwable $e) {
-    // Silently fail - will use local storage
+    // Log error but continue
+    $cloudinaryError = "Cloudinary initialization error: " . $e->getMessage();
     error_log("Cloudinary not available: " . $e->getMessage());
     $useCloudinary = false;
     $cloudinaryService = null;
@@ -138,6 +147,7 @@ try {
                 // Cloudinary failed, fall back to local
                 $errorMsg = $result['message'] ?? 'Unknown error';
                 error_log("Cloudinary upload failed: " . $errorMsg . " - Falling back to local storage");
+                $cloudinaryError = "Cloudinary upload failed: " . $errorMsg;
             }
         } catch (Throwable $e) {
             // If Cloudinary throws an exception, log it and fall back to local

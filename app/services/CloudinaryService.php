@@ -139,7 +139,8 @@ class CloudinaryService {
             }
             
             // Upload to Cloudinary
-            $uploadApi = new \Cloudinary\Api\Upload\UploadApi($this->cloudinary);
+            // UploadApi uses the global configuration we set in __construct()
+            $uploadApi = new \Cloudinary\Api\Upload\UploadApi();
             $result = $uploadApi->upload($file['tmp_name'], [
                 'public_id' => $publicId,
                 'folder' => $folder,
