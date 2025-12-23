@@ -235,6 +235,19 @@ require_once __DIR__ . '/path_helper.php';
     include 'partials/footer.php';
     ?>
     
+    <!-- Cookie Consent Banner -->
+    <div id="cookie-banner" class="cookie-banner hidden">
+        <p>We use cookies to enhance your browsing experience and analyze site traffic. By clicking "Accept", you consent to our use of cookies.</p>
+        <div class="cookie-actions">
+            <button id="cookie-accept-btn" class="cookie-btn accept">Accept</button>
+            <button id="cookie-deny-btn" class="cookie-btn deny">Reject</button>
+        </div>
+    </div>
+    
+    <!-- Cookie Utility Functions (must be loaded before app.js) -->
+    <script src="<?= asset('js/utils/cookie_utils.js') ?>"></script>
+    <!-- Cookie Consent Handler -->
+    <script src="<?= asset('js/utils/app.js') ?>"></script>
     <script src="<?= asset('js/homepage.js') ?>?v=2"></script>
     <script src="<?= asset('js/navbar.js') ?>"></script>
     
