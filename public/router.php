@@ -36,8 +36,8 @@ if (strpos($requestPath, 'api/') === 0) {
     return false; // Let API files handle themselves
 }
 
-// Handle utility scripts in public directory
-$utilityScripts = ['check_cloudinary.php', 'run_migration.php'];
+// Handle utility scripts in public directory (only if they exist)
+$utilityScripts = ['run_migration.php'];
 if (in_array($requestPath, $utilityScripts) || in_array(basename($requestPath), $utilityScripts)) {
     $scriptPath = __DIR__ . '/' . basename($requestPath);
     if (file_exists($scriptPath)) {
@@ -101,7 +101,6 @@ $routes = [
     'terms&conditions.php' => 'terms&conditions.php',
     'contact.php' => 'contact.php', // Handle contact.php in public directory
     'error.php' => 'error.php', // Allow direct access to error page
-    'check_cloudinary.php' => 'check_cloudinary.php', // Cloudinary status checker
 ];
 
 // Get view file
