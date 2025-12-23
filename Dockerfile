@@ -57,16 +57,28 @@ RUN echo "=== Contents of /app ===" && ls -la /app && \
 # Don't fail silently - we need Cloudinary SDK
 RUN if [ -f "composer.json" ]; then \
         echo "=== Installing Composer dependencies ==="; \
-        composer install --no-dev --optimize-autoloader 2>&1; \
+        echo "Composer.json contents:"; \
+        cat composer.json || true; \
+        composer install --no-dev --optimize-autoloader --verbose 2>&1 || { \
+            echo "=== Composer install failed, trying with --ignore-platform-reqs ==="; \
+            composer install --no-dev --optimize-autoloader --ignore-platform-reqs --verbose 2>&1 || { \
+                echo "=== Composer install still failed ==="; \
+                exit 1; \
+            }; \
+        }; \
         echo "=== Composer install completed ==="; \
         if [ -f "vendor/autoload.php" ]; then \
             echo "✓ vendor/autoload.php exists"; \
+            echo "=== Checking vendor directory contents ==="; \
+            ls -la vendor/ || true; \
             echo "=== Checking for Cloudinary ==="; \
             if [ -d "vendor/cloudinary" ]; then \
                 echo "✓ vendor/cloudinary directory exists"; \
                 ls -la vendor/cloudinary/ || true; \
             else \
                 echo "✗ vendor/cloudinary directory NOT found"; \
+                echo "=== Attempting to install Cloudinary directly ==="; \
+                composer require cloudinary/cloudinary_php --no-dev --optimize-autoloader --verbose 2>&1 || true; \
             fi; \
             if [ -f "vendor/cloudinary/cloudinary_php/src/Cloudinary.php" ]; then \
                 echo "✓ Cloudinary.php found"; \
