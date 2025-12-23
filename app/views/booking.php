@@ -118,7 +118,7 @@ try {
             'subcategory' => $eventData['subcategory'] ?? 'Event',
             'price' => (float)($eventData['price'] ?? 0),
             'discounted_price' => !empty($eventData['discounted_price']) ? (float)$eventData['discounted_price'] : null,
-            'image' => $eventData['image'] ?? $eventData['image_url'] ?? 'https://placehold.co/1200x630/1f2937/f1f1f1?text=Event',
+            'image' => imageUrl($eventData['image'] ?? $eventData['image_url'] ?? ''),
             'gallery' => $galleryImages,
             'organizer' => $venue['name'] ?? 'Organizer',
             'available_tickets' => (int)($eventData['available_tickets'] ?? 0),
