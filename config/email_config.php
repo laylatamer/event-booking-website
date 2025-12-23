@@ -27,7 +27,7 @@ return [
     'smtp_password' => 'nguddcnzotbnktpq',     // Your email password or app password (for Gmail, use App Password)
     
     // Email Settings
-    'from_email' => 'noreply@egzly.com',     // From email address (must be verified in SendGrid if using SendGrid)
+    'from_email' => getenv('FROM_EMAIL') ?: 'ms6261898@gmail.com',  // From email (must be verified in SendGrid - use the email you verified)
     'from_name' => 'EحGZLY',                  // From name
     'reply_to_email' => 'support@egzly.com', // Reply-to email address
     'reply_to_name' => 'EحGZLY Support',     // Reply-to name

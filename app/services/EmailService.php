@@ -418,10 +418,11 @@ class EmailService {
      */
     private function sendWithSendGrid($to, $subject, $body, $recipientName = '', $qrCodeImage = false) {
         try {
-            $apiKey = $this->config['sendgrid_api_key'] ?? '';
+            // Check environment variable first (for Railway), then config file
+            $apiKey = getenv('SENDGRID_API_KEY') ?: ($this->config['sendgrid_api_key'] ?? '');
             
             if (empty($apiKey)) {
-                error_log("ERROR: SendGrid API key not configured. Please set 'sendgrid_api_key' in config/email_config.php");
+                error_log("ERROR: SendGrid API key not configured. Please set SENDGRID_API_KEY environment variable in Railway or 'sendgrid_api_key' in config/email_config.php");
                 return false;
             }
             
