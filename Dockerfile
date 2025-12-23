@@ -56,11 +56,25 @@ RUN echo "=== Contents of /app ===" && ls -la /app && \
 # Install PHP dependencies (if composer.json exists)
 # Don't fail silently - we need Cloudinary SDK
 RUN if [ -f "composer.json" ]; then \
-        echo "Installing Composer dependencies..."; \
-        composer install --no-dev --optimize-autoloader; \
-        echo "Composer dependencies installed successfully"; \
+        echo "=== Installing Composer dependencies ==="; \
+        composer install --no-dev --optimize-autoloader 2>&1; \
+        echo "=== Composer install completed ==="; \
         if [ -f "vendor/autoload.php" ]; then \
             echo "✓ vendor/autoload.php exists"; \
+            echo "=== Checking for Cloudinary ==="; \
+            if [ -d "vendor/cloudinary" ]; then \
+                echo "✓ vendor/cloudinary directory exists"; \
+                ls -la vendor/cloudinary/ || true; \
+            else \
+                echo "✗ vendor/cloudinary directory NOT found"; \
+            fi; \
+            if [ -f "vendor/cloudinary/cloudinary_php/src/Cloudinary.php" ]; then \
+                echo "✓ Cloudinary.php found"; \
+            else \
+                echo "✗ Cloudinary.php NOT found"; \
+                echo "Searching for Cloudinary files..."; \
+                find vendor -name "*Cloudinary*" -type f 2>/dev/null | head -5 || true; \
+            fi; \
         else \
             echo "✗ vendor/autoload.php NOT found"; \
         fi; \

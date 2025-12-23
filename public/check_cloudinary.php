@@ -34,6 +34,24 @@ if (class_exists('Cloudinary\Cloudinary')) {
     $status['cloudinary_sdk_available'] = true;
 } else {
     $status['errors'][] = 'Cloudinary SDK not found. Install: composer require cloudinary/cloudinary_php';
+    
+    // Additional diagnostics
+    $cloudinaryPath = __DIR__ . '/../vendor/cloudinary/cloudinary_php/src/Cloudinary.php';
+    if (file_exists($cloudinaryPath)) {
+        $status['errors'][] = 'Cloudinary.php file exists but class not loaded. Path: ' . $cloudinaryPath;
+    } else {
+        $status['errors'][] = 'Cloudinary.php file not found at: ' . $cloudinaryPath;
+    }
+    
+    // Check vendor directory
+    $vendorDir = __DIR__ . '/../vendor';
+    if (is_dir($vendorDir)) {
+        $status['vendor_dir_exists'] = true;
+        $status['vendor_contents'] = array_slice(scandir($vendorDir), 0, 10); // First 10 items
+    } else {
+        $status['vendor_dir_exists'] = false;
+        $status['errors'][] = 'Vendor directory not found at: ' . $vendorDir;
+    }
 }
 
 // Check environment variables
