@@ -163,18 +163,11 @@ class EmailService {
             $emailProvider = $this->config['email_provider'] ?? 'phpmailer';
             
             // Build email body with QR code based on provider
-            if ($emailProvider === 'sendgrid' && $qrCodeImage) {
-                // For SendGrid, use CID reference (attachment will be added in sendWithSendGrid)
-                $qrCodeHtml = '<img src="cid:qrcode" alt="Booking QR Code" style="max-width: 300px; height: auto; margin: 20px auto; display: block;" />';
-                $emailBody = $this->buildEmailTemplate($fullName, $bookingData, $eventData, $qrCodeHtml);
-            } elseif ($this->usePHPMailer && $qrCodeImage) {
-                // When using PHPMailer, we'll embed as attachment and reference with CID
-                $qrCodeHtml = '<img src="cid:qrcode" alt="Booking QR Code" style="max-width: 300px; height: auto; margin: 20px auto; display: block;" />';
-                $emailBody = $this->buildEmailTemplate($fullName, $bookingData, $eventData, $qrCodeHtml);
-            } elseif ($qrCodeImage) {
-                // For native mail(), use base64 embedding
+            // For all providers, use base64 embedding for better compatibility
+            if ($qrCodeImage) {
+                // Use base64 embedding for all providers (most reliable across email clients)
                 $qrCodeBase64 = base64_encode($qrCodeImage);
-                $qrCodeHtml = '<img src="data:image/png;base64,' . $qrCodeBase64 . '" alt="Booking QR Code" style="max-width: 300px; height: auto; margin: 20px auto; display: block;" />';
+                $qrCodeHtml = '<img src="data:image/png;base64,' . $qrCodeBase64 . '" alt="Booking QR Code" style="max-width: 300px; height: auto; margin: 20px auto; display: block; border: 2px solid #f97316; border-radius: 8px; padding: 10px; background-color: #ffffff;" />';
                 $emailBody = $this->buildEmailTemplate($fullName, $bookingData, $eventData, $qrCodeHtml);
             } else {
                 error_log("Failed to generate QR code for booking: " . $bookingCode);
