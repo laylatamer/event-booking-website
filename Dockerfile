@@ -59,13 +59,20 @@ RUN if [ -f "composer.json" ]; then \
         echo "=== Installing Composer dependencies ==="; \
         echo "Composer.json contents:"; \
         cat composer.json || true; \
-        composer install --no-dev --optimize-autoloader --verbose 2>&1 || { \
-            echo "=== Composer install failed, trying with --ignore-platform-reqs ==="; \
-            composer install --no-dev --optimize-autoloader --ignore-platform-reqs --verbose 2>&1 || { \
-                echo "=== Composer install still failed ==="; \
-                exit 1; \
-            }; \
-        }; \
+        echo "=== Checking composer.lock ==="; \
+        if [ -f "composer.lock" ]; then \
+            echo "composer.lock exists, checking if Cloudinary is in it..."; \
+            if grep -q "cloudinary" composer.lock; then \
+                echo "✓ Cloudinary found in lock file"; \
+                composer install --no-dev --optimize-autoloader --verbose 2>&1 || composer install --no-dev --optimize-autoloader --ignore-platform-reqs --verbose 2>&1; \
+            else \
+                echo "✗ Cloudinary NOT in lock file, updating lock file..."; \
+                composer update --no-dev --optimize-autoloader --verbose 2>&1 || composer update --no-dev --optimize-autoloader --ignore-platform-reqs --verbose 2>&1; \
+            fi; \
+        else \
+            echo "No composer.lock found, running composer install..."; \
+            composer install --no-dev --optimize-autoloader --verbose 2>&1 || composer install --no-dev --optimize-autoloader --ignore-platform-reqs --verbose 2>&1; \
+        fi; \
         echo "=== Composer install completed ==="; \
         if [ -f "vendor/autoload.php" ]; then \
             echo "✓ vendor/autoload.php exists"; \
