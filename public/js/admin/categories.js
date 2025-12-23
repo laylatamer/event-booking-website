@@ -448,7 +448,13 @@ function renderCategoryTable(tableId, subcategories) {
         row.innerHTML = `
             <td>
                 ${subcategory.image_url ? 
-                    `<img src="${escapeHtml(subcategory.image_url)}" alt="${escapeHtml(subcategory.name)}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;">` : 
+                    (() => {
+                        let imgUrl = escapeHtml(subcategory.image_url);
+                        if (imgUrl && !imgUrl.startsWith('http') && !imgUrl.startsWith('/')) {
+                            imgUrl = '/' + imgUrl;
+                        }
+                        return `<img src="${imgUrl}" alt="${escapeHtml(subcategory.name)}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;">`;
+                    })() : 
                     '<div style="width: 50px; height: 50px; background: linear-gradient(135deg, #333, #444); border-radius: 8px; display: flex; align-items: center; justify-content: center;"><i data-feather="image" style="color: #666;"></i></div>'
                 }
             </td>
@@ -658,7 +664,11 @@ async function editSubcategory(subcategoryId) {
             // Show current image if exists
             const currentImage = document.getElementById('edit-subcategory-current-image');
             if (subcategory.image_url) {
-                currentImage.src = subcategory.image_url;
+                let imgUrl = subcategory.image_url;
+                if (imgUrl && !imgUrl.startsWith('http') && !imgUrl.startsWith('/')) {
+                    imgUrl = '/' + imgUrl;
+                }
+                currentImage.src = imgUrl;
                 currentImage.style.display = 'block';
             } else {
                 currentImage.style.display = 'none';
