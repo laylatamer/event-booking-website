@@ -159,8 +159,15 @@ class EmailService {
             // Generate QR code image
             $qrCodeImage = $this->generateQRCode($qrData);
             
-            // Build email body with QR code
-            if ($this->usePHPMailer && $qrCodeImage) {
+            // Determine email provider first
+            $emailProvider = $this->config['email_provider'] ?? 'phpmailer';
+            
+            // Build email body with QR code based on provider
+            if ($emailProvider === 'sendgrid' && $qrCodeImage) {
+                // For SendGrid, use CID reference (attachment will be added in sendWithSendGrid)
+                $qrCodeHtml = '<img src="cid:qrcode" alt="Booking QR Code" style="max-width: 300px; height: auto; margin: 20px auto; display: block;" />';
+                $emailBody = $this->buildEmailTemplate($fullName, $bookingData, $eventData, $qrCodeHtml);
+            } elseif ($this->usePHPMailer && $qrCodeImage) {
                 // When using PHPMailer, we'll embed as attachment and reference with CID
                 $qrCodeHtml = '<img src="cid:qrcode" alt="Booking QR Code" style="max-width: 300px; height: auto; margin: 20px auto; display: block;" />';
                 $emailBody = $this->buildEmailTemplate($fullName, $bookingData, $eventData, $qrCodeHtml);
@@ -179,12 +186,11 @@ class EmailService {
             error_log("EmailService: Attempting to send email to: " . $to);
             error_log("EmailService: Subject: " . $subject);
             error_log("EmailService: Email body length: " . strlen($emailBody) . " bytes");
+            error_log("EmailService: Email Provider: " . $emailProvider);
             error_log("EmailService: Using PHPMailer: " . ($this->usePHPMailer ? 'Yes' : 'No'));
             error_log("EmailService: QR code generated: " . ($qrCodeImage ? 'Yes' : 'No'));
             
             // Send email using configured provider
-            $emailProvider = $this->config['email_provider'] ?? 'phpmailer';
-            
             if ($emailProvider === 'sendgrid') {
                 $success = $this->sendWithSendGrid($to, $subject, $emailBody, $fullName, $qrCodeImage);
             } elseif ($emailProvider === 'phpmailer' || $this->usePHPMailer) {
