@@ -14,16 +14,18 @@ $isRailway = (getenv('RAILWAY_ENVIRONMENT') !== false ||
 // Base URL for assets
 // In Railway: / (since we serve from /app/public, which is the web root)
 // Locally: /event-booking-website/public/ or /public/ depending on setup
-if ($isRailway) {
-    // Railway: public is the web root
-    define('BASE_ASSETS_PATH', '/');
-} else {
-    // Local development: check if we're in a subdirectory
-    $scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
-    if (strpos($scriptName, '/event-booking-website/') !== false) {
-        define('BASE_ASSETS_PATH', '/event-booking-website/public/');
+if (!defined('BASE_ASSETS_PATH')) {
+    if ($isRailway) {
+        // Railway: public is the web root
+        define('BASE_ASSETS_PATH', '/');
     } else {
-        define('BASE_ASSETS_PATH', '/public/');
+        // Local development: check if we're in a subdirectory
+        $scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
+        if (strpos($scriptName, '/event-booking-website/') !== false) {
+            define('BASE_ASSETS_PATH', '/event-booking-website/public/');
+        } else {
+            define('BASE_ASSETS_PATH', '/public/');
+        }
     }
 }
 
