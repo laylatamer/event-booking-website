@@ -51,6 +51,11 @@ function imageUrl($url) {
         return $url;
     }
     
+    // If it's already using the image.php proxy, return as-is
+    if (strpos($url, '/image.php?path=') === 0) {
+        return $url;
+    }
+    
     // Clean up the path (remove backslashes, normalize)
     $url = str_replace('\\', '/', trim($url));
     
