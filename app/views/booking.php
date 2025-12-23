@@ -477,9 +477,10 @@ include 'partials/header.php';
                         // PHP populates the gallery
                         if ($event && !empty($event['gallery'])) {
                             foreach ($event['gallery'] as $image) {
+                                $normalizedImage = imageUrl($image);
                                 echo '
                                     <div class="overflow-hidden rounded-lg h-40">
-                                        <img src="' . $image . '" alt="Event image" class="w-full h-full object-cover hover:scale-110 transition duration-300">
+                                        <img src="' . htmlspecialchars($normalizedImage) . '" alt="Event image" class="w-full h-full object-cover hover:scale-110 transition duration-300">
                                     </div>
                                 ';
                             }
