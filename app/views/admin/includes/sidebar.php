@@ -63,7 +63,9 @@
             <div class="avatar">
                 <?php if (!empty($adminImage)): ?>
                     <?php 
-                    require_once __DIR__ . '/../../../app/views/path_helper.php';
+                    if (!function_exists('imageUrl')) {
+                        require_once __DIR__ . '/../../../app/views/path_helper.php';
+                    }
                     $imageSrc = imageUrl($adminImage);
                     ?>
                     <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="Admin Avatar" style="width: 100%; height: 100%; object-fit: cover;">
