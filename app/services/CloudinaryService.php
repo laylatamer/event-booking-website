@@ -47,8 +47,8 @@ class CloudinaryService {
         
         // Try to initialize Cloudinary
         try {
-            // Pass configuration directly to constructor (Cloudinary PHP SDK v3)
-            $config = [
+            // Set global configuration (required for UploadApi to work)
+            \Cloudinary\Configuration\Configuration::instance([
                 'cloud' => [
                     'cloud_name' => $cloudName,
                     'api_key' => $apiKey,
@@ -57,20 +57,22 @@ class CloudinaryService {
                 'url' => [
                     'secure' => true
                 ]
-            ];
+            ]);
             
-            // Create Cloudinary instance with configuration
-            $this->cloudinary = new \Cloudinary\Cloudinary($config);
+            // Create Cloudinary instance (uses global config)
+            $this->cloudinary = new \Cloudinary\Cloudinary();
             
             // Verify configuration was set correctly
-            $actualCloudName = $this->cloudinary->configuration->cloud->cloudName;
+            $config = \Cloudinary\Configuration\Configuration::instance();
+            $actualCloudName = $config->cloud->cloudName;
+            $actualApiSecret = $config->cloud->apiSecret;
             
-            if ($actualCloudName === $cloudName) {
+            if ($actualCloudName === $cloudName && !empty($actualApiSecret)) {
                 $this->enabled = true;
                 error_log("CloudinaryService: Successfully initialized with cloud name: " . $cloudName);
             } else {
                 $this->enabled = false;
-                error_log("CloudinaryService: Configuration verification failed. Expected: " . $cloudName . ", Got: " . $actualCloudName);
+                error_log("CloudinaryService: Configuration verification failed. Expected cloud name: " . $cloudName . ", Got: " . $actualCloudName . ", API Secret set: " . (!empty($actualApiSecret) ? 'yes' : 'no'));
             }
         } catch (Throwable $e) {
             error_log("Cloudinary initialization failed: " . $e->getMessage());
