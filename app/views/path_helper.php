@@ -38,15 +38,15 @@ function asset($path) {
 
 /**
  * Helper function to normalize image URLs
+ * Uses image.php proxy endpoint (same as profile pictures) for reliable access
  * Handles both absolute URLs (http/https) and relative paths
- * Ensures images are accessible via web (uploads/ paths become /uploads/)
  */
 function imageUrl($url) {
     if (empty($url)) {
-        return 'https://placehold.co/400x400/2a2a2a/f97316?text=Event';
+        return '/image.php?path=';
     }
     
-    // If it's already an absolute URL, return as-is
+    // If it's already an absolute URL (external), return as-is
     if (preg_match('/^https?:\/\//', $url)) {
         return $url;
     }
@@ -54,26 +54,24 @@ function imageUrl($url) {
     // Clean up the path (remove backslashes, normalize)
     $url = str_replace('\\', '/', trim($url));
     
-    // If it starts with /, it's already an absolute path - return as-is
-    if (strpos($url, '/') === 0) {
-        return $url;
-    }
+    // Remove leading slash if present (we'll add it back via proxy)
+    $url = ltrim($url, '/');
     
     // If it's in uploads directory (most common case)
-    // Paths like "uploads/events/file.jpg" should become "/uploads/events/file.jpg"
+    // Use image.php proxy endpoint (same as profile pictures) for reliable access
     if (strpos($url, 'uploads/') === 0) {
-        return '/' . $url; // Make it absolute from web root
+        return '/image.php?path=' . urlencode($url);
     }
     
-    // If it contains uploads anywhere, extract and make absolute
+    // If it contains uploads anywhere, extract and use proxy
     if (strpos($url, 'uploads/') !== false) {
         $parts = explode('uploads/', $url);
         if (count($parts) > 1) {
-            return '/uploads/' . $parts[1];
+            return '/image.php?path=' . urlencode('uploads/' . $parts[1]);
         }
     }
     
-    // Default: prepend with base assets path
-    return BASE_ASSETS_PATH . ltrim($url, '/');
+    // For other paths, also use proxy for consistency
+    return '/image.php?path=' . urlencode($url);
 }
 

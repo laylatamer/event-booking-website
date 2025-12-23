@@ -30,34 +30,29 @@ class EventController {
     
     /**
      * Normalize image URL - uses global imageUrl() function if available
+     * Uses image.php proxy endpoint (same as profile pictures) for reliable access
      */
     private function normalizeImageUrl($url) {
         if (function_exists('imageUrl')) {
             return imageUrl($url);
         }
         
-        // Fallback if imageUrl() is not available
+        // Fallback if imageUrl() is not available - use proxy endpoint
         if (empty($url)) {
-            return 'https://placehold.co/400x400/2a2a2a/f97316?text=Event';
+            return '/image.php?path=';
         }
         
-        // If it's already an absolute URL, return as-is
+        // If it's already an absolute URL (external), return as-is
         if (preg_match('/^https?:\/\//', $url)) {
             return $url;
         }
         
-        // If it starts with /, it's already an absolute path
-        if (strpos($url, '/') === 0) {
-            return $url;
-        }
+        // Clean up the path
+        $url = str_replace('\\', '/', trim($url));
+        $url = ltrim($url, '/');
         
-        // Otherwise, treat as relative to uploads or public directory
-        if (strpos($url, 'uploads/') === 0 || strpos($url, 'uploads\\') === 0) {
-            return '/' . ltrim(str_replace('\\', '/', $url), '/');
-        }
-        
-        // Default: assume it's in public directory or relative to base
-        return '/' . ltrim(str_replace('\\', '/', $url), '/');
+        // Use image.php proxy endpoint for all local images (same as profile pictures)
+        return '/image.php?path=' . urlencode($url);
     }
 
     public function getAllEvents() {
