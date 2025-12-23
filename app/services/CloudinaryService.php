@@ -133,8 +133,13 @@ class CloudinaryService {
                 $publicId = $folder . '/' . $publicId;
             }
             
+            // Verify Cloudinary instance is valid
+            if (!$this->cloudinary) {
+                return ['success' => false, 'message' => 'Cloudinary instance not initialized'];
+            }
+            
             // Upload to Cloudinary
-            $uploadApi = new \Cloudinary\Api\Upload\UploadApi();
+            $uploadApi = new \Cloudinary\Api\Upload\UploadApi($this->cloudinary);
             $result = $uploadApi->upload($file['tmp_name'], [
                 'public_id' => $publicId,
                 'folder' => $folder,
