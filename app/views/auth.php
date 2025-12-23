@@ -37,9 +37,9 @@ define('ADMIN_FEATURE_ENABLED', true); // Admin-specific functionality is ENABLE
 // --- END ADMIN CONSTANTS ---
 
 
-// Define a directory for uploaded profile pictures
+// Define a directory for uploaded profile pictures (in public/uploads for web accessibility)
 // NOTE: You must ensure this directory exists and is writable by the web server!
-$uploadDir = __DIR__ . '/../../uploads/profile_pics/'; // Absolute path to uploads directory
+$uploadDir = __DIR__ . '/../../public/uploads/profile_pics/'; // Absolute path to uploads directory
 
 // Function to safely check if the request method is POST
 function isPost() {

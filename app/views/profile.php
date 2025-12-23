@@ -102,7 +102,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 } elseif ($file['size'] > 2 * 1024 * 1024) {
                     $errors[] = 'Profile image must be 2MB or smaller.';
                 } else {
-                    $uploadDir = __DIR__ . '/../../uploads/profile_pics/';
+                    // Save to public/uploads for web accessibility
+                    $uploadDir = __DIR__ . '/../../public/uploads/profile_pics/';
                     if (!is_dir($uploadDir)) {
                         mkdir($uploadDir, 0777, true);
                     }

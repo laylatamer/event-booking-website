@@ -41,7 +41,7 @@ class Venue {
             throw new Exception('File size must be less than 5MB.');
         }
         
-        // Create uploads directory if it doesn't exist
+        // Create uploads directory if it doesn't exist (in public/uploads for web accessibility)
         $uploadDir = __DIR__ . '/../../public/uploads/venues/';
         if (!file_exists($uploadDir)) {
             mkdir($uploadDir, 0777, true);
@@ -54,7 +54,7 @@ class Venue {
         
         // Move uploaded file
         if (move_uploaded_file($file['tmp_name'], $filePath)) {
-            // Return relative path for database
+            // Return relative path for database (accessible via web)
             return 'uploads/venues/' . $filename;
         }
         

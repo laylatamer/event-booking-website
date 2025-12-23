@@ -114,8 +114,8 @@ try {
                             break;
                         }
                         
-                        // Create upload directory if it doesn't exist
-                        $uploadDir = __DIR__ . '/../../uploads/profile_pics/';
+                        // Create upload directory if it doesn't exist (in public/uploads for web accessibility)
+                        $uploadDir = __DIR__ . '/../uploads/profile_pics/';
                         if (!is_dir($uploadDir)) {
                             mkdir($uploadDir, 0777, true);
                         }
@@ -127,7 +127,7 @@ try {
                         
                         // Move uploaded file
                         if (move_uploaded_file($file['tmp_name'], $targetPath)) {
-                            // Save the relative path to the database
+                            // Save the relative path to the database (accessible via web)
                             $data['profile_image_path'] = 'uploads/profile_pics/' . $newFileName;
                             error_log("Profile image uploaded successfully: " . $data['profile_image_path']);
                         } else {
@@ -244,8 +244,8 @@ try {
                             break;
                         }
                         
-                        // Create upload directory if it doesn't exist
-                        $uploadDir = __DIR__ . '/../../uploads/profile_pics/';
+                        // Create upload directory if it doesn't exist (in public/uploads for web accessibility)
+                        $uploadDir = __DIR__ . '/../uploads/profile_pics/';
                         if (!is_dir($uploadDir)) {
                             mkdir($uploadDir, 0777, true);
                         }
@@ -261,7 +261,7 @@ try {
                         
                         // Move uploaded file
                         if (move_uploaded_file($file['tmp_name'], $targetPath)) {
-                            // Save the relative path to the database
+                            // Save the relative path to the database (accessible via web)
                             $data['profile_image_path'] = 'uploads/profile_pics/' . $newFileName;
                             error_log("Profile image uploaded successfully: " . $data['profile_image_path']);
                         } else {

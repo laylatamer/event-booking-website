@@ -16,16 +16,16 @@ $imagePath = str_replace(['..', '\\'], ['', '/'], $imagePath);
 $imagePath = ltrim($imagePath, '/');
 
 // Construct full file path
-// imagePath is like "uploads/profile_pics/prof_68f76afade590.jpg"
+// imagePath is like "uploads/profile_pics/user_123_1234567890.jpg"
 // public/image.php is at: public/image.php
-// uploads/ is at: uploads/ (root level)
-// So from public/, we go up one level: ../uploads/...
-$fullPath = __DIR__ . '/../' . $imagePath;
+// uploads/ should be at: public/uploads/ (for web accessibility)
+// So from public/, we go to: ./uploads/...
+$fullPath = __DIR__ . '/' . $imagePath;
 
 // Check if file exists and is within allowed directory
 if (!file_exists($fullPath) || !is_file($fullPath)) {
     // Try alternative path (in case uploads is in a different location)
-    $altPath = __DIR__ . '/../../uploads/' . str_replace('uploads/', '', $imagePath);
+    $altPath = __DIR__ . '/../uploads/' . str_replace('uploads/', '', $imagePath);
     if (file_exists($altPath) && is_file($altPath)) {
         $fullPath = $altPath;
     } else {
@@ -40,7 +40,7 @@ if (!file_exists($fullPath) || !is_file($fullPath)) {
 // Check if file is actually in uploads directory (only if file exists)
 if (file_exists($fullPath)) {
     $realPath = realpath($fullPath);
-    $uploadsDir = realpath(__DIR__ . '/../uploads');
+    $uploadsDir = realpath(__DIR__ . '/uploads');
     if ($uploadsDir && strpos($realPath, $uploadsDir) !== 0) {
         // Security violation - return default avatar instead of transparent pixel
         header('Content-Type: image/svg+xml');
