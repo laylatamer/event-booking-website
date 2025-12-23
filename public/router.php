@@ -37,7 +37,7 @@ if (strpos($requestPath, 'api/') === 0) {
 }
 
 // Handle utility scripts in public directory
-$utilityScripts = ['check_database.php', 'check_cloudinary.php', 'run_migration.php'];
+$utilityScripts = ['check_cloudinary.php', 'run_migration.php'];
 if (in_array($requestPath, $utilityScripts) || in_array(basename($requestPath), $utilityScripts)) {
     $scriptPath = __DIR__ . '/' . basename($requestPath);
     if (file_exists($scriptPath)) {
