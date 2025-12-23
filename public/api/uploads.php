@@ -1,26 +1,45 @@
 <?php
+// Start output buffering to catch any errors
+ob_start();
+
+// Set headers early
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST');
 header('Access-Control-Allow-Headers: Content-Type');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    ob_clean();
     http_response_code(200);
     exit();
 }
 
+// Suppress error display - we'll return JSON errors instead
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
 
-// Try to load Cloudinary service
+// Try to load Cloudinary service (suppress errors)
 $useCloudinary = false;
 $cloudinaryService = null;
 try {
-    require_once __DIR__ . '/../../app/services/CloudinaryService.php';
-    $cloudinaryService = new CloudinaryService();
-    $useCloudinary = $cloudinaryService->isEnabled();
-} catch (Exception $e) {
+    // Check if vendor/autoload.php exists (composer dependencies)
+    $vendorPath = __DIR__ . '/../../vendor/autoload.php';
+    if (file_exists($vendorPath)) {
+        require_once $vendorPath;
+    }
+    
+    $cloudinaryServicePath = __DIR__ . '/../../app/services/CloudinaryService.php';
+    if (file_exists($cloudinaryServicePath)) {
+        require_once $cloudinaryServicePath;
+        $cloudinaryService = new CloudinaryService();
+        $useCloudinary = $cloudinaryService->isEnabled();
+    }
+} catch (Throwable $e) {
+    // Silently fail - will use local storage
     error_log("Cloudinary not available: " . $e->getMessage());
+    $useCloudinary = false;
+    $cloudinaryService = null;
 }
 
 // Get absolute paths (fallback to local storage)
@@ -135,6 +154,9 @@ try {
         $relativePath = 'uploads/' . basename($relativePath);
     }
     
+    // Clean any output before sending JSON
+    ob_clean();
+    
     echo json_encode([
         'success' => true,
         'url' => $relativePath, // Return relative path only, not full URL
@@ -143,10 +165,25 @@ try {
     ]);
     
 } catch (Exception $e) {
+    // Clean any output before sending JSON error
+    ob_clean();
+    
     http_response_code(400);
     echo json_encode([
         'success' => false,
         'message' => $e->getMessage()
     ]);
+} catch (Throwable $e) {
+    // Catch any other errors (fatal errors, etc.)
+    ob_clean();
+    
+    http_response_code(500);
+    echo json_encode([
+        'success' => false,
+        'message' => 'Upload failed: ' . $e->getMessage()
+    ]);
 }
+
+// End output buffering
+ob_end_flush();
 ?>

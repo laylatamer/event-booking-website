@@ -5,17 +5,37 @@
  * Falls back to local storage if Cloudinary is not configured
  */
 
-require_once __DIR__ . '/../../vendor/autoload.php';
+// Try to load Cloudinary SDK (may not be installed)
+$cloudinaryLoaded = false;
+try {
+    $vendorPath = __DIR__ . '/../../vendor/autoload.php';
+    if (file_exists($vendorPath)) {
+        require_once $vendorPath;
+        $cloudinaryLoaded = true;
+    }
+} catch (Throwable $e) {
+    // Cloudinary SDK not available
+    $cloudinaryLoaded = false;
+}
 
-use Cloudinary\Cloudinary;
-use Cloudinary\Configuration\Configuration;
-use Cloudinary\Api\Upload\UploadApi;
+// Only use Cloudinary classes if SDK is loaded
+if ($cloudinaryLoaded) {
+    use Cloudinary\Cloudinary;
+    use Cloudinary\Configuration\Configuration;
+    use Cloudinary\Api\Upload\UploadApi;
+}
 
 class CloudinaryService {
     private $cloudinary;
     private $enabled;
     
     public function __construct() {
+        // Check if Cloudinary SDK is loaded
+        if (!class_exists('Cloudinary\Cloudinary')) {
+            $this->enabled = false;
+            return;
+        }
+        
         // Check if Cloudinary is configured
         $cloudName = getenv('CLOUDINARY_CLOUD_NAME') ?: '';
         $apiKey = getenv('CLOUDINARY_API_KEY') ?: '';
@@ -36,7 +56,7 @@ class CloudinaryService {
                     ]
                 ]);
                 $this->cloudinary = new Cloudinary();
-            } catch (Exception $e) {
+            } catch (Throwable $e) {
                 error_log("Cloudinary initialization failed: " . $e->getMessage());
                 $this->enabled = false;
             }
