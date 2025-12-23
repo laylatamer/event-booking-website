@@ -51,11 +51,20 @@ if (strpos($requestPath, 'admin') === 0 || $requestPath === 'admin') {
     
     $adminViewPath = $projectRoot . '/app/views/admin/' . $adminPath;
     
-    // Debug: log the path being checked
-    error_log("Admin route check: requestPath='$requestPath', adminPath='$adminPath', fullPath='$adminViewPath', exists=" . (file_exists($adminViewPath) ? 'yes' : 'no'));
-    
     if (file_exists($adminViewPath)) {
-        require $adminViewPath;
+        try {
+            require $adminViewPath;
+        } catch (Throwable $e) {
+            error_log("Admin panel error: " . $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine());
+            http_response_code(500);
+            $errorPage = $projectRoot . '/app/views/error.php';
+            if (file_exists($errorPage)) {
+                $_GET['code'] = 500;
+                require $errorPage;
+            } else {
+                echo "500 - Internal Server Error: " . htmlspecialchars($e->getMessage());
+            }
+        }
         exit;
     } else {
         // Redirect to error page for 404
