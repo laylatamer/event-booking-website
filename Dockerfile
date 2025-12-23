@@ -56,6 +56,15 @@ RUN echo "=== Contents of /app ===" && ls -la /app && \
 # Install PHP dependencies (if composer.json exists)
 RUN if [ -f "composer.json" ]; then composer install --no-dev --optimize-autoloader || true; fi
 
+# Create upload directories structure (will be mounted as volume in Railway)
+# These directories will be created if volume is not mounted, or Railway will mount volume here
+RUN mkdir -p /app/public/uploads/profile_pics \
+    && mkdir -p /app/public/uploads/events/gallery \
+    && mkdir -p /app/public/uploads/subcategories \
+    && mkdir -p /app/public/uploads/venues \
+    && mkdir -p /app/public/uploads/categories \
+    && chmod -R 755 /app/public/uploads
+
 # Expose port (Railway will set PORT env var)
 EXPOSE 8080
 
