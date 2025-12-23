@@ -94,7 +94,7 @@
                             <td><?php echo htmlspecialchars($booking['event_title'] ?? 'N/A'); ?></td>
                             <td><?php echo htmlspecialchars($booking['user_email'] ?? 'N/A'); ?></td>
                             <td><?php echo date('M d, Y', strtotime($booking['created_at'])); ?></td>
-                            <td><?php echo $booking['ticket_quantity'] ?? 1; ?></td>
+                            <td><?php echo $booking['ticket_count'] ?? 1; ?></td>
                             <td>$<?php echo number_format($booking['final_amount'] ?? 0, 2); ?></td>
                             <td>
                                 <?php 
