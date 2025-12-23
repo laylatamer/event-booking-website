@@ -5,17 +5,17 @@
  * This ensures sessions are started properly and prevents duplicate session_start() calls
  */
 
-// Configure session timeout to 15 minutes (900 seconds)
-ini_set('session.gc_maxlifetime', 900); // Session data lifetime
-ini_set('session.cookie_lifetime', 900); // Cookie lifetime
+// Configure session timeout to 30 minutes (1800 seconds)
+ini_set('session.gc_maxlifetime', 1800); // Session data lifetime
+ini_set('session.cookie_lifetime', 1800); // Cookie lifetime
 
 // Start session if not already started
 // Use output buffering to prevent any output issues
 if (session_status() === PHP_SESSION_NONE) {
     if (!headers_sent()) {
-        // Set session cookie parameters for 15 minutes
+        // Set session cookie parameters for 30 minutes
         session_set_cookie_params([
-            'lifetime' => 900, // 15 minutes
+            'lifetime' => 1800, // 30 minutes
             'path' => '/',
             'domain' => '',
             'secure' => false, // Set to true if using HTTPS
@@ -34,8 +34,8 @@ if (session_status() === PHP_SESSION_NONE) {
             $_SESSION['created'] = time();
         }
         
-        // Check if session has expired (15 minutes of inactivity)
-        if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 900)) {
+        // Check if session has expired (30 minutes of inactivity)
+        if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 1800)) {
             // Session expired - destroy it
             session_unset();
             session_destroy();

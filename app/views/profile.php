@@ -102,16 +102,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 } elseif ($file['size'] > 2 * 1024 * 1024) {
                     $errors[] = 'Profile image must be 2MB or smaller.';
                 } else {
-                    // Save to public/uploads for web accessibility
-                    $uploadDir = __DIR__ . '/../../public/uploads/profile_pics/';
-                    if (!is_dir($uploadDir)) {
-                        mkdir($uploadDir, 0777, true);
+                    // Try Cloudinary first
+                    $useCloudinary = false;
+                    $cloudinaryService = null;
+                    try {
+                        require_once __DIR__ . '/../../app/services/CloudinaryService.php';
+                        $cloudinaryService = new CloudinaryService();
+                        $useCloudinary = $cloudinaryService->isEnabled();
+                    } catch (Exception $e) {
+                        error_log("Cloudinary not available: " . $e->getMessage());
                     }
-                    $newFileName = 'user_' . $userId . '_' . time() . '.' . $allowed[$mime];
-                    if (move_uploaded_file($file['tmp_name'], $uploadDir . $newFileName)) {
-                        $profileImagePath = 'uploads/profile_pics/' . $newFileName;
-                    } else {
-                        $errors[] = 'Failed to save the uploaded image.';
+                    
+                    // Try Cloudinary upload
+                    if ($useCloudinary && $cloudinaryService) {
+                        $publicId = 'user_' . $userId . '_' . time();
+                        $result = $cloudinaryService->uploadImage($file, 'profile_pics', $publicId);
+                        
+                        if ($result['success']) {
+                            // Save Cloudinary URL to database
+                            $profileImagePath = $result['url'];
+                            error_log("Profile image uploaded to Cloudinary: " . $result['url']);
+                        } else {
+                            // Cloudinary failed, fall back to local
+                            error_log("Cloudinary upload failed, using local storage: " . ($result['message'] ?? 'Unknown error'));
+                            $useCloudinary = false;
+                        }
+                    }
+                    
+                    // Fallback to local storage
+                    if (!$useCloudinary) {
+                        // Save to public/uploads for web accessibility
+                        $uploadDir = __DIR__ . '/../../public/uploads/profile_pics/';
+                        if (!is_dir($uploadDir)) {
+                            mkdir($uploadDir, 0777, true);
+                        }
+                        $newFileName = 'user_' . $userId . '_' . time() . '.' . $allowed[$mime];
+                        if (move_uploaded_file($file['tmp_name'], $uploadDir . $newFileName)) {
+                            $profileImagePath = 'uploads/profile_pics/' . $newFileName;
+                        } else {
+                            $errors[] = 'Failed to save the uploaded image.';
+                        }
                     }
                 }
             } else {
