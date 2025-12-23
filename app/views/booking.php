@@ -25,6 +25,11 @@ if (file_exists(__DIR__ . '/../../config/db_connect.php')) {
     die("Database configuration not found");
 }
 
+// Include path helper BEFORE EventController (needed for imageUrl function)
+if (!defined('BASE_ASSETS_PATH')) {
+    require_once __DIR__ . '/path_helper.php';
+}
+
 // EventController
 if (file_exists(__DIR__ . '/../../app/controllers/EventController.php')) {
     require_once __DIR__ . '/../../app/controllers/EventController.php';
