@@ -78,7 +78,7 @@ include 'partials/header.php';
                             </div>
                         <?php endif; ?>
 
-                        <form action="/contact_form.php" method="POST" class="space-y-6">
+                        <form action="/contact.php" method="POST" class="space-y-6">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label class="block mb-2 text-sm font-medium">Your Name</label>
