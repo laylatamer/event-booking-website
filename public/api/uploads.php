@@ -87,16 +87,17 @@ try {
         throw new Exception('Failed to save file');
     }
     
-    // Generate URL relative to public directory (uploads/ is in public/uploads/)
-    $relativePath = str_replace($projectRoot . '/', '', $filepath);
-    // Use imageUrl helper or construct proper URL
-    $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
-    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-    $fileUrl = $protocol . '://' . $host . '/' . $relativePath;
+    // Generate relative path only (not full URL) - like "uploads/events/file.jpg"
+    // This will be normalized by imageUrl() helper when displayed
+    $relativePath = str_replace($projectRoot . '/public/', '', $filepath);
+    // Ensure it starts with "uploads/"
+    if (strpos($relativePath, 'uploads/') !== 0) {
+        $relativePath = 'uploads/' . basename($relativePath);
+    }
     
     echo json_encode([
         'success' => true,
-        'url' => $fileUrl,
+        'url' => $relativePath, // Return relative path only, not full URL
         'filename' => $filename,
         'message' => 'File uploaded successfully'
     ]);
