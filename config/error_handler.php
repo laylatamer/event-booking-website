@@ -39,9 +39,13 @@ if (!$isErrorPage) {
             
             // Redirect to error page
             if (!headers_sent()) {
-                $errorUrl = '/event-booking-website/app/views/error.php?code=500';
-                header('Location: ' . $errorUrl);
-                exit;
+                http_response_code(500);
+                $errorPage = __DIR__ . '/../app/views/error.php';
+                if (file_exists($errorPage)) {
+                    $_GET['code'] = 500;
+                    require $errorPage;
+                    exit;
+                }
             }
         }
         
@@ -67,9 +71,13 @@ if (!$isErrorPage) {
         
         // Redirect to error page
         if (!headers_sent()) {
-            $errorUrl = '/event-booking-website/app/views/error.php?code=500';
-            header('Location: ' . $errorUrl);
-            exit;
+            http_response_code(500);
+            $errorPage = __DIR__ . '/../app/views/error.php';
+            if (file_exists($errorPage)) {
+                $_GET['code'] = 500;
+                require $errorPage;
+                exit;
+            }
         }
     });
     
@@ -94,13 +102,20 @@ if (!$isErrorPage) {
             // or redirect if headers haven't been sent
             if (!headers_sent()) {
                 http_response_code(500);
-                $errorUrl = '/event-booking-website/app/views/error.php?code=500';
-                header('Location: ' . $errorUrl);
-                exit;
+                $errorPage = __DIR__ . '/../app/views/error.php';
+                if (file_exists($errorPage)) {
+                    $_GET['code'] = 500;
+                    require $errorPage;
+                    exit;
+                }
             } else {
-                // If headers already sent, output a script to redirect
-                echo '<script>window.location.href = "/event-booking-website/app/views/error.php?code=500";</script>';
-                exit;
+                // If headers already sent, try to output error page directly
+                $errorPage = __DIR__ . '/../app/views/error.php';
+                if (file_exists($errorPage)) {
+                    $_GET['code'] = 500;
+                    require $errorPage;
+                    exit;
+                }
             }
         }
     });

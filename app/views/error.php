@@ -86,7 +86,8 @@ $headline = $selected['headline'];
 $description = $selected['description'];
 
 // Provide a safe back link and home link
-$homeUrl = '/event-booking-website/app/views/homepage.php#top';
+// Use proper routing - homepage is accessible at / or /homepage.php
+$homeUrl = '/homepage.php';
 $backUrl = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : $homeUrl;
 ?>
 <!DOCTYPE html>

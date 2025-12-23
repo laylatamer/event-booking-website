@@ -113,9 +113,17 @@ if (file_exists($publicFilePath) && basename($requestPath) === $viewFile && $vie
 // Check if view exists
 $viewPath = $projectRoot . '/app/views/' . $viewFile;
 if (!file_exists($viewPath)) {
+    // Redirect to error page for 404
     http_response_code(404);
-    echo "404 - Page not found: " . htmlspecialchars($requestPath);
-    exit;
+    $errorPage = $projectRoot . '/app/views/error.php';
+    if (file_exists($errorPage)) {
+        $_GET['code'] = 404;
+        require $errorPage;
+        exit;
+    } else {
+        echo "404 - Page not found: " . htmlspecialchars($requestPath);
+        exit;
+    }
 }
 
 // Include the view
