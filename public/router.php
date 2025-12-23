@@ -100,6 +100,7 @@ $routes = [
     'ticket_verification.php' => 'ticket_verification.php',
     'terms&conditions.php' => 'terms&conditions.php',
     'contact.php' => 'contact.php', // Handle contact.php in public directory
+    'error.php' => 'error.php', // Allow direct access to error page
 ];
 
 // Get view file
