@@ -452,12 +452,12 @@ class EmailService {
                 'subject' => $subject,
                 'content' => [
                     [
-                        'type' => 'text/html',
-                        'value' => $body
-                    ],
-                    [
                         'type' => 'text/plain',
                         'value' => strip_tags($body)
+                    ],
+                    [
+                        'type' => 'text/html',
+                        'value' => $body
                     ]
                 ]
             ];
