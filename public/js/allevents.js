@@ -222,7 +222,12 @@
             const formattedDate = event.formattedDate || formatEventDateForCard(event.date);
             const venueName = event.location || event.venue_name || 'Venue TBD';
             const category = event.subcategory || event.category || 'Event';
-            const imageUrl = event.image || event.image_url || `https://placehold.co/400x400/2a2a2a/f97316?text=${encodeURIComponent(category)}`;
+            let imageUrl = event.image || event.image_url || `https://placehold.co/400x400/2a2a2a/f97316?text=${encodeURIComponent(category)}`;
+            
+            // Normalize image URL: if it's a local path (not http/https), prepend slash
+            if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('/')) {
+                imageUrl = '/' + imageUrl;
+            }
 
             card.innerHTML = `
                 <div class="event-image-container">
@@ -298,7 +303,13 @@
             contentEl.innerHTML = `
                 <div class="blurb-text-box">
                     <div style="margin-bottom: 1rem;">
-                        <img src="${event.image || event.image_url || 'https://placehold.co/600x300/2a2a2a/f97316?text=Event'}" 
+                        ${(() => {
+                            let imgUrl = event.image || event.image_url || 'https://placehold.co/600x300/2a2a2a/f97316?text=Event';
+                            if (imgUrl && !imgUrl.startsWith('http') && !imgUrl.startsWith('/')) {
+                                imgUrl = '/' + imgUrl;
+                            }
+                            return `<img src="${imgUrl}"`;
+                        })()} 
                              alt="${event.title}" 
                              style="width:100%;border-radius:8px;margin-bottom:1rem;">
                     </div>
