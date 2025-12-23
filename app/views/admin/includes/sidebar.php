@@ -63,8 +63,8 @@
             <div class="avatar">
                 <?php if (!empty($adminImage)): ?>
                     <?php 
-                    $cleanPath = ltrim($adminImage, '/\\');
-                    $imageSrc = '../../../public/image.php?path=' . urlencode($cleanPath);
+                    require_once __DIR__ . '/../../../app/views/path_helper.php';
+                    $imageSrc = imageUrl($adminImage);
                     ?>
                     <img src="<?php echo htmlspecialchars($imageSrc); ?>" alt="Admin Avatar" style="width: 100%; height: 100%; object-fit: cover;">
                 <?php else: ?>

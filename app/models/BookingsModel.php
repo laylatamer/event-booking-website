@@ -339,9 +339,6 @@ class BookingsModel {
      * @return array Result with success status, booking_id, and booking_code
      */
     public function createBooking($data) {
-        $totalStartTime = microtime(true);
-        error_log("DEBUG: createBooking started at " . date('Y-m-d H:i:s'));
-        
         try {
             // Check if bookings table exists (cache this check)
             static $bookingsTableExists = null;
@@ -354,9 +351,7 @@ class BookingsModel {
                 throw new Exception("Bookings table does not exist. Please run database migrations.");
             }
             
-            $transactionStartTime = microtime(true);
             $this->db->beginTransaction();
-            error_log("DEBUG: Transaction started");
             
             // Generate unique booking code
             $bookingCode = $this->generateBookingCode();
@@ -377,10 +372,7 @@ class BookingsModel {
             static $columnCache = [];
             if (!isset($columnCache[$this->table])) {
                 try {
-                    $startTime = microtime(true);
                     $columnCheck = $this->db->query("SHOW COLUMNS FROM " . $this->table);
-                    $queryTime = microtime(true) - $startTime;
-                    error_log("DEBUG: SHOW COLUMNS query took " . round($queryTime, 3) . " seconds");
                     
                     if (!$columnCheck) {
                         $errorInfo = $this->db->errorInfo();
@@ -578,11 +570,8 @@ class BookingsModel {
                 }
             }
             
-            // Update ticket availability (optimize with batch update if possible)
+            // Update ticket availability
             if (!empty($data['ticket_categories'])) {
-                $updateStartTime = microtime(true);
-                error_log("DEBUG: Starting ticket availability update for " . count($data['ticket_categories']) . " categories");
-                
                 foreach ($data['ticket_categories'] as $category) {
                     $categoryName = $category['category_name'] ?? $category['categoryName'] ?? '';
                     $quantity = intval($category['quantity'] ?? 0);
@@ -593,8 +582,6 @@ class BookingsModel {
                     }
                     
                     try {
-                        $categoryStartTime = microtime(true);
-                        
                         $updateQuery = "UPDATE event_ticket_categories 
                                        SET available_tickets = available_tickets - :quantity,
                                            updated_at = NOW()
@@ -609,8 +596,6 @@ class BookingsModel {
                         $updateStmt->bindValue(':category_name', $categoryName, PDO::PARAM_STR);
                         
                         $executeResult = $updateStmt->execute();
-                        $categoryTime = microtime(true) - $categoryStartTime;
-                        error_log("DEBUG: Category '$categoryName' update took " . round($categoryTime, 3) . " seconds");
                         
                         if (!$executeResult) {
                             $errorInfo = $updateStmt->errorInfo();
@@ -636,16 +621,10 @@ class BookingsModel {
                         throw new Exception("Database error updating ticket availability: " . $e->getMessage());
                     }
                 }
-                
-                $updateTotalTime = microtime(true) - $updateStartTime;
-                error_log("DEBUG: Total ticket availability update took " . round($updateTotalTime, 3) . " seconds");
             }
             
-            // Save booked seats if provided (optimize with batch insert if many seats)
+            // Save booked seats if provided
             if (!empty($data['booked_seats'])) {
-                $seatsStartTime = microtime(true);
-                error_log("DEBUG: Starting booked seats save for " . count($data['booked_seats']) . " seats");
-                
                 // Check if booked_seats table exists (cache this check)
                 static $bookedSeatsTableExists = null;
                 if ($bookedSeatsTableExists === null) {
@@ -690,22 +669,15 @@ class BookingsModel {
                         }
                     }
                     
-                    error_log("Seat saving summary - Saved: $seatsSaved, Failed: $seatsFailed");
                 } else {
                     // Table doesn't exist - log warning but don't fail
                     error_log("Warning: booked_seats table does not exist. Run migration: database/migrations/create_booked_seats_table.sql");
                 }
-                
-                $seatsTotalTime = microtime(true) - $seatsStartTime;
-                error_log("DEBUG: Total booked seats save took " . round($seatsTotalTime, 3) . " seconds");
-            } else {
-                error_log("No booked seats provided in booking data");
             }
             
-            // Mark reservations as confirmed (optimize with single query)
+            // Mark reservations as confirmed
             if (!empty($data['reservation_ids'])) {
                 try {
-                    $reservationStartTime = microtime(true);
                     $reservationIds = is_array($data['reservation_ids']) 
                         ? $data['reservation_ids'] 
                         : explode(',', $data['reservation_ids']);
@@ -722,9 +694,6 @@ class BookingsModel {
                                             WHERE id IN ($placeholders)";
                         $reservationStmt = $this->db->prepare($reservationQuery);
                         $reservationStmt->execute($reservationIds);
-                        
-                        $reservationTime = microtime(true) - $reservationStartTime;
-                        error_log("DEBUG: Reservation confirmation took " . round($reservationTime, 3) . " seconds");
                     }
                 } catch (Exception $e) {
                     // Log but don't fail the booking if reservation update fails
@@ -732,13 +701,7 @@ class BookingsModel {
                 }
             }
             
-            $commitStartTime = microtime(true);
             $this->db->commit();
-            $commitTime = microtime(true) - $commitStartTime;
-            error_log("DEBUG: Transaction committed in " . round($commitTime, 3) . " seconds");
-            
-            $totalTime = microtime(true) - $totalStartTime;
-            error_log("DEBUG: Total createBooking time: " . round($totalTime, 3) . " seconds");
             
             // Return response FIRST, then send email in background
             // This prevents email delays from causing API timeouts
@@ -750,7 +713,6 @@ class BookingsModel {
             
             // Send confirmation email if payment method is 'card' (in background, don't block)
             $paymentMethod = $data['payment_method'] ?? 'cash';
-            error_log("DEBUG: Payment method is: " . $paymentMethod);
             
             // Send email for card payments (credit_card, visa, etc.) - but don't wait for it
             if ($paymentMethod === 'card' || $paymentMethod === 'credit_card' || $paymentMethod === 'visa') {
@@ -772,8 +734,6 @@ class BookingsModel {
                 // This prevents email from blocking the API response
                 register_shutdown_function(function() use ($emailData) {
                     try {
-                        error_log("DEBUG: Sending email in background for booking: " . $emailData['booking_code']);
-                        
                         if (!class_exists('EmailService')) {
                             error_log("ERROR: EmailService class not found!");
                             return;
@@ -801,37 +761,20 @@ class BookingsModel {
                             'ticket_details' => $emailData['ticket_details']
                         ];
                         
-                        // Send email with maximum timeout of 10 seconds
+                        // Send email
                         $emailService = new EmailService();
-                        $emailStartTime = microtime(true);
-                        
-                        // Set a maximum execution time for email sending (10 seconds)
-                        $maxEmailTime = 10;
-                        $emailResult = false;
-                        
                         try {
-                            // Use a timeout mechanism
                             $emailResult = @$emailService->sendBookingConfirmationEmail($bookingDataForEmail, $eventData);
                         } catch (Exception $emailTimeoutEx) {
-                            error_log("Email sending timed out or failed: " . $emailTimeoutEx->getMessage());
+                            error_log("Email sending failed: " . $emailTimeoutEx->getMessage());
                             $emailResult = false;
                         }
-                        
-                        $emailDuration = microtime(true) - $emailStartTime;
-                        
-                        if ($emailDuration > $maxEmailTime) {
-                            error_log("WARNING: Email sending took longer than " . $maxEmailTime . " seconds (" . round($emailDuration, 2) . " seconds)");
-                        }
-                        
-                        error_log("DEBUG: Email send result: " . ($emailResult ? 'SUCCESS' : 'FAILED') . " (took " . round($emailDuration, 2) . " seconds)");
                     } catch (Exception $emailException) {
                         error_log("ERROR: Failed to send confirmation email: " . $emailException->getMessage());
                     } catch (Error $emailError) {
                         error_log("FATAL ERROR: Email service error: " . $emailError->getMessage());
                     }
                 });
-            } else {
-                error_log("DEBUG: Skipping email - payment method is: " . $paymentMethod);
             }
             
             return $response;
