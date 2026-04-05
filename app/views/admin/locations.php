@@ -1,7 +1,12 @@
 <?php
 // locations.php
-require_once __DIR__ . '/../../../config/db_connect.php';
+//require_once __DIR__ . '/../../../config/db_connect.php';
 require_once __DIR__ . '/../../../app/models/Venue.php';         
+
+// Ensure $pdo is available (it should be from index.php)
+if (!isset($pdo)) {
+    require_once __DIR__ . '/../../../config/db_connect.php';
+}
 
 // Create Venue instance
 $venue = new Venue($pdo);

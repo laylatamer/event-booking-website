@@ -1,55 +1,64 @@
 <?php
-// Ticket Verification Page - Accessible via QR code
-// No login required - public access for ticket verification
+/**
+ * Dynamic Ticket Display Page
+ * Accessible via QR code - shows ticket and user details
+ * URL: /app/views/ticket_verification.php?code=BOOKING_CODE
+ */
 
-require_once __DIR__ . '/../config/db_connect.php';
+require_once __DIR__ . '/../../config/error_handler.php';
+require_once __DIR__ . '/../../config/db_connect.php';
 require_once __DIR__ . '/../models/BookingsModel.php';
 
 // Get booking code from URL
 $bookingCode = $_GET['code'] ?? '';
+$error = '';
+$booking = null;
 
 if (empty($bookingCode)) {
-    die('Invalid ticket. No booking code provided.');
+    $error = 'No booking code provided. Please scan a valid QR code.';
+} else {
+    try {
+        $database = new Database();
+        $db = $database->getConnection();
+        $bookingsModel = new BookingsModel($db);
+        
+        // Get booking by code
+        $booking = $bookingsModel->getBookingByCode(htmlspecialchars($bookingCode));
+        
+        if (!$booking) {
+            $error = 'Ticket not found. Please check your booking code.';
+        }
+    } catch (Exception $e) {
+        error_log("Ticket verification error: " . $e->getMessage());
+        $error = 'Error loading ticket information. Please try again later.';
+    }
 }
 
-try {
-    $database = new Database();
-    $db = $database->getConnection();
-    $bookingsModel = new BookingsModel($db);
-    
-    // Get booking by code
-    $booking = $bookingsModel->getBookingByCode($bookingCode);
-    
-    if (!$booking) {
-        die('Ticket not found. Please check your booking code.');
-    }
-    
-    // Format event date
-    $eventDate = '';
-    $eventTime = '';
+// Format dates and times if booking exists
+$eventDate = 'N/A';
+$eventTime = 'N/A';
+$bookingDate = 'N/A';
+
+if ($booking) {
     if (!empty($booking['event_date'])) {
         try {
-            $dateTime = new DateTime($booking['event_date']);
-            $eventDate = $dateTime->format('F j, Y');
-            $eventTime = $dateTime->format('g:i A');
+            $eventDateTime = new DateTime($booking['event_date']);
+            $eventDate = $eventDateTime->format('F j, Y');
+            $eventTime = $eventDateTime->format('g:i A');
         } catch (Exception $e) {
-            $eventDate = $booking['event_date'];
+            $eventDate = 'N/A';
+            $eventTime = 'N/A';
         }
     }
     
-    // Format booking date
-    $bookingDate = '';
     if (!empty($booking['created_at'])) {
         try {
-            $dateTime = new DateTime($booking['created_at']);
-            $bookingDate = $dateTime->format('F j, Y g:i A');
+            $bookingDateTime = new DateTime($booking['created_at']);
+            $bookingDate = $bookingDateTime->format('F j, Y \a\t g:i A');
         } catch (Exception $e) {
-            $bookingDate = $booking['created_at'];
+            $bookingDate = 'N/A';
         }
     }
-    
-} catch (Exception $e) {
-    die('Error loading ticket information: ' . $e->getMessage());
 }
 ?>
 <!DOCTYPE html>
@@ -57,7 +66,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ticket Verification - <?php echo htmlspecialchars($bookingCode); ?></title>
+    <title><?php echo $booking ? 'Ticket - ' . htmlspecialchars($booking['event_title'] ?? 'Event') : 'Ticket Not Found'; ?> | EحGZLY</title>
     <style>
         * {
             margin: 0;
@@ -227,6 +236,11 @@ try {
             color: white;
         }
         
+        .status-cancelled {
+            background: #ef4444;
+            color: white;
+        }
+        
         .total-amount {
             font-size: 28px;
             font-weight: 700;
@@ -242,13 +256,57 @@ try {
         }
         
         .qr-instruction {
-            background: #eff6ff;
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
             border-left: 4px solid #3b82f6;
-            padding: 15px;
-            margin-top: 20px;
-            border-radius: 5px;
+            padding: 18px 20px;
+            margin-top: 30px;
+            border-radius: 8px;
             font-size: 14px;
             color: #1e40af;
+            line-height: 1.6;
+        }
+        
+        .qr-instruction strong {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 15px;
+        }
+        
+        .error-message {
+            background: white;
+            border-radius: 24px;
+            padding: 60px 40px;
+            text-align: center;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        .error-message h2 {
+            font-size: 28px;
+            color: #ef4444;
+            margin-bottom: 15px;
+        }
+        
+        .error-message p {
+            font-size: 16px;
+            color: #6b7280;
+            line-height: 1.6;
+        }
+        
+        .status-paid {
+            background: #10b981;
+            color: white;
+        }
+        
+        .status-unpaid {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .status-refunded {
+            background: #6b7280;
+            color: white;
         }
         
         @media (max-width: 600px) {
@@ -277,151 +335,171 @@ try {
     </style>
 </head>
 <body>
-    <div class="ticket-container">
-        <div class="ticket-header">
-            <h1>🎟️ EحGZLY</h1>
-            <p style="font-size: 16px; opacity: 0.9;">Event Ticket</p>
-            <div class="booking-code"><?php echo htmlspecialchars($bookingCode); ?></div>
+    <?php if ($error): ?>
+        <div class="error-message">
+            <h2>❌ Error</h2>
+            <p><?php echo htmlspecialchars($error); ?></p>
         </div>
-        
-        <div class="ticket-body">
-            <!-- Event Information -->
-            <div class="ticket-section">
-                <div class="section-title">Event Information</div>
-                <div class="event-title"><?php echo htmlspecialchars($booking['event_title'] ?? 'N/A'); ?></div>
-                <div class="detail-row">
-                    <span class="detail-label">Date:</span>
-                    <span class="detail-value"><?php echo htmlspecialchars($eventDate); ?></span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Time:</span>
-                    <span class="detail-value"><?php echo htmlspecialchars($eventTime); ?></span>
-                </div>
-                <?php if (!empty($booking['venue_name'])): ?>
-                <div class="detail-row">
-                    <span class="detail-label">Venue:</span>
-                    <span class="detail-value"><?php echo htmlspecialchars($booking['venue_name']); ?></span>
-                </div>
-                <?php endif; ?>
-                <?php if (!empty($booking['venue_address'])): ?>
-                <div class="detail-row">
-                    <span class="detail-label">Address:</span>
-                    <span class="detail-value"><?php echo htmlspecialchars($booking['venue_address']); ?></span>
-                </div>
-                <?php endif; ?>
+    <?php elseif ($booking): ?>
+        <div class="ticket-container">
+            <div class="ticket-header">
+                <h1>🎟️ EحGZLY</h1>
+                <p style="font-size: 16px; opacity: 0.9;">Event Ticket</p>
+                <div class="booking-code"><?php echo htmlspecialchars($bookingCode); ?></div>
             </div>
             
-            <!-- Customer Information -->
-            <div class="ticket-section">
-                <div class="section-title">Customer Information</div>
-                <div class="detail-row">
-                    <span class="detail-label">Name:</span>
-                    <span class="detail-value"><?php echo htmlspecialchars($booking['user_name'] ?? 'N/A'); ?></span>
-                </div>
-                <?php if (!empty($booking['user_email'])): ?>
-                <div class="detail-row">
-                    <span class="detail-label">Email:</span>
-                    <span class="detail-value"><?php echo htmlspecialchars($booking['user_email']); ?></span>
-                </div>
-                <?php endif; ?>
-                <?php if (!empty($booking['user_phone'])): ?>
-                <div class="detail-row">
-                    <span class="detail-label">Phone:</span>
-                    <span class="detail-value"><?php echo htmlspecialchars($booking['user_phone']); ?></span>
-                </div>
-                <?php endif; ?>
-            </div>
-            
-            <!-- Ticket Details -->
-            <div class="ticket-section">
-                <div class="section-title">Ticket Details</div>
-                <div class="detail-row">
-                    <span class="detail-label">Number of Tickets:</span>
-                    <span class="detail-value"><?php echo intval($booking['ticket_count'] ?? 0); ?></span>
-                </div>
-                
-                <?php if (!empty($booking['ticket_categories'])): ?>
-                <div class="ticket-categories">
-                    <strong style="display: block; margin-bottom: 10px; color: #1f2937;">Ticket Categories:</strong>
-                    <?php foreach ($booking['ticket_categories'] as $category): ?>
-                    <div class="category-item">
-                        <span><?php echo htmlspecialchars($category['category_name'] ?? ''); ?> x<?php echo intval($category['quantity'] ?? 0); ?></span>
-                        <span>$<?php echo number_format(floatval($category['price'] ?? 0), 2); ?></span>
+            <div class="ticket-body">
+                <!-- Event Information -->
+                <div class="ticket-section">
+                    <div class="section-title">Event Information</div>
+                    <div class="event-title"><?php echo htmlspecialchars($booking['event_title'] ?? 'N/A'); ?></div>
+                    <?php if (!empty($booking['event_description'])): ?>
+                    <div style="color: #6b7280; font-size: 14px; margin-bottom: 15px; line-height: 1.6;">
+                        <?php echo nl2br(htmlspecialchars($booking['event_description'])); ?>
                     </div>
-                    <?php endforeach; ?>
-                </div>
-                <?php endif; ?>
-                
-                <?php if (!empty($booking['booked_seats'])): ?>
-                <div style="margin-top: 15px;">
-                    <strong style="display: block; margin-bottom: 10px; color: #1f2937;">Seats:</strong>
-                    <div class="seats-list">
-                        <?php foreach ($booking['booked_seats'] as $seat): ?>
-                        <span class="seat-badge">
-                            <?php echo htmlspecialchars($seat['seat_id'] ?? ''); ?>
-                            <?php if (!empty($seat['category_name'])): ?>
-                            (<?php echo htmlspecialchars($seat['category_name']); ?>)
-                            <?php endif; ?>
+                    <?php endif; ?>
+                    <div class="detail-row">
+                        <span class="detail-label">Date:</span>
+                        <span class="detail-value"><?php echo htmlspecialchars($eventDate); ?></span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Time:</span>
+                        <span class="detail-value"><?php echo htmlspecialchars($eventTime); ?></span>
+                    </div>
+                    <?php if (!empty($booking['venue_name'])): ?>
+                    <div class="detail-row">
+                        <span class="detail-label">Venue:</span>
+                        <span class="detail-value"><?php echo htmlspecialchars($booking['venue_name']); ?></span>
+                    </div>
+                    <?php endif; ?>
+                    <?php if (!empty($booking['venue_address']) || !empty($booking['venue_city'])): ?>
+                    <div class="detail-row">
+                        <span class="detail-label">Location:</span>
+                        <span class="detail-value">
+                            <?php 
+                            $locationParts = array_filter([
+                                $booking['venue_address'] ?? '',
+                                $booking['venue_city'] ?? '',
+                                $booking['venue_country'] ?? ''
+                            ]);
+                            echo htmlspecialchars(implode(', ', $locationParts));
+                            ?>
                         </span>
+                    </div>
+                    <?php endif; ?>
+                </div>
+                
+                <!-- Customer Information -->
+                <div class="ticket-section">
+                    <div class="section-title">Customer Information</div>
+                    <div class="detail-row">
+                        <span class="detail-label">Name:</span>
+                        <span class="detail-value"><?php echo htmlspecialchars($booking['user_name'] ?? 'N/A'); ?></span>
+                    </div>
+                    <?php if (!empty($booking['user_email'])): ?>
+                    <div class="detail-row">
+                        <span class="detail-label">Email:</span>
+                        <span class="detail-value"><?php echo htmlspecialchars($booking['user_email']); ?></span>
+                    </div>
+                    <?php endif; ?>
+                    <?php if (!empty($booking['user_phone'])): ?>
+                    <div class="detail-row">
+                        <span class="detail-label">Phone:</span>
+                        <span class="detail-value"><?php echo htmlspecialchars($booking['user_phone']); ?></span>
+                    </div>
+                    <?php endif; ?>
+                </div>
+                
+                <!-- Ticket Details -->
+                <div class="ticket-section">
+                    <div class="section-title">Ticket Details</div>
+                    <div class="detail-row">
+                        <span class="detail-label">Number of Tickets:</span>
+                        <span class="detail-value"><?php echo intval($booking['ticket_count'] ?? 0); ?></span>
+                    </div>
+                    
+                    <?php if (!empty($booking['ticket_categories'])): ?>
+                    <div class="ticket-categories">
+                        <strong style="display: block; margin-bottom: 10px; color: #1f2937;">Ticket Categories:</strong>
+                        <?php foreach ($booking['ticket_categories'] as $category): ?>
+                        <div class="category-item">
+                            <span><?php echo htmlspecialchars($category['category_name'] ?? ''); ?> x<?php echo intval($category['quantity'] ?? 0); ?></span>
+                            <span>$<?php echo number_format(floatval($category['price'] ?? 0), 2); ?></span>
+                        </div>
                         <?php endforeach; ?>
                     </div>
+                    <?php endif; ?>
+                    
+                    <?php if (!empty($booking['booked_seats'])): ?>
+                    <div style="margin-top: 15px;">
+                        <strong style="display: block; margin-bottom: 10px; color: #1f2937;">Seats:</strong>
+                        <div class="seats-list">
+                            <?php foreach ($booking['booked_seats'] as $seat): ?>
+                            <span class="seat-badge">
+                                <?php echo htmlspecialchars($seat['seat_id'] ?? ''); ?>
+                                <?php if (!empty($seat['category_name'])): ?>
+                                (<?php echo htmlspecialchars($seat['category_name']); ?>)
+                                <?php endif; ?>
+                            </span>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                    <?php endif; ?>
                 </div>
-                <?php endif; ?>
-            </div>
-            
-            <!-- Payment Information -->
-            <div class="ticket-section">
-                <div class="section-title">Payment Information</div>
-                <div class="detail-row">
-                    <span class="detail-label">Payment Method:</span>
-                    <span class="detail-value">
-                        <?php 
-                        $paymentMethod = $booking['payment_method'] ?? 'cash';
-                        echo $paymentMethod === 'card' ? 'Credit/Debit Card' : 'Cash (Pay at Venue)';
-                        ?>
-                    </span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Payment Status:</span>
-                    <span class="detail-value">
-                        <span class="status-badge status-<?php echo strtolower($booking['payment_status'] ?? 'pending'); ?>">
-                            <?php echo ucfirst($booking['payment_status'] ?? 'Pending'); ?>
+                
+                <!-- Payment Information -->
+                <div class="ticket-section">
+                    <div class="section-title">Payment Information</div>
+                    <div class="detail-row">
+                        <span class="detail-label">Payment Method:</span>
+                        <span class="detail-value">
+                            <?php 
+                            $paymentMethod = strtolower($booking['payment_method'] ?? 'cash');
+                            echo $paymentMethod === 'card' ? 'Credit/Debit Card' : 'Cash (Pay at Venue)';
+                            ?>
                         </span>
-                    </span>
-                </div>
-                <div class="detail-row" style="margin-top: 15px; padding-top: 15px; border-top: 2px solid #e5e7eb;">
-                    <span class="detail-label">Total Amount:</span>
-                    <span class="detail-value total-amount">$<?php echo number_format(floatval($booking['final_amount'] ?? 0), 2); ?></span>
-                </div>
-            </div>
-            
-            <!-- Booking Information -->
-            <div class="ticket-section">
-                <div class="section-title">Booking Information</div>
-                <div class="detail-row">
-                    <span class="detail-label">Booking Date:</span>
-                    <span class="detail-value"><?php echo htmlspecialchars($bookingDate); ?></span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Status:</span>
-                    <span class="detail-value">
-                        <span class="status-badge status-<?php echo strtolower($booking['status'] ?? 'confirmed'); ?>">
-                            <?php echo ucfirst($booking['status'] ?? 'Confirmed'); ?>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Payment Status:</span>
+                        <span class="detail-value">
+                            <span class="status-badge status-<?php echo strtolower($booking['payment_status'] ?? 'pending'); ?>">
+                                <?php echo ucfirst($booking['payment_status'] ?? 'Pending'); ?>
+                            </span>
                         </span>
-                    </span>
+                    </div>
+                    <div class="detail-row" style="margin-top: 15px; padding-top: 15px; border-top: 2px solid #e5e7eb;">
+                        <span class="detail-label">Total Amount:</span>
+                        <span class="detail-value total-amount">$<?php echo number_format(floatval($booking['final_amount'] ?? 0), 2); ?></span>
+                    </div>
+                </div>
+                
+                <!-- Booking Information -->
+                <div class="ticket-section">
+                    <div class="section-title">Booking Information</div>
+                    <div class="detail-row">
+                        <span class="detail-label">Booking Date:</span>
+                        <span class="detail-value"><?php echo htmlspecialchars($bookingDate); ?></span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Status:</span>
+                        <span class="detail-value">
+                            <span class="status-badge status-<?php echo strtolower($booking['status'] ?? 'confirmed'); ?>">
+                                <?php echo ucfirst($booking['status'] ?? 'Confirmed'); ?>
+                            </span>
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="qr-instruction">
+                    <strong>📱 Important:</strong> Please show this page to venue staff for entry. Keep this page open or take a screenshot for offline access.
                 </div>
             </div>
             
-            <div class="qr-instruction">
-                <strong>📱 Important:</strong> Please show this page to venue staff for entry. Keep this page open or take a screenshot for offline access.
+            <div class="ticket-footer">
+                <p>Thank you for choosing EحGZLY!</p>
+                <p style="margin-top: 5px;">For support, please contact us at support@egzly.com</p>
             </div>
         </div>
-        
-        <div class="ticket-footer">
-            <p>Thank you for choosing EحGZLY!</p>
-            <p style="margin-top: 5px;">For support, please contact us at support@egzly.com</p>
-        </div>
-    </div>
+    <?php endif; ?>
 </body>
 </html>
-

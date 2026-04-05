@@ -117,23 +117,27 @@ class EmailService {
             // Prepare email subject
             $subject = "Booking Confirmation - " . ($eventData['title'] ?? 'Event Ticket');
             
-            // Generate QR code URL pointing to the dynamic ticket page
-            // Simple and clean approach - use configured base URL or auto-detect
+            // Generate QR code URL pointing to the dynamic ticket verification page
+            // When scanned, users will see their complete ticket and user information
+            
+            // Check if base_url is configured in config
             $configuredBaseUrl = $this->config['base_url'] ?? '';
             
             if (!empty($configuredBaseUrl)) {
                 // Use configured base URL
                 $baseUrl = rtrim($configuredBaseUrl, '/');
+                $ticketUrl = $baseUrl . "/app/views/ticket_verification.php?code=" . urlencode($bookingCode);
             } else {
-                // Auto-detect base URL
+                // Auto-detect URL for mobile device access
                 $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? "https" : "http";
                 $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
                 
-                // Try to get local IP if localhost (for mobile device access)
+                // If localhost, try to get actual server IP for mobile device access
                 if (strpos($host, 'localhost') !== false || strpos($host, '127.0.0.1') !== false) {
                     $localIP = $this->getServerLocalIP();
                     if ($localIP) {
-                        // Preserve port if exists
+                        // Preserve port if specified (e.g., localhost:8080)
+                        $port = '';
                         if (isset($_SERVER['HTTP_HOST']) && strpos($_SERVER['HTTP_HOST'], ':') !== false) {
                             $portParts = explode(':', $_SERVER['HTTP_HOST']);
                             if (isset($portParts[1])) {
@@ -141,17 +145,16 @@ class EmailService {
                             } else {
                                 $host = $localIP;
                             }
-                        } else {
-                            $host = $localIP;
                         }
+                        $host = $localIP . $port;
                     }
                 }
                 
-                $baseUrl = $protocol . "://" . $host . "/event-booking-website";
+                // Build ticket verification URL
+                $ticketUrl = $protocol . "://" . $host . "/event-booking-website/app/views/ticket_verification.php?code=" . urlencode($bookingCode);
             }
             
-            // Build ticket URL - points to new dynamic ticket page
-            $ticketUrl = $baseUrl . "/app/views/ticket.php?code=" . urlencode($bookingCode);
+            // QR code data is the URL to the ticket verification page
             $qrData = $ticketUrl;
             
             error_log("QR Code URL generated: " . $ticketUrl);

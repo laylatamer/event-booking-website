@@ -119,14 +119,22 @@ class EventChatbotPDO {
         if (class_exists('AIChatbotService')) {
             try {
                 $aiService = new AIChatbotService($this->pdo);
-                $response = $aiService->processMessage($user_message, $this->conversation_id);
-                if ($response && $response !== "I apologize, but I'm having trouble processing your request right now. Please try again or contact support.") {
+                $aiResponse = $aiService->processMessage($user_message, $this->conversation_id);
+                // Only use AI response if it's valid (not null and not the error message)
+                if ($aiResponse && 
+                    $aiResponse !== "I apologize, but I'm having trouble processing your request right now. Please try again or contact support." &&
+                    trim($aiResponse) !== '') {
+                    $response = $aiResponse;
                     $intent = 'ai_response';
                     $confidence = 0.95;
+                    error_log("AI Chatbot: Successfully got AI response");
+                } else {
+                    error_log("AI Chatbot: AI service returned null or error, using fallback");
                 }
             } catch (Exception $e) {
                 error_log("AI Chatbot Service Error: " . $e->getMessage());
-                // Continue to fallback
+                error_log("AI Chatbot Service Trace: " . $e->getTraceAsString());
+                // Continue to fallback - response remains null
             }
         }
         
